@@ -16,6 +16,14 @@ pnpm install
 pnpm dev
 ```
 
+### Building
+
+```sh
+pnpm build
+```
+
+The output will be located in `app/dist`.
+
 ### Formatting and style check
 
 > [!todo]
