@@ -1,25 +1,16 @@
 import type { Component } from "solid-js";
-
-import logo from "./logo.svg";
-import styles from "./App.module.css";
+import { Editor } from "./components/Editor";
+import { schema } from "./lib/prosemirror-schema";
 
 const App: Component = () => {
+  const doc = schema.node("root", null, [
+    schema.node("paragraph", null, [schema.text("This is a test.")]),
+    schema.node("paragraph", null, [schema.text("Try editing me!")]),
+    schema.node("paragraph", null, [schema.text("You can use ctrl-z and ctrl-y to undo and redo")])
+  ])
   return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-      </header>
+    <div>
+      <Editor schema={schema} initialDocument={doc!} />
     </div>
   );
 };
