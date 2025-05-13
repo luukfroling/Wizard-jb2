@@ -2,18 +2,29 @@
 // This function will be called to add the button
 function addTeachBooksEditButton() {
     // Find the container where launch buttons are located.
-    const headerEndContainer = document.querySelector('.article-header-buttons');
+    const navbarContainer = document.querySelector('.article-header-buttons');
 
-    if (headerEndContainer) {
-        // TODO: Add the dropdown menu here
+    if (navbarContainer) {
+        // Create the new container
+        // Maybe there is a cleaner way for this but for now it is fine...
+        const actualContainer = document.createElement('div')
+        actualContainer.classList.add('dropdown', 'dropdown-edit-buttons')
+
+        const dropdownMenu = document.createElement('ul')
+        dropdownMenu.classList.add('dropdown-menu')
+
+        const linkForMenu = document.createElement('li')
+        const actualLink = document.createElement('a')
+        actualLink.classList.add('btn', 'btn-sm', 'btn-edit-button', 'dropdown-item')
+        actualLink.setAttribute('data-bs-placement', 'left')
+        actualLink.setAttribute('data-bs-toggle', 'tooltip')
+        actualLink.textContent = "Edit this page"
 
         // Create the actual button
         const editButton = document.createElement('button');
         editButton.id = 'teachbooks-edit-button';
-        editButton.classList.add('btn'); // Use theme classes for styling
-
-        // TODO: Change this to the dropdown menu defined above
-        editButton.setAttribute('data-tippy-content', 'Edit this page'); // Tooltip
+        // Use theme classes for styling
+        editButton.classList.add('btn', 'dropdown-toggle');
 
         // Add an icon (using FontAwesome, assuming it's available via the theme)
         const icon = document.createElement('i');
@@ -27,32 +38,28 @@ function addTeachBooksEditButton() {
         };
 
 
-        // TODO: Not needed if we use the proper dropdown menu
-        if (window.tippy) {
-          window.tippy(editButton, {
-            // You can add Tippy.js options here if needed
-            // allowHTML: false,
-            // placement: 'bottom',
-            theme: 'dark',
-          });
-          console.log("Tippy initialized on TeachBooks Edit button.");
-        } else {
-          console.warn("Tippy.js (window.tippy) not found.");
-        }
+        //Create the list
+        linkForMenu.appendChild(actualLink)
+        dropdownMenu.appendChild(linkForMenu)
 
-    // Add the button to the container.
-    headerEndContainer.prepend(editButton);
+        // Add the button to the container.
+        actualContainer.appendChild(editButton);
+        actualContainer.appendChild(dropdownMenu)
 
-  } else {
-    console.warn('TeachBooks: Header container for edit button not found.');
-  }
+        // Add the container to the navbar
+        navbarContainer.prepend(actualContainer)
+
+
+
+    } else {
+        console.warn('TeachBooks: Header container for edit button not found.');
+    }
 }
 
 // Wait for the DOM to be fully loaded before trying to add the button
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', addTeachBooksEditButton);
+    document.addEventListener('DOMContentLoaded', addTeachBooksEditButton);
 } else {
-  // DOMContentLoaded has already fired
-  addTeachBooksEditButton();
+    // DOMContentLoaded has already fired
+    addTeachBooksEditButton();
 }
-
