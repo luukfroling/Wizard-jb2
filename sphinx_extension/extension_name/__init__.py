@@ -1,6 +1,6 @@
-## Copied from official Sphinx tutorial
-
 from __future__ import annotations
+
+import os
 
 from docutils import nodes
 
@@ -11,7 +11,6 @@ from sphinx.util.typing import ExtensionMetadata
 
 class HelloRole(SphinxRole):
     """A role to say hello!"""
-
     def run(self) -> tuple[list[nodes.Node], list[nodes.system_message]]:
         node = nodes.inline(text=f'Hello {self.text}!')
         return [node], []
@@ -27,9 +26,18 @@ class HelloDirective(SphinxDirective):
         return [paragraph_node]
 
 
+def extension_name_static_path(app):
+    static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "_static"))
+    app.config.html_static_path.append(static_path)
+
+
 def setup(app: Sphinx) -> ExtensionMetadata:
+    app.connect("builder-inited", extension_name_static_path)
+
     app.add_role('hello', HelloRole())
     app.add_directive('hello', HelloDirective)
+
+    app.add_js_file('edit_button.js', priority=500)
 
     return {
         'version': '0.1',

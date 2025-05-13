@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+#backend-path = ["."]
+
+[project]
+name = "extension_name"
+version = "0.0.1"
+description = "A extension for editing TeachBooks"
+authors = [{ name = "Leander Bindt", email = "l.bindt@student.tudelft.nl" }]
+dependencies = ["sphinx", "docutils"]
+
+[tools.setuptools]
+include-package-data = true
+packages = ["extension_name"]
