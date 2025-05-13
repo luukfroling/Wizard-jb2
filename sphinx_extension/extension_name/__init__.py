@@ -37,7 +37,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_role('hello', HelloRole())
     app.add_directive('hello', HelloDirective)
 
-    app.add_js_file('edit_button.js')
+    app.add_js_file('edit_button.js', 1)
 
     return {
         'version': '0.1',

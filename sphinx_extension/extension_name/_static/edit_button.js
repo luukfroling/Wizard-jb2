@@ -6,24 +6,12 @@ function addTeachBooksEditButton() {
 
     if (navbarContainer) {
         // Create the new container
-        // Maybe there is a cleaner way for this but for now it is fine...
         const actualContainer = document.createElement('div')
         actualContainer.classList.add('dropdown', 'dropdown-edit-buttons')
-
-        const dropdownMenu = document.createElement('ul')
-        dropdownMenu.classList.add('dropdown-menu')
-
-        const linkForMenu = document.createElement('li')
-        const actualLink = document.createElement('a')
-        actualLink.classList.add('btn', 'btn-sm', 'btn-edit-button', 'dropdown-item')
-        actualLink.setAttribute('data-bs-placement', 'left')
-        actualLink.setAttribute('data-bs-toggle', 'tooltip')
-        actualLink.textContent = "Edit this page"
 
         // Create the actual button
         const editButton = document.createElement('button');
         editButton.id = 'teachbooks-edit-button';
-        // Use theme classes for styling
         editButton.classList.add('btn', 'dropdown-toggle');
 
         // Add an icon (using FontAwesome, assuming it's available via the theme)
@@ -37,19 +25,43 @@ function addTeachBooksEditButton() {
             alert('Edit functionality to be implemented!');
         };
 
-
-        //Create the list
-        linkForMenu.appendChild(actualLink)
-        dropdownMenu.appendChild(linkForMenu)
-
-        // Add the button to the container.
-        actualContainer.appendChild(editButton);
-        actualContainer.appendChild(dropdownMenu)
-
         // Add the container to the navbar
         navbarContainer.prepend(actualContainer)
 
+        // Add the button to the container.
+        actualContainer.appendChild(editButton);
 
+        // As in the basic theme a dropdown menu:
+        // Maybe change this to pure html and add it as a whole... this is a mess
+        // Create a list for the different links
+        const hiddenList = document.createElement('ul')
+        hiddenList.classList.add('dropdown-menu')
+        // Define the list items as 'li' html tags
+        const hiddenListItem = document.createElement('li')
+        // The list item is a button
+        const hiddenButtonContainer = document.createElement('button')
+        hiddenButtonContainer.classList.add('btn', 'btn-sm', 'btn-edit-page', 'dropdown-item')
+        // In the button we have two spans: one for the icon and the other for the text
+        // This is the icon container
+        const hiddenIconContainer = document.createElement('span')
+        hiddenIconContainer.classList.add('btn__icon-container')
+        // The actual icon
+        const actualHiddenIcon = document.createElement('i')
+        actualHiddenIcon.classList.add('fas', 'fa-pen')
+        // The text for the current list item
+        const actualHiddenText = document.createElement('span')
+        actualHiddenText.classList.add('btn__text-container')
+        actualHiddenText.textContent = "Edit page"
+        // Define more list items for more options?
+        // I don't think we need more options
+
+        // Initialise the list next to the actual navbar button
+        actualContainer.appendChild(hiddenList)
+        hiddenList.appendChild(hiddenListItem)
+        hiddenListItem.appendChild(hiddenButtonContainer)
+        hiddenButtonContainer.appendChild(hiddenIconContainer)
+        hiddenIconContainer.appendChild(actualHiddenIcon)
+        hiddenButtonContainer.appendChild(actualHiddenText)
 
     } else {
         console.warn('TeachBooks: Header container for edit button not found.');
