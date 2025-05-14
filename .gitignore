@@ -1,1 +1,13 @@
+# Bravo voor MacOS
 .DS_Store
+
+# Pip install extension bs
+/sphinx_extension/extension_name.egg-info/
+
+# Code editor bs
+/.vscode/
+/.idea
+
+# Vite bs
+/app/node_modules
+/app/dist
