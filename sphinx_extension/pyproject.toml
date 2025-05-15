@@ -3,8 +3,9 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "myFirst_sphinx_extension"
+name = "extension_name"
 version = "0.0.1"
-description = "My frist Sphinx extension"
+description = "A extension for editing TeachBooks"
 authors = [{ name = "Leander Bindt", email = "l.bindt@student.tudelft.nl" }]
 dependencies = ["sphinx", "docutils"]
+

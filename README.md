@@ -40,13 +40,24 @@ For eslint and type check, run
 pnpm eslint
 ```
 
-# Basic extension
+# The Sphinx extension
 
-1. run `pip install -e ./src` in this repo
+1. Pip install the extension by running the following in the root foler: 
+```shell
+pip install -e ./sphinx_extension
+```
 
-2. Add `basic_extension` to the `_config.yml` of a TeachBooks repo under `extra_extensions`
+2. Add `extension_name` to the `_config.yml` of a TeachBooks repo under `extra_extensions`
 
-3. run `jupyter-book build book` in the TeachBooks repo
+3. In said TeachBooks repo run
+```shell
+jupyter-book build book
+```
+
+4. You might need to clean before building: 
+```shell
+jupyter-book clean book
+```
 
 ## Usage
 Add ```` ```{hello} \<argument\>```` to any markdown file or cell. 
