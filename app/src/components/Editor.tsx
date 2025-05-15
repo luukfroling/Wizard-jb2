@@ -20,8 +20,8 @@ export const Editor: Component<EditorProps> = (props) => {
       plugins: [
         history(),
         keymap({ "Mod-z": undo, "Mod-y": redo }),
-        keymap(baseKeymap)
-      ]
+        keymap(baseKeymap),
+      ],
     });
     const view = new EditorView(ref!, { state });
     onCleanup(() => view.destroy());
