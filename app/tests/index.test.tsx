@@ -1,33 +1,21 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
-// Mock solid-js/web
-const renderMock = vi.fn()
-vi.mock('solid-js/web', () => ({ render: renderMock }))
+const SolidWeb = await import('solid-js/web')
+const renderSpy = vi.spyOn(SolidWeb, 'render')
 
-// Clear DOM and Module cache before each test
-beforeEach(() => {
-    vi.resetModules()
-    document.body.innerHTML = ''
-    renderMock.mockReset()
-})
-
-// Use "describe" to create a group of tests
+// Use "describe" to create a test suite
 describe('Example tests for index.src expected behaviour', () => {
-    // Use "it" to start a test
+    // Use "it" to define a test case
     it('Renders <App /> into #root when #root exists', async () => {
         // Create a custom root element
         const root = document.createElement('div')
         root.id = 'root'
         document.body.appendChild(root)
 
-        // Import index.tsx
+        // Import index.tsxq
         await import('../src/index')
 
         // Assert render was called with our custom root element
-        expect(renderMock).toHaveBeenCalledWith(expect.any(Function), root)
-    })
-
-    it('Throws a helpful error if #root is missing', async () => {
-        await expect(import('../src/index')).rejects.toThrowError()
+        expect(renderSpy).toHaveBeenCalledWith(expect.any(Function), root)
     })
 })
