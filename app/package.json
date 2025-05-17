@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest",
+    "test:ci": "vitest run",
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
