@@ -1,7 +1,7 @@
 import { Component, onMount } from "solid-js";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { Schema, MarkType } from "prosemirror-model";
+import { Schema } from "prosemirror-model";
 import { schema as basicSchema } from "prosemirror-schema-basic";
 import { history, undo, redo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
@@ -10,38 +10,6 @@ import "prosemirror-view/style/prosemirror.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 type Dispatch = (tr: Transaction) => void;
-
-const toggleMarkWithAttrs = (
-  markType: MarkType,
-  attrs: Record<string, any>,
-) => {
-  return (state: EditorState, dispatch: Dispatch) => {
-    const { from, to } = state.selection;
-    let hasMark = false;
-
-    state.doc.nodesBetween(from, to, (node) => {
-      if (markType.isInSet(node.marks)) {
-        hasMark = true;
-      }
-    });
-
-    if (hasMark) {
-      dispatch(state.tr.removeMark(from, to, markType));
-    } else {
-      const tr = state.tr;
-      state.doc.nodesBetween(from, to, (node: any, pos: number) => {
-        const existingMark = markType.isInSet(node.marks);
-        const newAttrs = existingMark
-          ? { ...existingMark.attrs, ...attrs }
-          : attrs;
-        tr.addMark(pos, pos + node.nodeSize, markType.create(newAttrs));
-      });
-      dispatch(tr);
-    }
-
-    return true;
-  };
-};
 
 // Extend the schema to include alignment, color, font size, and image
 const extendedSchema = new Schema({
@@ -155,11 +123,14 @@ const App: Component = () => {
     });
 
     // Helper function to set block attributes without resetting others
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setBlockAttrs = (attrs: Record<string, any>) => {
       return (
         state: EditorState,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         dispatch: ((transaction: any) => void) | undefined,
       ) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { $from } = state.selection as any; // ProseMirror types are not always complete
         const node = state.doc.nodeAt($from.before());
         if (dispatch) {
@@ -177,6 +148,7 @@ const App: Component = () => {
     // Helper function to toggle marks without resetting attributes
     const toggleMarkWithAttrs = (
       markType: import("prosemirror-model").MarkType,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       attrs: Record<string, any>,
     ) => {
       return (state: EditorState, dispatch: Dispatch) => {
@@ -193,6 +165,7 @@ const App: Component = () => {
           dispatch(state.tr.removeMark(from, to, markType));
         } else {
           const tr = state.tr;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           state.doc.nodesBetween(from, to, (node: any, pos: number) => {
             const existingMark = markType.isInSet(node.marks);
             const newAttrs = existingMark
@@ -208,6 +181,7 @@ const App: Component = () => {
     };
 
     // Helper function to create toolbar buttons
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const createButton = (label: string, command: any) => {
       const button = document.createElement("button");
       button.textContent = label;
@@ -219,12 +193,13 @@ const App: Component = () => {
     };
 
     // Helper function to create dropdowns
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const createDropdown = (options: { label: string; command: any }[]) => {
       const select = document.createElement("select");
       select.className = "form-select form-select-sm mx-1";
       select.style.width = "100px";
 
-      options.forEach(({ label, command }) => {
+      options.forEach(({ label }) => {
         const option = document.createElement("option");
         option.textContent = label;
         option.value = label;
@@ -383,14 +358,14 @@ const App: Component = () => {
         <div
           ref={(el) => (toolbarContainer = el as HTMLDivElement)}
           class="d-flex"
-        ></div>
+        />
       </div>
 
       {/* Editor Container */}
       <div
         ref={(el) => (editorContainer = el as HTMLDivElement)}
         class="p-3 mt-2 bg-white border rounded"
-      ></div>
+      />
     </div>
   );
 };
