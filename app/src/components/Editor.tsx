@@ -1,4 +1,4 @@
-import { Component, onCleanup, onMount } from "solid-js";
+import { onCleanup, onMount, ParentComponent } from "solid-js";
 import type { Node, Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
@@ -11,10 +11,11 @@ export interface EditorProps {
   initialDocument?: Node;
 }
 
-export const Editor: Component<EditorProps> = (props) => {
+
+export const Editor: ParentComponent<EditorProps> = (props) => {
   let ref: HTMLDivElement;
   onMount(() => {
-    const state = EditorState.create({
+    const editorState = EditorState.create({
       schema: props.schema,
       doc: props.initialDocument,
       plugins: [
@@ -23,9 +24,11 @@ export const Editor: Component<EditorProps> = (props) => {
         keymap(baseKeymap),
       ],
     });
-    const view = new EditorView(ref!, { state });
+    const view = new EditorView(ref!, { state: editorState });
     onCleanup(() => view.destroy());
   });
 
-  return <div ref={ref!} />;
+  return <>
+    <div ref={ref!} />
+  </>;
 };
