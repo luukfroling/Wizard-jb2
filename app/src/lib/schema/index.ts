@@ -137,7 +137,7 @@ export const schema = new Schema({
         },
         listItem: {
             defining: true,
-            content: "paragraph block*",
+            content: "flowContent*",
             parseDOM: [{ tag: "li" }],
             group: "listContent",
             toDOM() {
