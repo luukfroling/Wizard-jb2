@@ -1,8 +1,6 @@
 /* @refresh reload */
-import { Schema } from "prosemirror-model";
+import { Schema, Mark } from "prosemirror-model";
 
-import type {} from "myst-spec";
-import type {} from "mdast";
 import { boolean, integer, oneOf, string } from "./utils";
 
 // NOTE: Schema inspired by [prosemirror-markdown](https://github.com/ProseMirror/prosemirror-markdown/blob/master/src/schema.ts).
@@ -12,18 +10,43 @@ import { boolean, integer, oneOf, string } from "./utils";
 export const schema = new Schema({
     nodes: {
         root: {
-            content: "(block | blockBreak | flowContent)+ | listContent+",
+            content: "(block | blockBreak | flowContent)* | listContent*",
+            toDOM() {
+                return ["div", 0];
+            },
         },
         block: {
             content: "flowContent+ | listContent+",
+            toDOM() {
+                return ["div", 0];
+            },
         },
-        blockBreak: {},
+        blockBreak: {
+            toDOM() {
+                return ["hr"];
+            },
+        },
         paragraph: {
             group: "flowContent",
             content: "phrasingContent*",
-            parseDOM: [{ tag: "p" }],
-            toDOM() {
-                return ["p", 0];
+            marks: "_",
+            attrs: {
+                align: { default: "left" },
+            },
+            parseDOM: [
+                {
+                    tag: "p",
+                    getAttrs: (node) => ({
+                        align:
+                            node.style && node.style.textAlign
+                                ? node.style.textAlign
+                                : "left",
+                    }),
+                },
+            ],
+            toDOM(node) {
+                const { align } = node.attrs;
+                return ["p", { style: `text-align: ${align}` }, 0];
             },
         },
         definition: {
@@ -35,13 +58,15 @@ export const schema = new Schema({
         heading: {
             defining: true,
             content: "phrasingContent*",
+            marks: "_",
             attrs: {
                 level: {
                     default: 1,
-                    validate(val) {
+                    validate(val: number) {
                         return Number.isInteger(val) && val >= 1 && val <= 6;
                     },
                 },
+                align: { default: "left" },
             },
             parseDOM: [
                 { tag: "h1", attrs: { level: 1 } },
@@ -53,18 +78,20 @@ export const schema = new Schema({
             ],
             group: "flowContent",
             toDOM(node) {
-                return ["h" + node.attrs.level, 0];
+                const { level, align } = node.attrs;
+                return [`h${level}`, { style: `text-align: ${align}` }, 0];
             },
         },
         thematicBreak: {
             group: "flowContent",
             parseDOM: [{ tag: "hr" }],
             toDOM() {
-                return ["hr", 0];
+                return ["hr"];
             },
         },
         blockquote: {
             group: "flowContent",
+            content: "block+",
             toDOM() {
                 return ["blockquote", 0];
             },
@@ -77,11 +104,10 @@ export const schema = new Schema({
             },
             group: "flowContent",
             content: "listContent",
-
             parseDOM: [
                 {
                     tag: "ol",
-                    getAttrs(dom) {
+                    getAttrs(dom: HTMLElement) {
                         return {
                             start: dom.hasAttribute("start")
                                 ? +dom.getAttribute("start")!
@@ -93,11 +119,9 @@ export const schema = new Schema({
                 },
                 {
                     tag: "ul",
-                    getAttrs(dom) {
+                    getAttrs(dom: HTMLElement) {
                         return {
-                            spread: (dom as HTMLElement).hasAttribute(
-                                "data-spread",
-                            ),
+                            spread: dom.hasAttribute("data-spread"),
                             ordered: false,
                         };
                     },
@@ -106,21 +130,26 @@ export const schema = new Schema({
             toDOM({ attrs }) {
                 return [
                     attrs.ordered ? "ol" : "ul",
-                    {
-                        "data-spread": attrs.spread ? "true" : null,
-                    },
+                    { "data-spread": attrs.spread ? "true" : null },
                     0,
                 ];
             },
         },
         listItem: {
             defining: true,
-            content: "phrasingContent",
+            content: "flowContent*",
             parseDOM: [{ tag: "li" }],
             group: "listContent",
+            toDOM() {
+                return ["li", 0];
+            },
         },
         html: {
             group: "flowContent",
+            toDOM() {
+                return ["div", { class: "html" }, 0];
+            },
+            content: "phrasingContent*",
         },
         code: {
             attrs: {
@@ -130,7 +159,7 @@ export const schema = new Schema({
                 showLineNumbers: boolean({ default: false }),
                 startingLineNumber: integer({ default: 1 }),
                 emphasizeLines: {
-                    validate(val) {
+                    validate(val: unknown) {
                         return (
                             Array.isArray(val) &&
                             val.find((x) => !Number.isInteger(x)) === undefined
@@ -142,7 +171,7 @@ export const schema = new Schema({
                 {
                     tag: "pre",
                     preserveWhitespace: "full",
-                    getAttrs(node) {
+                    getAttrs(node: HTMLElement) {
                         return {
                             lang: [...node.classList]
                                 .find((x) => x.startsWith("language-"))
@@ -152,7 +181,7 @@ export const schema = new Schema({
                                 node
                                     .getAttribute("data-emphasize-lines")
                                     ?.split(",")
-                                    .map((x) => parseInt(x)) ?? [],
+                                    .map((x: string) => parseInt(x)) ?? [],
                         };
                     },
                 },
@@ -169,26 +198,21 @@ export const schema = new Schema({
             group: "flowContent",
             content: "phrasingContent*",
         },
-        // comment: {
-        //     content: "text*",
-        //     toDOM(_node) {
-        //         return ["pre", { class: "comment" }, 0];
-        //     },
-        //     group: "flowContent",
-        // },
         target: {
-            attrs: {
-                label: string(),
-            },
+            attrs: { label: string() },
             group: "flowContent",
+            toDOM(node) {
+                return ["span", { "data-label": node.attrs.label }, 0];
+            },
+            content: "text*",
         },
         directive: {
-            attrs: {
-                name: string(),
-                args: string(),
-                value: string(),
-            },
+            attrs: { name: string(), args: string(), value: string() },
             group: "flowContent",
+            toDOM(node) {
+                return ["div", { "data-directive": node.attrs.name }, 0];
+            },
+            content: "text*",
         },
         admonition: {
             attrs: {
@@ -209,24 +233,40 @@ export const schema = new Schema({
                 class: string({ optional: true }),
             },
             group: "flowContent",
+            toDOM(node) {
+                return ["div", { class: `admonition ${node.attrs.kind}` }, 0];
+            },
+            content: "block+",
         },
         container: {
-            attrs: {
-                kind: oneOf({ values: ["figure", "table"] as const }),
-            },
+            attrs: { kind: oneOf({ values: ["figure", "table"] as const }) },
             group: "flowContent",
+            toDOM(node) {
+                return ["div", { class: `container ${node.attrs.kind}` }, 0];
+            },
+            content: "block+",
         },
         math: {
-            attrs: {
-                enumerated: boolean(),
-            },
+            attrs: { enumerated: boolean() },
             group: "flowContent",
+            toDOM() {
+                return ["span", { class: "math" }, 0];
+            },
+            content: "text*",
         },
         table: {
             group: "flowContent",
+            toDOM() {
+                return ["table", 0];
+            },
+            content: "block+",
         },
         footnoteDefinition: {
             group: "flowContent",
+            toDOM() {
+                return ["div", { class: "footnote-definition" }, 0];
+            },
+            content: "block+",
         },
         text: {
             group: "phrasingContent",
@@ -239,7 +279,7 @@ export const schema = new Schema({
             parseDOM: [
                 {
                     tag: "img[src]",
-                    getAttrs(node) {
+                    getAttrs(node: any) {
                         return {
                             url: node.getAttribute("src"),
                             title: node.getAttribute("title") ?? "",
@@ -254,14 +294,17 @@ export const schema = new Schema({
                 },
             ],
             toDOM(node) {
-                const img = document.createElement("img");
-                img.src = node.attrs.url;
-                img.title = node.attrs.title;
-                img.style.setProperty("width", node.attrs.width);
-                img.alt = node.attrs.alt;
-                img.className = node.attrs.class;
-
-                return img;
+                // ProseMirror expects an array, not a DOM element, for toDOM
+                return [
+                    "img",
+                    {
+                        src: node.attrs.url,
+                        title: node.attrs.title,
+                        style: `width: ${node.attrs.width}`,
+                        alt: node.attrs.alt,
+                        class: node.attrs.class,
+                    },
+                ];
             },
             attrs: {
                 class: string({ default: "" }),
@@ -277,15 +320,19 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (typeof value === "object" &&
+                            (
+                                typeof value === "object" &&
+                                value !== null &&
                                 "referenceType" in value &&
+                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
-                                    ] as unknown[]
-                                ).includes(value.referenceType))
+                                    ] as string[]
+                                ).includes((value as { referenceType: string }).referenceType)
+                            )
                         );
                     },
                 },
@@ -309,7 +356,7 @@ export const schema = new Schema({
                 { style: "font-style=italic" },
                 {
                     style: "font-style=normal",
-                    clearMark: (m) => m.type.name === "em",
+                    clearMark: (m: Mark) => m.type.name === "em",
                 },
             ],
             toDOM() {
@@ -321,15 +368,16 @@ export const schema = new Schema({
                 { tag: "strong" },
                 {
                     tag: "b",
-                    getAttrs: (n) => n.style.fontWeight !== "normal" && null,
+                    getAttrs: (n: any) =>
+                        n.style.fontWeight !== "normal" && null,
                 },
                 {
                     style: "font-weight=400",
-                    clearMark: (m) => m.type.name === "strong",
+                    clearMark: (m: Mark) => m.type.name === "strong",
                 },
                 {
                     style: "font-weight",
-                    getAttrs: (v) =>
+                    getAttrs: (v: string) =>
                         /^(bold(er)?|[5-9]\d{2,})$/.test(v) && null,
                 },
             ],
@@ -357,18 +405,73 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (typeof value === "object" &&
+                            (
+                                typeof value === "object" &&
+                                value !== null &&
                                 "referenceType" in value &&
+                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
-                                    ] as unknown[]
-                                ).includes(value.referenceType))
+                                    ] as string[]
+                                ).includes((value as { referenceType: string }).referenceType)
+                            )
                         );
                     },
                 },
+            },
+            toDOM(node) {
+                return [
+                    "a",
+                    {
+                        href: node.attrs.url,
+                        title: node.attrs.title,
+                    },
+                    0,
+                ];
+            },
+        },
+        underline: {
+            parseDOM: [{ tag: "u" }, { style: "text-decoration=underline" }],
+            toDOM() {
+                return ["u"];
+            },
+        },
+        fontSize: {
+            attrs: { size: {} },
+            parseDOM: [
+                { style: "font-size", getAttrs: (value) => ({ size: value }) },
+            ],
+            toDOM(node) {
+                return ["span", { style: `font-size: ${node.attrs.size}` }, 0];
+            },
+        },
+        fontFamily: {
+            attrs: { family: {} },
+            parseDOM: [
+                {
+                    style: "font-family",
+                    getAttrs: (value) => ({ family: value }),
+                },
+            ],
+            toDOM(node) {
+                return [
+                    "span",
+                    { style: `font-family: ${node.attrs.family}` },
+                    0,
+                ];
+            },
+        },
+        strikethrough: {
+            parseDOM: [
+                { tag: "s" },
+                { tag: "del" },
+                { style: "text-decoration=line-through" },
+            ],
+            toDOM() {
+                return ["s", 0];
             },
         },
     },

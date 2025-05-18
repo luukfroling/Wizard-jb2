@@ -11,3 +11,51 @@ code {
   font-family:
     source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
+
+.ProseMirror {
+  min-height: 800px;
+  background: #fff;
+  border: 2px solid #d7e1ff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px 0 #0001;
+  padding: 48px 64px;
+  box-sizing: border-box;
+  outline: none;
+  font-size: 11px;
+  margin: 40px auto;
+  transition:
+    border 0.15s,
+    box-shadow 0.15s;
+  max-width: 800px;
+}
+
+blockquote {
+  border-left: 3px solid #d7e1ff;
+  margin-left: 0;
+  padding-left: 1em;
+  color: #555;
+  background: #f9f9fa;
+}
+
+pre {
+  background: #272822;
+  color: #f8f8f2;
+  border-radius: 6px;
+  padding: 1em;
+  font-family: "Fira Mono", "Consolas", "Menlo", "Monaco", monospace;
+  font-size: 13px;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+a {
+  color: #1976d2;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dropdown-item:focus,
+.dropdown-item:hover {
+  background-color: #d7e1ff !important;
+  color: #1a237e !important;
+}

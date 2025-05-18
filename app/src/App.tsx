@@ -1,21 +1,17 @@
-import type { Component } from "solid-js";
 import { Editor } from "./components/Editor";
+import Toolbar from "./components/toolbar";
 import { schema } from "./lib/schema";
-import "prosemirror-view/style/prosemirror.css";
+//import "prosemirror-view/style/prosemirror.css";
 
-const App: Component = () => {
-  const doc = schema.node("root", null, [
-    schema.node("heading", { level: 1 }, [schema.text("This is a test.")]),
-    schema.node("paragraph", null, [schema.text("Try editing me!")]),
-    schema.node("paragraph", null, [
-      schema.text("You can use ctrl-z and ctrl-y to undo and redo"),
-    ]),
+export default function App() {
+  const initialDocument = schema.node("root", undefined, [
+    schema.node("paragraph"),
   ]);
   return (
-    <div>
-      <Editor schema={schema} initialDocument={doc!} />
-    </div>
+    <>
+      <Editor schema={schema} initialDocument={initialDocument}>
+        <Toolbar />
+      </Editor>
+    </>
   );
-};
-
-export default App;
+}
