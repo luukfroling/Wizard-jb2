@@ -91,7 +91,7 @@ export const schema = new Schema({
         },
         blockquote: {
             group: "flowContent",
-            content: "block+",
+            content: "flowContent+",
             toDOM() {
                 return ["blockquote", 0];
             },
@@ -103,7 +103,7 @@ export const schema = new Schema({
                 spread: boolean({ default: false }),
             },
             group: "flowContent",
-            content: "listContent",
+            content: "listContent+",
             parseDOM: [
                 {
                     tag: "ol",
@@ -159,6 +159,7 @@ export const schema = new Schema({
                 showLineNumbers: boolean({ default: false }),
                 startingLineNumber: integer({ default: 1 }),
                 emphasizeLines: {
+                    default: [],
                     validate(val: unknown) {
                         return (
                             Array.isArray(val) &&
@@ -196,7 +197,7 @@ export const schema = new Schema({
                 ];
             },
             group: "flowContent",
-            content: "phrasingContent*",
+            content: "text*",
         },
         target: {
             attrs: { label: string() },
@@ -212,7 +213,7 @@ export const schema = new Schema({
             toDOM(node) {
                 return ["div", { "data-directive": node.attrs.name }, 0];
             },
-            content: "text*",
+            content: "flowContent*",
         },
         admonition: {
             attrs: {
@@ -236,7 +237,13 @@ export const schema = new Schema({
             toDOM(node) {
                 return ["div", { class: `admonition ${node.attrs.kind}` }, 0];
             },
-            content: "block+",
+            content: "admonitionTitle? flowContent*",
+        },
+        admonitionTitle: {
+            toDOM(_node) {
+                return ["h2", 0];
+            },
+            content: "text*",
         },
         container: {
             attrs: { kind: oneOf({ values: ["figure", "table"] as const }) },
@@ -244,7 +251,7 @@ export const schema = new Schema({
             toDOM(node) {
                 return ["div", { class: `container ${node.attrs.kind}` }, 0];
             },
-            content: "block+",
+            // content: "(caption | legend | image | table)*",
         },
         math: {
             attrs: { enumerated: boolean() },
@@ -257,16 +264,16 @@ export const schema = new Schema({
         table: {
             group: "flowContent",
             toDOM() {
+                // TODO: Table rendering
                 return ["table", 0];
             },
-            content: "block+",
         },
         footnoteDefinition: {
             group: "flowContent",
             toDOM() {
                 return ["div", { class: "footnote-definition" }, 0];
             },
-            content: "block+",
+            content: "flowContent+",
         },
         text: {
             group: "phrasingContent",
@@ -279,7 +286,7 @@ export const schema = new Schema({
             parseDOM: [
                 {
                     tag: "img[src]",
-                    getAttrs(node: any) {
+                    getAttrs(node) {
                         return {
                             url: node.getAttribute("src"),
                             title: node.getAttribute("title") ?? "",
@@ -320,23 +327,31 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (
-                                typeof value === "object" &&
+                            (typeof value === "object" &&
                                 value !== null &&
                                 "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
+                                typeof (value as { referenceType?: unknown })
+                                    .referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
                                     ] as string[]
-                                ).includes((value as { referenceType: string }).referenceType)
-                            )
+                                ).includes(
+                                    (value as { referenceType: string })
+                                        .referenceType,
+                                ))
                         );
                     },
                 },
             },
+        },
+        caption: {
+            toDOM(_node) {
+                return ["caption", 0];
+            },
+            content: "text*",
         },
         break: {
             group: "phrasingContent",
@@ -368,8 +383,7 @@ export const schema = new Schema({
                 { tag: "strong" },
                 {
                     tag: "b",
-                    getAttrs: (n: any) =>
-                        n.style.fontWeight !== "normal" && null,
+                    getAttrs: (n) => n.style.fontWeight !== "normal" && null,
                 },
                 {
                     style: "font-weight=400",
@@ -405,19 +419,21 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (
-                                typeof value === "object" &&
+                            (typeof value === "object" &&
                                 value !== null &&
                                 "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
+                                typeof (value as { referenceType?: unknown })
+                                    .referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
                                     ] as string[]
-                                ).includes((value as { referenceType: string }).referenceType)
-                            )
+                                ).includes(
+                                    (value as { referenceType: string })
+                                        .referenceType,
+                                ))
                         );
                     },
                 },

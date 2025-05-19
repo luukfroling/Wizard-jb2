@@ -42,6 +42,8 @@
   "dependencies": {
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
+    "myst-common": "^1.7.11",
+    "myst-parser": "^1.5.13",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-history": "^1.4.1",
     "prosemirror-keymap": "^1.2.3",
@@ -50,7 +52,8 @@
     "prosemirror-schema-list": "^1.5.1",
     "prosemirror-state": "^1.4.3",
     "prosemirror-view": "^1.39.2",
-    "solid-js": "^1.9.6"
+    "solid-js": "^1.9.6",
+    "unified": "^11.0.5"
   },
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
 }
