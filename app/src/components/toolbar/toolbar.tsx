@@ -9,20 +9,13 @@ import {
   wrapOrderedList,
   setFontSize,
   setAlign,
-  increaseIndent,
-  decreaseIndent,
   insertLink,
   setFontFamily,
-  toggleBlockquote,
-  toggleCodeBlock,
-  blockquoteActive,
-  codeBlockActive,
   insertImage,
   setHeading,
   setParagraph,
 } from "./toolbar_commands";
 import {
-  ToolbarButton,
   ToolbarDropdown,
   ToolbarDropdownWithLabels,
   ToolbarSeparator,
@@ -40,8 +33,8 @@ import {
 } from "./toolbar_options";
 import {
   boldButton,
-  buildButtons,
-  createButton,
+  createButtons as initialiseButtons,
+  buttonToHtml,
   formatButton,
   italicsButton,
   redoButton,
@@ -50,6 +43,10 @@ import {
   superscriptButton,
   underlineButton,
   undoButton,
+  codeButton,
+  indentButton,
+  outdentButton,
+  quoteButton,
 } from "./toolbar_buttons";
 
 // --- Main Toolbar Component ---
@@ -69,7 +66,8 @@ export const Toolbar: Component = () => {
     setFontSizeInput(size);
   }
 
-  buildButtons();
+  // Initialise all toolbar buttons
+  initialiseButtons();
 
   // --- Render Toolbar ---
   return (
@@ -82,17 +80,17 @@ export const Toolbar: Component = () => {
         background: "#fff",
       }}
     >
-      {createButton(undoButton)}
-      {createButton(redoButton)}
+      {buttonToHtml(undoButton)}
+      {buttonToHtml(redoButton)}
       <ToolbarSeparator />
-      {createButton(formatButton)}
+      {buttonToHtml(formatButton)}
       <ToolbarSeparator />
-      {createButton(boldButton)}
-      {createButton(italicsButton)}
-      {createButton(underlineButton)}
-      {createButton(strikeThroughButton)}
-      {createButton(superscriptButton)}
-      {createButton(subscriptButton)}
+      {buttonToHtml(boldButton)}
+      {buttonToHtml(italicsButton)}
+      {buttonToHtml(underlineButton)}
+      {buttonToHtml(strikeThroughButton)}
+      {buttonToHtml(superscriptButton)}
+      {buttonToHtml(subscriptButton)}
       <ToolbarSeparator />
 
       {/* Font Family Dropdown */}
@@ -233,36 +231,10 @@ export const Toolbar: Component = () => {
         })()}
       />
 
-      {/* Indent/Outdent */}
-      <ToolbarButton
-        icon="bi-caret-right"
-        label="Increase Indent"
-        onClick={() => dispatchCommand(increaseIndent())}
-      />
-      <ToolbarButton
-        icon="bi-caret-left"
-        label="Decrease Indent"
-        onClick={() => dispatchCommand(decreaseIndent())}
-      />
-      <ToolbarSeparator />
-
-      {/* Blockquote and Code Block */}
-      <ToolbarButton
-        icon="bi-blockquote-left"
-        label="Blockquote"
-        onClick={() => dispatchCommand(toggleBlockquote)}
-        active={
-          editorStateAccessor ? blockquoteActive(editorStateAccessor()) : false
-        }
-      />
-      <ToolbarButton
-        icon="bi-code"
-        label="Code Block"
-        onClick={() => dispatchCommand(toggleCodeBlock)}
-        active={
-          editorStateAccessor ? codeBlockActive(editorStateAccessor()) : false
-        }
-      />
+      {buttonToHtml(indentButton)}
+      {buttonToHtml(outdentButton)}
+      {buttonToHtml(quoteButton)}
+      {buttonToHtml(codeButton)}
       <ToolbarSeparator />
 
       {/* Insert Dropdown (Link, Image, Table, Equation) */}

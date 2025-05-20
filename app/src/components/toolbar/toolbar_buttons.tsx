@@ -1,6 +1,12 @@
 import { redo, undo } from "prosemirror-history";
 import {
+    blockquoteActive,
+    codeBlockActive,
+    decreaseIndent,
+    increaseIndent,
+    toggleBlockquote,
   toggleBold,
+  toggleCodeBlock,
   toggleItalic,
   toggleStrikethrough,
   toggleSubscript,
@@ -13,6 +19,8 @@ import { ToolbarButton } from "./toolbar_components";
 import { createSignal } from "solid-js";
 import { Mark } from "prosemirror-model";
 import { EditorState, Transaction } from "prosemirror-state";
+
+let buttonsCreated: boolean = false;
 
 type ButtonValues = {
   icon: string;
@@ -30,8 +38,12 @@ export let underlineButton: ButtonValues;
 export let strikeThroughButton: ButtonValues;
 export let superscriptButton: ButtonValues;
 export let subscriptButton: ButtonValues;
+export let indentButton: ButtonValues;
+export let outdentButton: ButtonValues;
+export let quoteButton: ButtonValues;
+export let codeButton: ButtonValues;
 
-function createButtonFromValues(
+function buttonValuesToHtml(
   iconString: string,
   labelString: string,
   onClickFunction: () => boolean | void,
@@ -46,8 +58,9 @@ function createButtonFromValues(
     />
   );
 }
-export function createButton(buttonValues: ButtonValues) {
-  return createButtonFromValues(
+export function buttonToHtml(buttonValues: ButtonValues) {
+    if(!buttonsCreated) throw new Error("Buttons not initialised");
+  return buttonValuesToHtml(
     buttonValues.icon,
     buttonValues.label,
     buttonValues.onClick,
@@ -55,7 +68,7 @@ export function createButton(buttonValues: ButtonValues) {
   );
 }
 
-export function buildButtons() {
+export function createButtons() {
   const editorStateAccessor = useEditorState();
   const dispatchCommand = useDispatchCommand();
   const [formatMarks, setFormatMarks] = createSignal<Mark[] | null>(null);
@@ -189,4 +202,31 @@ export function buildButtons() {
           )
         : false,
   };
+  
+    indentButton = {
+        icon: "bi-caret-right",
+        label: "Increase Indent",
+        onClick: () => dispatchCommand(increaseIndent()),
+        active: () => undefined
+    }
+    outdentButton = {
+        icon: "bi-caret-left",
+        label: "Decrease Indent",
+        onClick: () => dispatchCommand(decreaseIndent()),
+        active: () => undefined
+    }
+    quoteButton = {
+        icon: "bi-blockquote-left",
+        label: "Blockquote",
+        onClick: () => dispatchCommand(toggleBlockquote),
+        active: () => editorStateAccessor ? blockquoteActive(editorStateAccessor()) : false
+    }
+    codeButton = {
+        icon: "bi-code",
+        label: "Code Block",
+        onClick: () => dispatchCommand(toggleCodeBlock),
+        active: () => editorStateAccessor ? codeBlockActive(editorStateAccessor()) : false
+    }
+
+  buttonsCreated = true;
 }
