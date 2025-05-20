@@ -38,9 +38,19 @@ import {
   HEADER_OPTIONS,
   ALIGN_ICON_MAP,
 } from "./toolbar_options";
-import { boldButton, buildButtons, createButton, formatButton, italicsButton, redoButton, strikeThroughButton, subscriptButton, superscriptButton, underlineButton, undoButton } from "./toolbar_buttons";
-
-
+import {
+  boldButton,
+  buildButtons,
+  createButton,
+  formatButton,
+  italicsButton,
+  redoButton,
+  strikeThroughButton,
+  subscriptButton,
+  superscriptButton,
+  underlineButton,
+  undoButton,
+} from "./toolbar_buttons";
 
 // --- Main Toolbar Component ---
 // The main toolbar with all formatting and insert controls
@@ -60,7 +70,7 @@ export const Toolbar: Component = () => {
   }
 
   buildButtons();
-  
+
   // --- Render Toolbar ---
   return (
     <div
@@ -75,11 +85,11 @@ export const Toolbar: Component = () => {
       {createButton(undoButton)}
       {createButton(redoButton)}
       <ToolbarSeparator />
-      {createButton(formatButton)} 
+      {createButton(formatButton)}
       <ToolbarSeparator />
-      {createButton(boldButton)} 
-      {createButton(italicsButton)} 
-      {createButton(underlineButton)} 
+      {createButton(boldButton)}
+      {createButton(italicsButton)}
+      {createButton(underlineButton)}
       {createButton(strikeThroughButton)}
       {createButton(superscriptButton)}
       {createButton(subscriptButton)}
