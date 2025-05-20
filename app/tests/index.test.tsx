@@ -28,7 +28,6 @@ describe('Example tests for index.src expected behaviour', () => {
     })
 
     it('throws an error if #root does not exist', async () => {
-        // Act & Assert: dynamic import rejects because no root in the DOM
         await expect(import('../src/index')).rejects.toThrow()
     })
 })
