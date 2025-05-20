@@ -42,25 +42,26 @@ pnpm eslint
 
 # The Sphinx extension
 
-1. Pip install the extension by running the following in the root foler: 
+1. Enable the single file plugin in the `vite.config.ts` of the Vite app
+
+2. Build the Vite app and copy the resulting `dist` folder into the `_static` folder of the extension so we get `_static/dist`
+
+3. Pip install the extension by running the following in the root folder: 
 ```shell
 pip install -e ./sphinx_extension
 ```
 
-2. Add `extension_name` to the `_config.yml` of a TeachBooks repo under `extra_extensions`
+4. Add `extension_name` to the `_config.yml` of a TeachBooks repo under `extra_extensions`
 
-3. In said TeachBooks repo run
+5. In said TeachBooks repo run
 ```shell
 jupyter-book build book
 ```
 
-4. You might need to clean before building: 
+6. You might need to clean before building: 
 ```shell
 jupyter-book clean book
 ```
-
-## Usage
-Add ```` ```{hello} \<argument\>```` to any markdown file or cell. 
 
 
 # Vitest

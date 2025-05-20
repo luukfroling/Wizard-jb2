@@ -9,8 +9,9 @@
 /.vscode/
 /.idea
 
-
 # Vite builds
 /app/node_modules
 /app/dist
 
+# Vite build in the extension folder
+/sphinx_extension/extension_name/_static/dist/

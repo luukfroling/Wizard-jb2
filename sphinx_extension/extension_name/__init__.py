@@ -22,7 +22,9 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.connect("builder-inited", extension_name_static_path)
 
     # Add the javascript for the navbar button
-    app.add_js_file('edit_button.js', 1)
+    app.add_js_file('add_edit_button.js', 1)
+    app.add_js_file('add_editor.js', 1)
+    app.add_js_file('main.js', 1)
 
     # Basic information of the sphinx extension
     # Match with myproject.toml
