@@ -32,21 +32,7 @@ import {
   ALIGN_ICON_MAP,
 } from "./toolbar_options";
 import {
-  boldButton,
-  createButtons as initialiseButtons,
-  buttonToHtml,
-  formatButton,
-  italicsButton,
-  redoButton,
-  strikeThroughButton,
-  subscriptButton,
-  superscriptButton,
-  underlineButton,
-  undoButton,
-  codeButton,
-  indentButton,
-  outdentButton,
-  quoteButton,
+  toolbarButtons
 } from "./toolbar_buttons";
 
 // --- Main Toolbar Component ---
@@ -67,7 +53,7 @@ export const Toolbar: Component = () => {
   }
 
   // Initialise all toolbar buttons
-  initialiseButtons();
+  toolbarButtons.createButtons();
 
   // --- Render Toolbar ---
   return (
@@ -80,17 +66,17 @@ export const Toolbar: Component = () => {
         background: "#fff",
       }}
     >
-      {buttonToHtml(undoButton)}
-      {buttonToHtml(redoButton)}
+      {toolbarButtons.undoButton}
+      {toolbarButtons.redoButton}
       <ToolbarSeparator />
-      {buttonToHtml(formatButton)}
+      {toolbarButtons.formatButton}
       <ToolbarSeparator />
-      {buttonToHtml(boldButton)}
-      {buttonToHtml(italicsButton)}
-      {buttonToHtml(underlineButton)}
-      {buttonToHtml(strikeThroughButton)}
-      {buttonToHtml(superscriptButton)}
-      {buttonToHtml(subscriptButton)}
+      {toolbarButtons.boldButton}
+      {toolbarButtons.italicsButton}
+      {toolbarButtons.underlineButton}
+      {toolbarButtons.strikeThroughButton}
+      {toolbarButtons.superscriptButton}
+      {toolbarButtons.subscriptButton}
       <ToolbarSeparator />
 
       {/* Font Family Dropdown */}
@@ -231,10 +217,10 @@ export const Toolbar: Component = () => {
         })()}
       />
 
-      {buttonToHtml(indentButton)}
-      {buttonToHtml(outdentButton)}
-      {buttonToHtml(quoteButton)}
-      {buttonToHtml(codeButton)}
+      {toolbarButtons.indentButton}
+      {toolbarButtons.outdentButton}
+      {toolbarButtons.quoteButton}
+      {toolbarButtons.codeButton}
       <ToolbarSeparator />
 
       {/* Insert Dropdown (Link, Image, Table, Equation) */}
