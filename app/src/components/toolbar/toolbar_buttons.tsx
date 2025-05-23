@@ -20,14 +20,12 @@ import { createSignal, JSX } from "solid-js";
 import { Mark } from "prosemirror-model";
 import { EditorState, Transaction } from "prosemirror-state";
 
-type ButtonValues = {
+function buttonValuesToJSXElement(buttonValues: {
   icon: string;
   label: string;
   onClick: () => boolean | void;
   active: () => boolean | undefined;
-};
-
-function buttonValuesToJSXElement(buttonValues: ButtonValues) {
+}) {
   return (
     <ToolbarButton
       icon={buttonValues.icon}
