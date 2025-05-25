@@ -1,5 +1,5 @@
 import { lift, toggleMark, wrapIn, setBlockType } from "prosemirror-commands";
-import { schema } from "../lib/schema";
+import { schema } from "../../lib/schema";
 import { EditorState, Transaction } from "prosemirror-state";
 import { MarkType } from "prosemirror-model";
 import {

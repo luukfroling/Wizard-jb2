@@ -279,7 +279,7 @@ export const schema = new Schema({
             parseDOM: [
                 {
                     tag: "img[src]",
-                    getAttrs(node: any) {
+                    getAttrs(node: HTMLElement) {
                         return {
                             url: node.getAttribute("src"),
                             title: node.getAttribute("title") ?? "",
@@ -320,19 +320,21 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (
-                                typeof value === "object" &&
+                            (typeof value === "object" &&
                                 value !== null &&
                                 "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
+                                typeof (value as { referenceType?: unknown })
+                                    .referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
                                     ] as string[]
-                                ).includes((value as { referenceType: string }).referenceType)
-                            )
+                                ).includes(
+                                    (value as { referenceType: string })
+                                        .referenceType,
+                                ))
                         );
                     },
                 },
@@ -368,7 +370,7 @@ export const schema = new Schema({
                 { tag: "strong" },
                 {
                     tag: "b",
-                    getAttrs: (n: any) =>
+                    getAttrs: (n: HTMLElement) =>
                         n.style.fontWeight !== "normal" && null,
                 },
                 {
@@ -405,19 +407,21 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (
-                                typeof value === "object" &&
+                            (typeof value === "object" &&
                                 value !== null &&
                                 "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
+                                typeof (value as { referenceType?: unknown })
+                                    .referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
                                     ] as string[]
-                                ).includes((value as { referenceType: string }).referenceType)
-                            )
+                                ).includes(
+                                    (value as { referenceType: string })
+                                        .referenceType,
+                                ))
                         );
                     },
                 },
