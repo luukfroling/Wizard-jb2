@@ -14,3 +14,5 @@
 /app/node_modules
 /app/dist
 
+# Test output
+/app/test-report.xml

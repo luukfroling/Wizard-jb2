@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest",
-    "test:ci": "vitest run",
+    "test:ci": "vitest run --reporter=junit",
     "start": "vite",
     "dev": "vite",
     "build": "vite build",

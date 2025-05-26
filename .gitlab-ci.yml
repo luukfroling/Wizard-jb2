@@ -29,3 +29,9 @@ test:
   stage: test
   script:
     - pnpm test:ci
+  artifacts:
+    paths:
+      - app/test-report.xml
+  reports:
+    junit:
+      - app/test-report.xml
