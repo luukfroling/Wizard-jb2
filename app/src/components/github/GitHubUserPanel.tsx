@@ -33,8 +33,12 @@ export const GitHubUserPanel = (props: Props) => {
         commitMsg,
       });
       setStatus(`Committed to branch ${result.branch} as ${result.filePath}`);
-    } catch (err: any) {
-      setStatus(`Error: ${err.message}`);
+    } catch (err) {
+      if (err instanceof Error) {
+        setStatus(`Error: ${err.message}`);
+      } else {
+        setStatus("An unknown error occurred.");
+      }
     }
   };
 
@@ -60,12 +64,10 @@ export const GitHubUserPanel = (props: Props) => {
         >
           Commit
         </button>
-        {status() && (
-          <div class="mt-2 text-center text-sm">{status()}</div>
-        )}
+        {status() && <div class="mt-2 text-center text-sm">{status()}</div>}
       </div>
       <button
-        onClick={props.onLogout}
+        onClick={() => props.onLogout()}
         class="mt-4 bg-black text-white px-4 py-2 rounded"
       >
         Logout
