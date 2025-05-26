@@ -15,8 +15,6 @@ export const toggleBold = toggleMark(schema.marks.strong);
 // Toggle emphasis/italic mark
 export const toggleItalic = toggleMark(schema.marks.emphasis);
 // Toggle underline mark
-export const toggleUnderline = toggleMark(schema.marks.underline);
-// Toggle superscript mark
 export const toggleSuperscript = toggleMark(schema.marks.superscript);
 // Toggle subscript mark
 export const toggleSubscript = toggleMark(schema.marks.subscript);
@@ -44,64 +42,6 @@ export const wrapOrderedList = (
     dispatch?: (tr: Transaction) => void,
 ) => wrapInList(schema.nodes.list, { ordered: true })(state, dispatch);
 
-// --- FONT SIZE COMMAND ---
-
-// Set font size mark for selection or cursor
-export function setFontSize(size: string) {
-    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { from, to, empty } = state.selection;
-        const markType: MarkType = schema.marks.fontSize;
-        let tr = state.tr;
-
-        if (!empty) {
-            // Remove all fontSize marks in the selection, then add the new one
-            tr = tr.removeMark(from, to, markType);
-            tr = tr.addMark(from, to, markType.create({ size }));
-        } else {
-            // For cursor: set stored mark
-            const marks = markType.isInSet(
-                state.storedMarks || state.selection.$from.marks(),
-            )
-                ? (state.storedMarks || state.selection.$from.marks()).filter(
-                      (m) => m.type !== markType,
-                  )
-                : state.storedMarks || state.selection.$from.marks();
-            tr = tr.setStoredMarks([...marks, markType.create({ size })]);
-        }
-
-        if (dispatch) dispatch(tr);
-        return true;
-    };
-}
-
-// --- ALIGNMENT COMMAND ---
-
-// Set alignment for paragraphs and headings in selection
-export function setAlign(align: "left" | "center" | "right" | "justify") {
-    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { from, to } = state.selection;
-        const tr = state.tr;
-        let modified = false;
-
-        state.doc.nodesBetween(from, to, (node, pos) => {
-            if (
-                (node.type === state.schema.nodes.paragraph ||
-                    node.type === state.schema.nodes.heading) &&
-                node.attrs.align !== align
-            ) {
-                tr.setNodeMarkup(pos, node.type, { ...node.attrs, align });
-                modified = true;
-            }
-        });
-
-        if (modified && dispatch) {
-            dispatch(tr);
-            return true;
-        }
-        return false;
-    };
-}
-
 // --- INDENT/OUTDENT COMMANDS ---
 
 // Increase indent (sink list item)
@@ -113,7 +53,27 @@ export const decreaseIndent = () => liftListItem(schema.nodes.listItem);
 
 // Toggle link mark for selection or cursor
 export function insertLink(url = "", title = "") {
-    return toggleMark(schema.marks.link, { url, title });
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { from, to, empty } = state.selection;
+        const markType: MarkType = schema.marks.link;
+        let tr = state.tr;
+
+        if (empty) {
+            // Optionally, insert placeholder text and apply link
+            const text = state.schema.text(url);
+            tr = tr.insert(from, text);
+            tr = tr.addMark(
+                from,
+                from + url.length,
+                markType.create({ url, title, reference: null }),
+            );
+        } else {
+            tr = tr.addMark(from, to, markType.create({ url, title }));
+        }
+
+        if (dispatch) dispatch(tr.scrollIntoView());
+        return true;
+    };
 }
 
 // --- FONT FAMILY COMMAND ---
@@ -220,11 +180,32 @@ export function codeBlockActive(state: EditorState) {
 // Insert image node at selection
 export function insertImage(url: string, alt = "", title = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { schema } = state;
-        const node = schema.nodes.image.create({ url, alt, title });
-        if (dispatch)
-            dispatch(state.tr.replaceSelectionWith(node).scrollIntoView());
-        return true;
+        const { schema, selection } = state;
+        const imageNode = schema.nodes.image.create({
+            url,
+            alt,
+            title,
+            reference: null,
+        });
+
+        // If selection is empty, try to insert as a block
+        if (selection.empty) {
+            // Insert image as a new block after the current block
+            const { $from } = selection;
+            const pos = $from.after();
+            if (dispatch) {
+                dispatch(state.tr.insert(pos, imageNode).scrollIntoView());
+            }
+            return true;
+        } else {
+            // Replace selection with image
+            if (dispatch) {
+                dispatch(
+                    state.tr.replaceSelectionWith(imageNode).scrollIntoView(),
+                );
+            }
+            return true;
+        }
     };
 }
 
@@ -238,4 +219,45 @@ export function setHeading(level: number) {
 // Set block type to paragraph
 export function setParagraph() {
     return setBlockType(schema.nodes.paragraph);
+}
+
+// --- TABLE COMMAND ---
+
+// Insert a table with the given number of rows and columns
+export function insertTable(rows: number, cols: number) {
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { schema, selection } = state;
+        // Create a simple table: each row is a paragraph block
+        const rowNodes = [];
+        for (let r = 0; r < rows; r++) {
+            const cellNodes = [];
+            for (let c = 0; c < cols; c++) {
+                cellNodes.push(schema.nodes.paragraph.create());
+            }
+            // For now, just use a block for each row (adjust if you add table_row/cell nodes)
+            rowNodes.push(...cellNodes);
+        }
+        const table = schema.nodes.table.create(null, rowNodes);
+        if (dispatch) {
+            dispatch(state.tr.replaceSelectionWith(table).scrollIntoView());
+        }
+        return true;
+    };
+}
+
+// --- MATH COMMAND ---
+
+// Insert math (equation) node at selection
+export function insertMath(equation: string = "") {
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { schema, selection } = state;
+        const mathNode = schema.nodes.math.create(
+            { enumerated: false },
+            schema.text(equation),
+        );
+        if (dispatch) {
+            dispatch(state.tr.replaceSelectionWith(mathNode).scrollIntoView());
+        }
+        return true;
+    };
 }

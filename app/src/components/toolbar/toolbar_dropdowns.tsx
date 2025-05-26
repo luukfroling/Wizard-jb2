@@ -4,53 +4,44 @@ import {
   setFontFamily,
   setParagraph,
   setHeading,
-  setAlign,
   wrapBulletList,
   wrapOrderedList,
   insertLink,
   insertImage,
-  setFontSize,
+  insertTable,
+  insertMath,
 } from "./toolbar_commands";
 import {
   ToolbarDropdownWithLabels,
   ToolbarDropdown,
 } from "./toolbar_components";
-import {
-  FONT_OPTIONS,
-  HEADER_OPTIONS,
-  FONT_SIZES,
-  ALIGN_ICON_MAP,
-} from "./toolbar_options";
-import {
-  getCurrentFontSize,
-  getCurrentAlignment,
-  getCurrentListType,
-} from "./toolbar_utils";
+import { FONT_OPTIONS, HEADER_OPTIONS } from "./toolbar_options";
+import { getCurrentListType } from "./toolbar_utils";
 
+// --- Signals for Table Grid Selector popup state and position ---
+export const [showTableSelector, setShowTableSelector] = createSignal(false);
+export const [selectorPos, setSelectorPos] = createSignal<{
+  top: number;
+  left: number;
+}>({ top: 0, left: 0 });
+
+// --- Ref to the Insert Dropdown button, used for positioning the grid selector ---
+let insertButtonRef: HTMLButtonElement | undefined;
+
+// --- Toolbar Dropdowns Object ---
 export const toolbarDropdowns: {
   fontFamilyDropdown?: JSX.Element;
   headerDropdown?: JSX.Element;
-  fontSizeDropdown?: JSX.Element;
-  alignmentDropdown?: JSX.Element;
   listDropdown?: JSX.Element;
   insertDropdown?: JSX.Element;
   createDropdowns: () => void;
 } = {
   createDropdowns() {
+    // --- Accessors for editor state and command dispatcher ---
     const editorStateAccessor = useEditorState();
     const dispatchCommand = useDispatchCommand();
-    const [_fontSizeInput, setFontSizeInput] = createSignal(
-      editorStateAccessor
-        ? getCurrentFontSize(editorStateAccessor()) || "11"
-        : "11",
-    );
 
-    // Change font size and update input state
-    function changeFontSize(size: string) {
-      dispatchCommand(setFontSize(size));
-      setFontSizeInput(size);
-    }
-
+    // --- Font Family Dropdown ---
     this.fontFamilyDropdown = (
       <ToolbarDropdownWithLabels
         icon=""
@@ -79,6 +70,8 @@ export const toolbarDropdowns: {
         }))}
       />
     );
+
+    // --- Header (Paragraph/Heading) Dropdown ---
     this.headerDropdown = (
       <ToolbarDropdownWithLabels
         icon=""
@@ -106,57 +99,8 @@ export const toolbarDropdowns: {
         }))}
       />
     );
-    this.fontSizeDropdown = (
-      <ToolbarDropdownWithLabels
-        icon=""
-        title={(() => {
-          const size =
-            editorStateAccessor && editorStateAccessor()
-              ? getCurrentFontSize(editorStateAccessor())
-              : null;
-          return size ? size.replace("px", "") : "11";
-        })()}
-        options={FONT_SIZES.map((size) => ({
-          label: size.replace("px", ""),
-          icon: "",
-          onClick: () => changeFontSize(size),
-        }))}
-      />
-    );
-    this.alignmentDropdown = (
-      <ToolbarDropdown
-        icon={
-          ALIGN_ICON_MAP[
-            editorStateAccessor && editorStateAccessor()
-              ? getCurrentAlignment(editorStateAccessor())
-              : "left"
-          ]
-        }
-        options={[
-          {
-            label: "Left Align",
-            icon: "bi-text-left",
-            onClick: () => dispatchCommand(setAlign("left")),
-          },
-          {
-            label: "Center Align",
-            icon: "bi-text-center",
-            onClick: () => dispatchCommand(setAlign("center")),
-          },
-          {
-            label: "Right Align",
-            icon: "bi-text-right",
-            onClick: () => dispatchCommand(setAlign("right")),
-          },
-          {
-            label: "Justify",
-            icon: "bi-justify",
-            onClick: () => dispatchCommand(setAlign("justify")),
-          },
-        ]}
-        title="Text Alignment"
-      />
-    );
+
+    // --- List Dropdown (Bullet/Numbered) ---
     this.listDropdown = (
       <ToolbarDropdown
         icon={(() => {
@@ -187,6 +131,8 @@ export const toolbarDropdowns: {
         })()}
       />
     );
+
+    // --- Insert Dropdown (Link, Image, Table, Equation) ---
     this.insertDropdown = (
       <ToolbarDropdown
         icon="bi-plus-lg"
@@ -207,10 +153,32 @@ export const toolbarDropdowns: {
               if (url) dispatchCommand(insertImage(url));
             },
           },
-          { label: "Insert Table", icon: "bi-table", onClick: () => {} },
-          { label: "Insert Equation", icon: "bi-sigma", onClick: () => {} },
+          {
+            label: "Insert Table",
+            icon: "bi-table",
+            onClick: () => {
+              // Position the grid selector under the Insert button
+              if (insertButtonRef) {
+                const rect = insertButtonRef.getBoundingClientRect();
+                setSelectorPos({
+                  top: rect.bottom + window.scrollY,
+                  left: rect.left + window.scrollX,
+                });
+                setShowTableSelector(true);
+              }
+            },
+          },
+          {
+            label: "Insert Equation",
+            icon: "bi-calculator", // Use a valid Bootstrap icon
+            onClick: () => {
+              const equation = prompt("Enter LaTeX equation:", "E=mc^2");
+              if (equation !== null) dispatchCommand(insertMath(equation));
+            },
+          },
         ]}
         title="Insert"
+        ref={(el: HTMLButtonElement | undefined) => (insertButtonRef = el)}
       />
     );
   },

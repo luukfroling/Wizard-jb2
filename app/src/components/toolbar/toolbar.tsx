@@ -32,16 +32,12 @@ export const Toolbar: Component = () => {
       <ToolbarSeparator />
       {toolbarButtons.boldButton}
       {toolbarButtons.italicsButton}
-      {toolbarButtons.underlineButton}
       {toolbarButtons.strikeThroughButton}
       {toolbarButtons.superscriptButton}
       {toolbarButtons.subscriptButton}
       <ToolbarSeparator />
       {toolbarDropdowns.fontFamilyDropdown}
       {toolbarDropdowns.headerDropdown}
-      {toolbarDropdowns.fontSizeDropdown}
-      <ToolbarSeparator />
-      {toolbarDropdowns.alignmentDropdown}
       <ToolbarSeparator />
       {toolbarDropdowns.listDropdown}
       {toolbarButtons.indentButton}

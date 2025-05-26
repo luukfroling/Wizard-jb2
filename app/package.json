@@ -20,7 +20,6 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.26.0",
-    "@solidjs/testing-library": "^0.8.10",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.15.17",

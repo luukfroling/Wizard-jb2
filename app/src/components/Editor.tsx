@@ -4,6 +4,7 @@ import {
   createMemo,
   createSignal,
   onCleanup,
+  onMount,
   ParentComponent,
   untrack,
   useContext,
@@ -135,6 +136,22 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     () => new EditorView(ref()!, { state: editorState() }),
   );
   onCleanup(() => view().destroy());
+
+  onMount(() => {
+    const el = ref();
+    if (!el) return;
+    el.addEventListener("click", (event) => {
+      const e = event as MouseEvent;
+      // Check for Ctrl (Windows/Linux) or Meta (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.target instanceof HTMLElement) {
+        const link = e.target.closest("a");
+        if (link && link.href) {
+          window.open(link.href, "_blank");
+          e.preventDefault();
+        }
+      }
+    });
+  });
 
   return (
     <>

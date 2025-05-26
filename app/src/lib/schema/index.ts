@@ -230,7 +230,7 @@ export const schema = new Schema({
                         "warning",
                     ] as const,
                 }),
-                class: string({ optional: true }),
+                class: string(),
             },
             group: "flowContent",
             toDOM(node) {
@@ -286,7 +286,7 @@ export const schema = new Schema({
                             width:
                                 node.style.width !== ""
                                     ? node.style.width
-                                    : "100%",
+                                    : "50%",
                             alt: node.getAttribute("alt") ?? "",
                             class: node.getAttribute("class") ?? "",
                         };
@@ -294,7 +294,6 @@ export const schema = new Schema({
                 },
             ],
             toDOM(node) {
-                // ProseMirror expects an array, not a DOM element, for toDOM
                 return [
                     "img",
                     {
@@ -308,7 +307,7 @@ export const schema = new Schema({
             },
             attrs: {
                 class: string({ default: "" }),
-                width: string(),
+                width: string({ default: "50%" }), // <-- default to 50%
                 align: oneOf({
                     values: ["left", "right", "center"] as const,
                     default: "left",
@@ -325,13 +324,7 @@ export const schema = new Schema({
                                 "referenceType" in value &&
                                 typeof (value as { referenceType?: unknown })
                                     .referenceType === "string" &&
-                                (
-                                    [
-                                        "shortcut",
-                                        "collapsed",
-                                        "full",
-                                    ] as string[]
-                                ).includes(
+                                ["shortcut", "collapsed", "full"].includes(
                                     (value as { referenceType: string })
                                         .referenceType,
                                 ))

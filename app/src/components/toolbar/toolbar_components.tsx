@@ -274,3 +274,56 @@ export const ToolbarSeparator = () => (
     }}
   />
 );
+
+// --- Table Grid Selector Component ---
+// A component for selecting a table grid size (rows x cols)
+export function TableGridSelector(props: {
+  maxRows?: number;
+  maxCols?: number;
+  onSelect: (rows: number, cols: number) => void;
+  onClose: () => void;
+}) {
+  const maxRows = props.maxRows ?? 8;
+  const maxCols = props.maxCols ?? 8;
+  const [hovered, setHovered] = createSignal<[number, number]>([0, 0]);
+
+  return (
+    <div
+      style={{
+        border: "1px solid #ccc",
+        background: "#fff",
+        padding: "8px",
+        "box-shadow": "0 2px 8px rgba(0,0,0,0.15)",
+        position: "absolute",
+        "z-index": 1000,
+      }}
+      onMouseLeave={props.onClose}
+    >
+      <div>
+        {[...Array(maxRows)].map((_, row) => (
+          <div style={{ display: "flex" }}>
+            {[...Array(maxCols)].map((_, col) => {
+              const selected = row <= hovered()[0] && col <= hovered()[1];
+              return (
+                <div
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    border: "1px solid #ccc",
+                    background: selected ? "#D7E1FF" : "#fff",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={() => setHovered([row, col])}
+                  onClick={() => props.onSelect(row + 1, col + 1)}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div style={{ "margin-top": "8px", "text-align": "center" }}>
+        {hovered()[0] + 1} × {hovered()[1] + 1}
+      </div>
+    </div>
+  );
+}

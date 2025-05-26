@@ -11,7 +11,6 @@ import {
   toggleStrikethrough,
   toggleSubscript,
   toggleSuperscript,
-  toggleUnderline,
 } from "./toolbar_commands";
 import { markActive } from "./toolbar_utils";
 import { useDispatchCommand, useEditorState } from "../Editor";
@@ -42,7 +41,6 @@ export const toolbarButtons: {
   formatButton?: JSX.Element;
   boldButton?: JSX.Element;
   italicsButton?: JSX.Element;
-  underlineButton?: JSX.Element;
   strikeThroughButton?: JSX.Element;
   superscriptButton?: JSX.Element;
   subscriptButton?: JSX.Element;
@@ -135,18 +133,6 @@ export const toolbarButtons: {
           ? markActive(
               editorStateAccessor(),
               editorStateAccessor().schema.marks.emphasis,
-            )
-          : false,
-    });
-    this.underlineButton = buttonValuesToJSXElement({
-      icon: "bi-type-underline",
-      label: "Underline",
-      onClick: () => dispatchCommand(toggleUnderline),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.underline,
             )
           : false,
     });
