@@ -6,6 +6,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { ToolbarSeparator } from "./toolbar_components";
 import { toolbarButtons } from "./toolbar_buttons";
 import { toolbarDropdowns } from "./toolbar_dropdowns";
+import { GitHubDropdown } from "../github/GitHubDropdown";
 
 // --- Main Toolbar Component ---
 // The main toolbar with all formatting and insert controls
@@ -50,6 +51,7 @@ export const Toolbar: Component = () => {
       {toolbarButtons.codeButton}
       <ToolbarSeparator />
       {toolbarDropdowns.insertDropdown}
+      <GitHubDropdown />
     </div>
   );
 };
