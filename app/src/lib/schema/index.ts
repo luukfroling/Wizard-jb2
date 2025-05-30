@@ -3,10 +3,19 @@ import { Schema, Mark } from "prosemirror-model";
 
 import { boolean, integer, oneOf, string } from "./utils";
 
-// NOTE: Schema inspired by [prosemirror-markdown](https://github.com/ProseMirror/prosemirror-markdown/blob/master/src/schema.ts).
+// NOTE: Schema partially based on [prosemirror-markdown][1].
 // Copyright (C) 2015-2017 by Marijn Haverbeke <marijn@haverbeke.berlin> and others
 // Licensed under the MIT (Expat) License; SPDX identifier: MIT.
+//
+// [1]: https://github.com/ProseMirror/prosemirror-markdown/blob/master/src/schema.ts
 
+/** Prosemirror schema
+ *
+ * This is the schema used by prosemirror to determine the structure of the document.
+ * This must match the MyST AST closely, to ensure we create a ~1:1 mapping.
+ *
+ * More info: https://prosemirror.net/docs/guide/#schema
+ */
 export const schema = new Schema({
     nodes: {
         root: {
@@ -91,7 +100,7 @@ export const schema = new Schema({
         },
         blockquote: {
             group: "flowContent",
-            content: "block+",
+            content: "flowContent+",
             toDOM() {
                 return ["blockquote", 0];
             },
@@ -103,7 +112,7 @@ export const schema = new Schema({
                 spread: boolean({ default: false }),
             },
             group: "flowContent",
-            content: "listContent",
+            content: "listContent+",
             parseDOM: [
                 {
                     tag: "ol",
@@ -159,6 +168,7 @@ export const schema = new Schema({
                 showLineNumbers: boolean({ default: false }),
                 startingLineNumber: integer({ default: 1 }),
                 emphasizeLines: {
+                    default: [],
                     validate(val: unknown) {
                         return (
                             Array.isArray(val) &&
@@ -196,7 +206,7 @@ export const schema = new Schema({
                 ];
             },
             group: "flowContent",
-            content: "phrasingContent*",
+            content: "text*",
         },
         target: {
             attrs: { label: string() },
@@ -212,7 +222,7 @@ export const schema = new Schema({
             toDOM(node) {
                 return ["div", { "data-directive": node.attrs.name }, 0];
             },
-            content: "text*",
+            content: "flowContent*",
         },
         admonition: {
             attrs: {
@@ -236,37 +246,47 @@ export const schema = new Schema({
             toDOM(node) {
                 return ["div", { class: `admonition ${node.attrs.kind}` }, 0];
             },
-            content: "block+",
+            content: "admonitionTitle? flowContent*",
+        },
+        admonitionTitle: {
+            toDOM(_node) {
+                return ["h2", 0];
+            },
+            content: "text*",
         },
         container: {
             attrs: { kind: oneOf({ values: ["figure", "table"] as const }) },
             group: "flowContent",
             toDOM(node) {
-                return ["div", { class: `container ${node.attrs.kind}` }, 0];
+                return [node.attrs.kind, 0];
             },
-            content: "block+",
+            content: "flowContent*",
         },
         math: {
-            attrs: { enumerated: boolean() },
+            attrs: {
+                enumerated: boolean({ default: false }),
+                enumerator: string({ optional: true }),
+                label: string({ optional: true }),
+            },
             group: "flowContent",
             toDOM() {
-                return ["span", { class: "math" }, 0];
+                return ["div", { class: "math" }, 0];
             },
             content: "text*",
         },
         table: {
             group: "flowContent",
             toDOM() {
+                // TODO: Table rendering
                 return ["table", 0];
             },
-            content: "block+",
         },
         footnoteDefinition: {
             group: "flowContent",
             toDOM() {
                 return ["div", { class: "footnote-definition" }, 0];
             },
-            content: "block+",
+            content: "flowContent*",
         },
         text: {
             group: "phrasingContent",
@@ -279,7 +299,7 @@ export const schema = new Schema({
             parseDOM: [
                 {
                     tag: "img[src]",
-                    getAttrs(node: any) {
+                    getAttrs(node) {
                         return {
                             url: node.getAttribute("src"),
                             title: node.getAttribute("title") ?? "",
@@ -320,23 +340,34 @@ export const schema = new Schema({
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (
-                                typeof value === "object" &&
+                            (typeof value === "object" &&
                                 value !== null &&
                                 "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
+                                typeof (value as { referenceType?: unknown })
+                                    .referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
                                     ] as string[]
-                                ).includes((value as { referenceType: string }).referenceType)
-                            )
+                                ).includes(
+                                    (value as { referenceType: string })
+                                        .referenceType,
+                                ))
                         );
                     },
                 },
             },
+        },
+        inlineMath: {
+            group: "phrasingContent",
+            content: "text*",
+            inline: true,
+            toDOM() {
+                return ["span", { class: "math" }, 0];
+            },
+            parseDOM: [{ tag: "span[class=math]" }],
         },
         break: {
             group: "phrasingContent",
@@ -368,8 +399,7 @@ export const schema = new Schema({
                 { tag: "strong" },
                 {
                     tag: "b",
-                    getAttrs: (n: any) =>
-                        n.style.fontWeight !== "normal" && null,
+                    getAttrs: (n) => n.style.fontWeight !== "normal" && null,
                 },
                 {
                     style: "font-weight=400",
@@ -402,22 +432,25 @@ export const schema = new Schema({
                 url: string(),
                 title: string({ optional: true }),
                 reference: {
+                    default: null,
                     validate(value: unknown) {
                         return (
                             value === null ||
-                            (
-                                typeof value === "object" &&
+                            (typeof value === "object" &&
                                 value !== null &&
                                 "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown }).referenceType === "string" &&
+                                typeof (value as { referenceType?: unknown })
+                                    .referenceType === "string" &&
                                 (
                                     [
                                         "shortcut",
                                         "collapsed",
                                         "full",
                                     ] as string[]
-                                ).includes((value as { referenceType: string }).referenceType)
-                            )
+                                ).includes(
+                                    (value as { referenceType: string })
+                                        .referenceType,
+                                ))
                         );
                     },
                 },

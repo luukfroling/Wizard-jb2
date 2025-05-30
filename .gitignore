@@ -15,3 +15,7 @@
 
 # Vite build in the extension folder
 /sphinx_extension/extension_name/_static/dist/
+
+# Test output
+/app/test-report.xml
+/app/coverage

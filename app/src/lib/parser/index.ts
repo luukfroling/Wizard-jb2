@@ -1,0 +1,257 @@
+import { mystParse } from "myst-parser";
+import { schema } from "../schema";
+import type {
+    Node as MystNode,
+    Block,
+    Paragraph,
+    Text,
+    Emphasis,
+    Strong,
+    Link,
+    LinkReference,
+    Definition,
+    Parent as MystParent,
+    HTML,
+    Root,
+    Heading,
+    ThematicBreak,
+    Blockquote,
+    List,
+    ListItem,
+    Code,
+    Target,
+    Directive,
+    Admonition,
+    AdmonitionTitle,
+    Container,
+    Math,
+    InlineMath,
+} from "myst-spec";
+import type { GenericNode, GenericParent } from "myst-common";
+import { Mark, Node } from "prosemirror-model";
+
+type DefinitionMap = Map<string, Definition>;
+
+export function findDefinitions(
+    myst: MystNode,
+    map: DefinitionMap = new Map(),
+): Map<string, Definition> {
+    if (myst.type === "definition") {
+        // MyST spec conversion to typescript types is unfortunately far from perfect, so we have to use some casting.
+        const def = myst as Definition;
+        map.set(def.identifier!.trim().toLowerCase(), def);
+    } else if ("children" in myst) {
+        for (const child of (myst as MystParent).children) {
+            findDefinitions(child, map);
+        }
+    }
+    return map;
+}
+
+/** Parse raw MyST into a ProseMirror document.
+ */
+export function parseMyst(source: string): Node {
+    const parsed = mystParse(source);
+    return mystToProseMirror(parsed);
+}
+
+/** Parse MyST abstract syntax tree into a ProseMirror document.
+ */
+export function mystToProseMirror(myst: GenericParent): Node {
+    const definitions = findDefinitions(myst);
+    const res = transformAst(myst, definitions);
+    if (Array.isArray(res)) {
+        throw new TypeError("Final parse result should not be array");
+    }
+    return res;
+}
+
+/** Utility function to recursively convert children in a handler function.
+ */
+function children(node: GenericNode, defs: DefinitionMap): Node[] | undefined {
+    return node.children?.flatMap((x) => {
+        const res = transformAst(x, defs);
+        return Array.isArray(res) ? res : [res];
+    });
+}
+
+/** Utility function to recursively mark children in a handler function.
+ * This is used to mark inline content as
+ */
+function markChildren(
+    node: GenericNode,
+    defs: DefinitionMap,
+    ...marks: Mark[]
+): Node[] | undefined {
+    return node?.children
+        ?.flatMap((n) => transformAst(n, defs))
+        ?.map((x) => x.mark([...x.marks, ...marks]));
+}
+
+function pick<T extends object, A extends keyof T>(
+    src: T,
+    ...attrs: A[]
+): Pick<T, A> {
+    const obj: Record<PropertyKey, unknown> = {};
+    for (const attr of attrs) {
+        obj[attr] = src[attr];
+    }
+    return obj as Pick<T, A>;
+}
+
+/** List of supported directives
+ *
+ * This is the list of directives we currently render into editable content.
+ * Other directives remain untouched and their code will be shown in the editor.
+ */
+const SUPPORTED_DIRECTIVES = [
+    "admonition",
+    "attention", // alias of 'admonition'
+    "caution", // alias of 'admonition'
+    "danger", // alias of 'admonition'
+    "error", // alias of 'admonition'
+    "important", // alias of 'admonition'
+    "hint", // alias of 'admonition'
+    "note", // alias of 'admonition'
+    "seealso", // alias of 'admonition'
+    "tip", // alias of 'admonition'
+    "warning", // alias of 'admonition'
+];
+
+/** Handlers for MyST AST types
+ *
+ * These are the handlers that convert the MyST abstract syntax tree into
+ * ProseMirror nodes. They are called by the transformAst function, and in turn
+ * call the transformAst function again, to convert the AST recursively.
+ *
+ * Some nodes cannot be directly converted to ProseMirror nodes, because,
+ * according to the MyST spec, they can include block (flow) or inline
+ * (phrasing) content. This is not supported by ProseMirror, which only allows
+ * a certain node type to support flow xor phrasing content. We get around this
+ * by wrapping inline children in a paragraph. For an example, see listItem
+ *
+ * TODO: Right now, typing is messy, with casting and all. Figure out a way to
+ * have better typing.
+ *
+ * TODO: It seems keeping track of definitions is not necessary, since the
+ * parser seemingly handles this already. It doesn't emit the linkReference
+ * node, even though it is defined in the MyST specification.
+ */
+const handlers = {
+    root: (node: Root, defs: DefinitionMap) =>
+        schema.node("root", {}, children(node, defs)),
+    block: (node: Block, defs: DefinitionMap) =>
+        schema.node("block", { meta: node.meta }, children(node, defs)),
+    paragraph: (node: Paragraph, defs: DefinitionMap) =>
+        schema.node("paragraph", {}, children(node, defs)),
+    definition: (node: Definition) =>
+        schema.node("definition", { url: node.url, type: node.type }),
+    heading: (node: Heading, defs: DefinitionMap) =>
+        schema.node(
+            "heading",
+            {
+                level: node.depth,
+                enumerated: node.enumerated,
+                enumerator: node.enumerator,
+                identifier: node.identifier,
+                label: node.label,
+            },
+            children(node, defs),
+        ),
+    thematicBreak: (_node: ThematicBreak) => schema.node("thematicBreak"),
+    blockquote: (node: Blockquote, defs: DefinitionMap) =>
+        schema.node("blockquote", {}, children(node, defs)),
+    list: (node: List, defs: DefinitionMap) =>
+        schema.node(
+            "list",
+            { spread: node.spread, ordered: node.ordered },
+            children(node, defs),
+        ),
+    listItem: (node: ListItem, defs: DefinitionMap) => {
+        let myChildren = children(node, defs);
+        if (myChildren !== undefined && myChildren.every((x) => x.isInline)) {
+            myChildren = [schema.node("paragraph", {}, myChildren)];
+        }
+        return schema.node("listItem", { spread: node.spread }, myChildren);
+    },
+    text: (node: Text) => schema.text(node.value),
+    html: (node: HTML) => schema.node("html", { value: node.value }),
+    code: (node: Code) =>
+        schema.node(
+            "code",
+            pick(
+                node,
+                "lang",
+                "meta",
+                "class",
+                "showLineNumbers",
+                "emphasizeLines",
+                "identifier",
+                "label",
+            ),
+            schema.text(node.value),
+        ),
+    mystTarget: (node: Target) =>
+        schema.node("target", { label: node.label?.trim()?.toLowerCase() }),
+    mystDirective: (node: Directive, defs: DefinitionMap) =>
+        schema.node(
+            "directive",
+            pick(node, "name", "value", "args"),
+            SUPPORTED_DIRECTIVES.includes(node.name)
+                ? children(node, defs)
+                : undefined,
+        ),
+    admonition: (node: Admonition, defs: DefinitionMap) =>
+        schema.node("admonition", { kind: node.kind }, children(node, defs)),
+    admonitionTitle: (node: AdmonitionTitle, defs: DefinitionMap) =>
+        schema.node("admonitionTitle", {}, children(node, defs)),
+    container: (node: Container, defs: DefinitionMap) =>
+        schema.node("container", { kind: node.kind }, children(node, defs)),
+    emphasis: (node: Emphasis, defs: DefinitionMap) =>
+        markChildren(node, defs, schema.mark("emphasis")),
+    strong: (node: Strong, defs: DefinitionMap) =>
+        markChildren(node, defs, schema.mark("strong")),
+    link: (node: Link, defs: DefinitionMap) =>
+        markChildren(
+            node,
+            defs,
+            schema.mark("link", pick(node, "url", "title")),
+        ),
+    linkReference: (node: LinkReference, defs: DefinitionMap) =>
+        markChildren(
+            node,
+            defs,
+            schema.mark("link", {
+                url: defs.get(node.identifier!.trim().toLowerCase()),
+                reference: {
+                    referenceType: node.referenceType,
+                },
+            }),
+        ),
+    math: (node: Math) =>
+        schema.node(
+            "math",
+            pick(node, "identifier", "label"),
+            schema.text(node.value),
+        ),
+    inlineMath: (node: InlineMath) =>
+        schema.node("inlineMath", {}, schema.text(node.value)),
+};
+
+function transformAst(
+    myst: MystNode,
+    definitions: Map<string, Definition>,
+): Node | Node[] {
+    // TODO: Maybe add some kind of fallback here for unsupported types. This
+    // might not be necessary, because the core specification should remain
+    // pretty stable, and we only parse directives that we know we can handle.
+    if (!(myst.type in handlers))
+        throw new RangeError(`Unknown node type '${myst.type}'`);
+    const handler = (
+        handlers as unknown as Record<
+            string,
+            (node: MystNode, definitions: DefinitionMap) => Node
+        >
+    )[myst.type];
+    return handler(myst, definitions);
+}
