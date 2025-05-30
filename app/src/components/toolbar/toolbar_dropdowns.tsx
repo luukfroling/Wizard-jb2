@@ -8,7 +8,8 @@ import {
   wrapOrderedList,
   insertLink,
   insertImage,
-  insertTable,
+  // Commented while insertTable is not fully implemented and used
+  // insertTable,
   insertMath,
 } from "./toolbar_commands";
 import {

@@ -226,7 +226,7 @@ export function setParagraph() {
 // Insert a table with the given number of rows and columns
 export function insertTable(rows: number, cols: number) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { schema, selection } = state;
+        const { schema } = state; // removed 'selection'
         // Create a simple table: each row is a paragraph block
         const rowNodes = [];
         for (let r = 0; r < rows; r++) {
@@ -250,7 +250,7 @@ export function insertTable(rows: number, cols: number) {
 // Insert math (equation) node at selection
 export function insertMath(equation: string = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { schema, selection } = state;
+        const { schema } = state; // removed 'selection'
         const mathNode = schema.nodes.math.create(
             { enumerated: false },
             schema.text(equation),
