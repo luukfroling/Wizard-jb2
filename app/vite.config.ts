@@ -9,15 +9,6 @@ export default defineConfig({
         // Uncomment the line below if you want a single file for the Sphinx extension
         viteSingleFile()
     ],
-    css: {
-        postcss: {
-            plugins: [
-                postcssPrefixSelector({
-                    prefix: '.extension_name_vite',
-                })
-            ]
-        }
-    },
     base: "./",
     server: {
         port: 3000,

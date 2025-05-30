@@ -1,5 +1,5 @@
 import { Editor } from "./components/Editor";
-import Toolbar from "./components/toolbar";
+import Toolbar from "./components/toolbar_alternative";
 import { schema } from "./lib/schema";
 //import "prosemirror-view/style/prosemirror.css";
 
