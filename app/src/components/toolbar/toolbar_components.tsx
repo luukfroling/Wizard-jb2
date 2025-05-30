@@ -66,13 +66,20 @@ export const ToolbarDropdown: Component<{
 }> = (props) => {
   const [open, setOpen] = createSignal(false);
   let buttonRef: HTMLButtonElement | undefined;
+  let menuRef: HTMLUListElement | undefined; // 4. Added menuRef
 
   // Close dropdown when clicking outside
   onMount(() => {
     const handler = (e: MouseEvent) => {
-      if (open() && buttonRef && !buttonRef.contains(e.target as Node)) {
+      // 5. Updated mousedown handler condition
+      if (
+        open() &&
+        buttonRef && !buttonRef.contains(e.target as Node) &&
+        menuRef && !menuRef.contains(e.target as Node)
+      ) {
         setOpen(false);
-        buttonRef.style.background = "#fff";
+        // Retaining this style reset as it was in your original specific request
+        if (buttonRef) buttonRef.style.background = "#fff";
       }
     };
     document.addEventListener("mousedown", handler);
@@ -101,9 +108,12 @@ export const ToolbarDropdown: Component<{
           transition: "background 0.1s, color 0.1s, border 0.1s",
         }}
         title={typeof props.title === "string" ? props.title : undefined}
-        data-bs-toggle="dropdown"
+        // data-bs-toggle="dropdown" // 1. Removed data-bs-toggle
         aria-expanded={open()}
-        onClick={() => setOpen(!open())}
+        onClick={(e) => { // 2. Added e.stopPropagation()
+          e.stopPropagation();
+          setOpen(!open());
+        }}
         onMouseOver={(e) => (e.currentTarget.style.background = ACCENT)}
         onMouseOut={(e) =>
           !open() && (e.currentTarget.style.background = "#fff")
@@ -111,7 +121,12 @@ export const ToolbarDropdown: Component<{
       >
         <i class={`bi ${props.icon} fs-5`} style={{ color: "#212529" }} />
       </button>
-      <ul class="dropdown-menu p-0" style={{ "min-width": "40px" }}>
+      <ul
+        ref={menuRef} // 4. Assigned menuRef
+        class="dropdown-menu p-0"
+        classList={{ show: open() }} // 6. Added classList to toggle .show
+        style={{ "min-width": "40px" }}
+      >
         <For each={props.options}>
           {(opt) => (
             <li>
@@ -144,13 +159,20 @@ export const ToolbarDropdownWithLabels: Component<{
 }> = (props) => {
   const [open, setOpen] = createSignal(false);
   let buttonRef: HTMLButtonElement | undefined;
+  let menuRef: HTMLUListElement | undefined; // 4. Added menuRef
 
   // Close dropdown when clicking outside
   onMount(() => {
     const handler = (e: MouseEvent) => {
-      if (open() && buttonRef && !buttonRef.contains(e.target as Node)) {
+      // 5. Updated mousedown handler condition
+      if (
+        open() &&
+        buttonRef && !buttonRef.contains(e.target as Node) &&
+        menuRef && !menuRef.contains(e.target as Node)
+      ) {
         setOpen(false);
-        buttonRef.style.background = "#fff";
+        // Retaining this style reset as it was in your original specific request
+        if (buttonRef) buttonRef.style.background = "#fff";
       }
     };
     document.addEventListener("mousedown", handler);
@@ -179,9 +201,12 @@ export const ToolbarDropdownWithLabels: Component<{
           transition: "background 0.1s, color 0.1s, border 0.1s",
         }}
         title={typeof props.title === "string" ? props.title : undefined}
-        data-bs-toggle="dropdown"
+        // data-bs-toggle="dropdown" // 1. Removed data-bs-toggle
         aria-expanded={open()}
-        onClick={() => setOpen(!open())}
+        onClick={(e) => { // 2. Added e.stopPropagation()
+          e.stopPropagation();
+          setOpen(!open());
+        }}
         onMouseOver={(e) => (e.currentTarget.style.background = ACCENT)}
         onMouseOut={(e) =>
           !open() && (e.currentTarget.style.background = "#fff")
@@ -209,7 +234,12 @@ export const ToolbarDropdownWithLabels: Component<{
           {props.title}
         </span>
       </button>
-      <ul class="dropdown-menu p-0" style={{ "min-width": "40px" }}>
+      <ul
+        ref={menuRef} // 4. Assigned menuRef
+        class="dropdown-menu p-0"
+        classList={{ show: open() }} // 6. Added classList to toggle .show
+        style={{ "min-width": "40px" }}
+      >
         <For each={props.options}>
           {(opt) => (
             <li>
