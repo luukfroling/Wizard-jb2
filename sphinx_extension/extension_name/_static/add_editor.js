@@ -21,20 +21,14 @@ function addViteApp() {
     editorSection.id = 'extension_name_editor';
 
     // Get the relative path to the Vite app
-    const htmlFilePath = './_static/dist/index.html';
-    const htmlFilePath2 = '././_static/dist/index.html'
+    const htmlFilePath = '_static/dist/index.html';
+    // const htmlFilePath2 = '././_static/dist/index.html'
 
     // Try to fetch the Vite app
     // Fix this for all paths...
     fetch(htmlFilePath).then(response => {
         if (!response.ok) {
-            fetch(htmlFilePath2).then(response2 => {
-                if (!response2.ok) {
-                    throw new Error(`extension_name: Response 2 was not ok: ${response2.statusText}`);
-                } else {
-                    return response2.text();
-                }
-            })
+            throw new Error(`extension_name: Response 2 was not ok: ${response.statusText}`);
         } else {
             return response.text();
         }
