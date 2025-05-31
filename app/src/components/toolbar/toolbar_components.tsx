@@ -74,8 +74,10 @@ export const ToolbarDropdown: Component<{
       // 5. Updated mousedown handler condition
       if (
         open() &&
-        buttonRef && !buttonRef.contains(e.target as Node) &&
-        menuRef && !menuRef.contains(e.target as Node)
+        buttonRef &&
+        !buttonRef.contains(e.target as Node) &&
+        menuRef &&
+        !menuRef.contains(e.target as Node)
       ) {
         setOpen(false);
         // Retaining this style reset as it was in your original specific request
@@ -110,7 +112,8 @@ export const ToolbarDropdown: Component<{
         title={typeof props.title === "string" ? props.title : undefined}
         // data-bs-toggle="dropdown" // 1. Removed data-bs-toggle
         aria-expanded={open()}
-        onClick={(e) => { // 2. Added e.stopPropagation()
+        onClick={(e) => {
+          // 2. Added e.stopPropagation()
           e.stopPropagation();
           setOpen(!open());
         }}
@@ -167,8 +170,10 @@ export const ToolbarDropdownWithLabels: Component<{
       // 5. Updated mousedown handler condition
       if (
         open() &&
-        buttonRef && !buttonRef.contains(e.target as Node) &&
-        menuRef && !menuRef.contains(e.target as Node)
+        buttonRef &&
+        !buttonRef.contains(e.target as Node) &&
+        menuRef &&
+        !menuRef.contains(e.target as Node)
       ) {
         setOpen(false);
         // Retaining this style reset as it was in your original specific request
@@ -203,7 +208,8 @@ export const ToolbarDropdownWithLabels: Component<{
         title={typeof props.title === "string" ? props.title : undefined}
         // data-bs-toggle="dropdown" // 1. Removed data-bs-toggle
         aria-expanded={open()}
-        onClick={(e) => { // 2. Added e.stopPropagation()
+        onClick={(e) => {
+          // 2. Added e.stopPropagation()
           e.stopPropagation();
           setOpen(!open());
         }}
