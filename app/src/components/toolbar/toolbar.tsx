@@ -2,7 +2,6 @@ import { Component } from "solid-js";
 import "prosemirror-view/style/prosemirror.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { ToolbarSeparator } from "./toolbar_components";
 import { toolbarButtons } from "./toolbar_buttons";
 import { toolbarDropdowns } from "./toolbar_dropdowns";
