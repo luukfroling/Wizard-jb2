@@ -1,3 +1,4 @@
+![coverage](https://gitlab.ewi.tudelft.nl/cse2000-software-project/2024-2025/cluster-j/10c/10c/badges/main/coverage.svg)
 # Getting started
 
 ## Browser app
