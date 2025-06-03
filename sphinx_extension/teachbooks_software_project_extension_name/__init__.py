@@ -29,7 +29,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     # Basic information of the sphinx extension
     # Match with myproject.toml
     return {
-        'version': '0.0.5',
+        'version': '0.0.6',
         'parallel_read_safe': True,
         'parallel_write_safe': True,
     }
