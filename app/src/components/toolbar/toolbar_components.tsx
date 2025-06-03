@@ -110,7 +110,6 @@ export const ToolbarDropdown: Component<{
           transition: "background 0.1s, color 0.1s, border 0.1s",
         }}
         title={typeof props.title === "string" ? props.title : undefined}
-        // data-bs-toggle="dropdown" // 1. Removed data-bs-toggle
         aria-expanded={open()}
         onClick={(e) => {
           // 2. Added e.stopPropagation()
@@ -206,7 +205,6 @@ export const ToolbarDropdownWithLabels: Component<{
           transition: "background 0.1s, color 0.1s, border 0.1s",
         }}
         title={typeof props.title === "string" ? props.title : undefined}
-        // data-bs-toggle="dropdown" // 1. Removed data-bs-toggle
         aria-expanded={open()}
         onClick={(e) => {
           // 2. Added e.stopPropagation()
