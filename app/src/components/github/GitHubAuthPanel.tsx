@@ -1,8 +1,9 @@
-import { Show, type Setter } from "solid-js";
+import { Show, type Setter, createSignal, onMount } from "solid-js";
 import { GitHubTokenInput } from "./GitHubTokenInput";
 import { GitHubUserPanel } from "./GitHubUserPanel";
 import type { GitHubUser } from "../../lib/github";
 import { useEditorView } from "../Editor";
+import { getRepositoryLink, getDefaultBranchFromHref, repositoryHref } from "../../lib/github";
 
 type Props = {
   token: string | null;
@@ -32,6 +33,17 @@ export const GitHubAuthPanel = (props: Props) => {
   const view = useEditorView();
   const getEditorContent = () => view?.()?.state.doc.textContent || "";
 
+  const [baseBranch, setBaseBranch] = createSignal<string>("main");
+
+  onMount(async () => {
+    // Get the repository link (ensure it's set)
+    const href = getRepositoryLink() ?? repositoryHref();
+    if (href) {
+      const branch = await getDefaultBranchFromHref(href, props.token ?? undefined);
+      if (branch) setBaseBranch(branch);
+    }
+  });
+
   return (
     <div class="p-6">
       <Show when={!props.token}>
@@ -45,9 +57,7 @@ export const GitHubAuthPanel = (props: Props) => {
             user={user}
             onLogout={props.onLogout}
             token={props.token ?? ""}
-            owner="Lopalov"
-            repo="test"
-            baseBranch="main"
+            baseBranch={baseBranch()}
             getEditorContent={getEditorContent}
           />
         )}
