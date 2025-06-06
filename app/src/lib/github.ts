@@ -112,6 +112,8 @@ export async function createBranch(
 
 /**
  * Commits a file to a specific branch in a GitHub repository.
+ * If the file exists, it updates the file (requires the file's SHA).
+ * If the file does not exist, it creates a new file.
  * @param owner Repository owner
  * @param repo Repository name
  * @param branch Branch to commit to
@@ -136,16 +138,34 @@ export async function commitFileToBranch(
         "Content-Type": "application/json",
     };
 
+    // Check if the file exists on the branch
+    let sha: string | undefined = undefined;
+    try {
+        const file = await getFileFromBranch(owner, repo, filePath, branch, token);
+        if (file && file.sha) {
+            sha = file.sha;
+        }
+    } catch {
+        // If the file does not exist, getFileFromBranch will return null or throw, which is fine
+        sha = undefined;
+    }
+
+    // Prepare the request body
+    const body: Record<string, any> = {
+        message: commitMsg,
+        content: btoa(unescape(encodeURIComponent(content))),
+        branch,
+    };
+    if (sha) {
+        body.sha = sha; // Required for updating an existing file
+    }
+
     const resp = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
         {
             method: "PUT",
             headers,
-            body: JSON.stringify({
-                message: commitMsg,
-                content: btoa(unescape(encodeURIComponent(content))),
-                branch,
-            }),
+            body: JSON.stringify(body),
         },
     );
     if (!resp.ok) throw new Error("Failed to commit file");
@@ -266,6 +286,35 @@ export async function getDefaultBranchFromHref(
 
     const data = await resp.json();
     return data.default_branch ?? null;
+}
+
+/**
+ * Fetches the content of a file from a specific branch in a GitHub repository.
+ * @param owner Repository owner
+ * @param repo Repository name
+ * @param path Path to the file in the repository (e.g. "README.md" or "src/index.ts")
+ * @param branch Branch name to fetch the file from
+ * @param token (optional) GitHub token for private repos or higher rate limits
+ * @returns An object with content (base64-encoded) and encoding, or null if not found
+ */
+export async function getFileFromBranch(
+    owner: string,
+    repo: string,
+    path: string,
+    branch: string,
+    token?: string
+): Promise<{ content: string; encoding: string; sha: string } | null> {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+    const headers: Record<string, string> = {
+        Accept: "application/vnd.github.v3+json",
+    };
+    if (token) {
+        headers.Authorization = `token ${token}`;
+    }
+    const resp = await fetch(url, { headers });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return { content: data.content, encoding: data.encoding, sha: data.sha };
 }
 
 /**
