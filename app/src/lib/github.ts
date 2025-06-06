@@ -141,7 +141,13 @@ export async function commitFileToBranch(
     // Check if the file exists on the branch
     let sha: string | undefined = undefined;
     try {
-        const file = await getFileFromBranch(owner, repo, filePath, branch, token);
+        const file = await getFileFromBranch(
+            owner,
+            repo,
+            filePath,
+            branch,
+            token,
+        );
         if (file && file.sha) {
             sha = file.sha;
         }
@@ -151,7 +157,12 @@ export async function commitFileToBranch(
     }
 
     // Prepare the request body
-    const body: Record<string, any> = {
+    const body: {
+        message: string;
+        content: string;
+        branch: string;
+        sha?: string;
+    } = {
         message: commitMsg,
         content: btoa(unescape(encodeURIComponent(content))),
         branch,
@@ -302,7 +313,7 @@ export async function getFileFromBranch(
     repo: string,
     path: string,
     branch: string,
-    token?: string
+    token?: string,
 ): Promise<{ content: string; encoding: string; sha: string } | null> {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
     const headers: Record<string, string> = {
