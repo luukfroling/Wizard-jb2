@@ -380,10 +380,9 @@ export function getLocalHumanTimeString(date: Date = new Date()): string {
     return `${year}-${month}-${day}T${hour}-${min}-${sec}${tzString}`;
 }
 
-
-export const [currentFileHref, setCurrentFileHref] = createSignal<string | null>(
-    null,
-);
+export const [currentFileHref, setCurrentFileHref] = createSignal<
+    string | null
+>(null);
 
 export function getCurrentFileHref(): string | null {
     const anchor = document.querySelector<HTMLAnchorElement>(
@@ -411,7 +410,9 @@ export function getCurrentFileHref(): string | null {
 export function getFilePathFromHref(href: string | null): string | null {
     if (!href) return null;
     // Match both /blob/<branch>/ and /edit/<branch>/ patterns
-    const match = href.match(/github\.com\/[^/]+\/[^/]+\/(?:blob|edit)\/[^/]+\/(.+)$/);
+    const match = href.match(
+        /github\.com\/[^/]+\/[^/]+\/(?:blob|edit)\/[^/]+\/(.+)$/,
+    );
     const filePath = match ? match[1] : null;
     console.log("Extracted file path:", filePath);
     return filePath;

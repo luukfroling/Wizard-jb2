@@ -1,4 +1,4 @@
-import { Show, type Setter, createSignal } from "solid-js";
+import { Show, type Setter } from "solid-js";
 import { GitHubTokenInput } from "./GitHubTokenInput";
 import { GitHubUserPanel } from "./GitHubUserPanel";
 import type { GitHubUser } from "../../lib/github";
