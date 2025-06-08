@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App";
 import { getRepositoryLink, getCurrentFileHref } from "./lib/github";
 import { database } from "./lib/localStorage/database";
+import { showModal } from "./components/popups/popup_modal";
 
 const root = document.getElementById("root");
 
@@ -25,4 +26,23 @@ if (ref != null) {
   console.warn("Database not initialised - no github repo link found.");
 }
 
-render(() => <App />, root!);
+render(
+  () => (
+    <div>
+      <button
+        onClick={() =>
+          showModal(
+            <div>
+              <h2>My Modal</h2>
+              <p>Cool content here</p>
+            </div>,
+          )
+        }
+      >
+        Open Modal
+      </button>
+      <App />
+    </div>
+  ),
+  root!,
+);
