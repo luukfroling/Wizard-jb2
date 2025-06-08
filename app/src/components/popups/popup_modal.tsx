@@ -1,8 +1,11 @@
-// Modal.tsx
 import { createSignal, JSX, onCleanup, Show } from "solid-js";
 import { Portal, render } from "solid-js/web";
 
-export function showModal(content: JSX.Element) {
+/**
+ * Shows a popup that blocks all interaction with other UI elements.
+ * @param content the content to show in the modal popup.
+ */
+export function showModal(content: JSX.Element | string) {
   const container = document.createElement("div");
   document.body.appendChild(container);
 

@@ -1,13 +1,23 @@
-import { createEffect, createSignal, JSX, Show } from "solid-js";
+import { createSignal, JSX, Show, onCleanup, createEffect } from "solid-js";
 import { render } from "solid-js/web";
 
+/**
+ * Options for toast popups, currently only the duration.
+ */
 type ToastOptions = {
-  duration?: number; // ms
+    /**
+     * Duration before the toast popup automatically closes, in ms.
+     */
+  duration: number; // ms
 };
 
-const toastContainerId = "solid-toast-container";
 
-function ensureToastContainer(): HTMLElement {
+/**
+ * Gets the container that holds the toast popups.
+ * @returns the container to put the popups in.
+ */
+function getToastContainer(): HTMLElement {
+    const toastContainerId = "solid-toast-container";
   let container = document.getElementById(toastContainerId);
   if (!container) {
     container = document.createElement("div");
@@ -26,26 +36,54 @@ function ensureToastContainer(): HTMLElement {
   return container;
 }
 
+/**
+ * Shows a toast popup.
+ * @param message The message to display in the popup.
+ * @param options The {@link ToastOptions} for the popup, defaults to 10 second duration.
+ */
 export function showToast(
   message: JSX.Element | string,
-  options: ToastOptions = {},
+  options: ToastOptions = {duration: 10000}
 ) {
-  const container = ensureToastContainer();
+  const container = getToastContainer();
   const toast = document.createElement("div");
 
   const Toast = () => {
     const [visible, setVisible] = createSignal(true);
+    const [fadeLevel, setFadeLevel] = createSignal(1); // 1 = fully visible
 
-    const duration = options.duration ?? 30000;
+    const fadeStart = options.duration * 0.75;
 
+    // Manual close
     const close = () => setVisible(false);
 
-    // Auto-dismiss after duration
-    if (duration > 0) {
-      setTimeout(close, duration);
-    }
+    // Fade timer
+    const start = performance.now();
+    let animFrame: number;
 
-    // When visible becomes false, remove toast DOM node
+    const updateFade = (now: number) => {
+      const elapsed = now - start;
+
+      if (elapsed >= fadeStart) {
+        const fadeProgress = Math.min((elapsed - fadeStart) / (options.duration - fadeStart), 1);
+        const newOpacity = 1 - fadeProgress * 0.5; // fade to 50% opacity
+        setFadeLevel(newOpacity);
+      }
+
+      if (elapsed >= options.duration) {
+        setVisible(false);
+      } else {
+        animFrame = requestAnimationFrame(updateFade);
+      }
+    };
+
+    animFrame = requestAnimationFrame(updateFade);
+
+    // Clean up
+    onCleanup(() => {
+      cancelAnimationFrame(animFrame);
+      toast.remove();
+    });
     createEffect(() => {
       if (!visible()) {
         toast.remove();
@@ -57,7 +95,7 @@ export function showToast(
         <div
           style={{
             padding: "12px 16px",
-            background: "#333",
+            background: `rgba(51,51,51,${fadeLevel()})`,
             color: "#fff",
             "border-radius": "6px",
             "box-shadow": "0 2px 6px rgba(0,0,0,0.2)",
@@ -67,6 +105,7 @@ export function showToast(
             "justify-content": "space-between",
             "align-items": "center",
             gap: "8px",
+            transition: "background 0.2s ease",
           }}
         >
           <span>{message}</span>
