@@ -1,20 +1,21 @@
 import { createSignal, onMount } from "solid-js";
-import type { GitHubUser } from "../../lib/github";
+import type { GitHubUser } from "../../lib/github/GitHubLogin";
 import {
-  comitToGitHub,
   repositoryHref,
   parseOwnerRepoFromHref,
   getLocalHumanTimeString,
   getDefaultBranchFromHref,
   getFilePathFromHref,
   currentFileHref,
-} from "../../lib/github";
+} from "../../lib/github/GitHubUtility";
+import { comitToGitHub } from "../../lib/github/Depreciated";
+import { commitMultipleFilesToBranch } from "../../lib/github/GitHubCommit";
+import { database } from "../../lib/localStorage/database";
 
 type Props = {
   user: GitHubUser;
   onLogout: () => void;
   token: string;
-  getEditorContent: () => string;
 };
 
 export const GitHubUserPanel = (props: Props) => {
@@ -34,51 +35,65 @@ export const GitHubUserPanel = (props: Props) => {
 
   const handleCommit = async () => {
     setStatus("Committing...");
-    const content = props.getEditorContent();
 
-    // If filePath could not be determined, show an error and return
+    // Save the current editor content to the database before committing
     const filePathValue = filePath();
-    if (!filePathValue) {
-      setStatus("Could not determine the current file path.");
+    const content = window.__getEditorContent ? window.__getEditorContent() : "";
+
+    if (filePathValue && content && database.isInitialised()) {
+      await database.save("markdown", filePathValue, content);
+    }
+
+    // Now load all markdown files for the active repo
+    let files: [string, string][] = [];
+    try {
+      files = (await database.loadAll<string>("markdown")).map(
+        ([key, value]) => [key.toString(), value] as [string, string]
+      );
+    } catch (err) {
+      setStatus("Failed to load files from database.");
       return;
     }
 
-    // Commit message is now the current time
+    if (files.length === 0) {
+      setStatus("No files to commit.");
+      return;
+    }
+
+    // Prepare commit info
     const now = new Date();
     const humanTime = getLocalHumanTimeString(now);
     const commitMsg = humanTime;
-
-    // Use the branch name from input, replacing all spaces with dashes, or the current time
     const inputBranch = branchName().replace(/\s+/g, "-");
     const newBranch = inputBranch || `branch-${humanTime}`;
-
-    // Get owner/repo from repositoryHref
     const repoInfo = parseOwnerRepoFromHref(repositoryHref());
     if (!repoInfo) {
       setStatus("Repository link not found or invalid.");
       return;
     }
 
+    // Commit each file
+    const filesToCommit = files.map(([path, content]) => ({
+      path,
+      content,
+    }));
+
     try {
-      const result = await comitToGitHub({
-        token: props.token,
-        owner: repoInfo.owner,
-        repo: repoInfo.repo,
-        baseBranch: baseBranch(),
+      await commitMultipleFilesToBranch(
+        repoInfo.owner,
+        repoInfo.repo,
         newBranch,
-        filePath: filePathValue,
-        content,
+        filesToCommit,
         commitMsg,
-      });
+        props.token,
+        baseBranch()
+      );
+      await database.clear("markdown"); // <-- Reset the markdown store after commit
       setStatus(
-        `Committed to branch ${result.branch} at ${commitMsg}. Please wait at least a minute before attemtping to commit changes to the same files on the same branch!`,
+        `Committed ${filesToCommit.length} file(s) to branch ${newBranch} at ${commitMsg}. Please wait at least a minute before attempting to commit changes to the same files on the same branch!`
       );
     } catch (err) {
-      if (err instanceof Error) {
-        setStatus(`Error: ${err.message}`);
-      } else {
-        setStatus("An unknown error occurred.");
-      }
+      setStatus("Failed to commit files: " + (err instanceof Error ? err.message : err));
     }
   };
 

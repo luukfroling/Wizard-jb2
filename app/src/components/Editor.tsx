@@ -122,6 +122,9 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
         }
       }
     });
+
+    // Expose a function to get the editor content globally
+    window.__getEditorContent = () => state().doc.textContent;
   });
 
   return (

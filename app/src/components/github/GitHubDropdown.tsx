@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { useGitHubAuth } from "../../lib/github";
+import { useGitHubAuth } from "../../lib/github/GitHubLogin";
 import { GitHubAuthPanel } from "./GitHubAuthPanel";
 
 export const GitHubDropdown = () => {

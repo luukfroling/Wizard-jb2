@@ -2,7 +2,7 @@
 import { render } from "solid-js/web";
 import "./index.css";
 import App from "./App";
-import { getRepositoryLink, getCurrentFileHref } from "./lib/github";
+import { getRepositoryLink, getCurrentFileHref, getFilePathFromHref } from "./lib/github/GitHubUtility";
 import { database } from "./lib/localStorage/database";
 
 const root = document.getElementById("root");
@@ -24,5 +24,20 @@ if (ref != null) {
 } else {
   console.warn("Database not initialised - no github repo link found.");
 }
+
+window.addEventListener("beforeunload", () => {
+  // Get the file path
+  const fileHref = getCurrentFileHref();
+  const filePath = getFilePathFromHref(fileHref);
+
+  // Get the editor content
+  const content = window.__getEditorContent ? window.__getEditorContent() : "";
+
+  // Save to the database if possible
+  if (filePath && content && database.isInitialised()) {
+    // Save as markdown
+    database.save("markdown", filePath, content);
+  }
+});
 
 render(() => <App />, root!);
