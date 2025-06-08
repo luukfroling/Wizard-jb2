@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render } from "solid-js/web";
-import { Editor, useEditorState, useEditorView, useDispatchCommand, useCommand, dispatchCommand } from "../../src/components/Editor";
+import {
+  Editor,
+  useEditorState,
+  useEditorView,
+  useDispatchCommand,
+  useCommand,
+  dispatchCommand,
+} from "../../src/components/Editor";
 import { schema } from "../../src/lib/schema";
 import { Command } from "prosemirror-state";
 import { createEffect } from "solid-js";
 
 describe("<Editor />", () => {
   afterEach(() => {
-    vi.resetModules()
+    vi.resetModules();
     document.body.innerHTML = "";
   });
 
@@ -15,7 +22,7 @@ describe("<Editor />", () => {
 
   it("renders without crashing", () => {
     expect(() =>
-      render(() => <Editor schema={schema} />, document.body)
+      render(() => <Editor schema={schema} />, document.body),
     ).not.toThrow();
   });
 
@@ -37,7 +44,7 @@ describe("<Editor />", () => {
           <DummyChild />
         </Editor>
       ),
-      document.body
+      document.body,
     );
     expect(contextAvailable).toBe(true);
   });
@@ -49,11 +56,11 @@ describe("<Editor />", () => {
           <span data-testid="child">Hello</span>
         </Editor>
       ),
-      document.body
+      document.body,
     );
     expect(document.querySelector('[data-testid="child"]')).not.toBeNull();
   });
-  
+
   // --- Logic specific to the Editor ---
 
   it("useEditorView provides the EditorView instance", () => {
@@ -68,7 +75,7 @@ describe("<Editor />", () => {
           <DummyChild />
         </Editor>
       ),
-      document.body
+      document.body,
     );
     expect(viewAvailable).toBe(true);
   });
@@ -95,7 +102,7 @@ describe("<Editor />", () => {
           <DummyChild />
         </Editor>
       ),
-      document.body
+      document.body,
     );
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -122,7 +129,7 @@ describe("<Editor />", () => {
           <DummyChild />
         </Editor>
       ),
-      document.body
+      document.body,
     );
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -145,7 +152,7 @@ describe("<Editor />", () => {
           <DummyChild />
         </Editor>
       ),
-      document.body
+      document.body,
     );
     expect(result).toBe(true);
   });

@@ -1,9 +1,9 @@
 /* @refresh reload */
 import { render } from "solid-js/web";
-
 import "./index.css";
 import App from "./App";
 import { getRepositoryLink, getCurrentFileHref } from "./lib/github";
+import { database } from "./lib/localStorage/database";
 
 const root = document.getElementById("root");
 
@@ -13,7 +13,16 @@ if (!(root instanceof HTMLElement)) {
   );
 }
 
-getRepositoryLink();
+//initialise github info
+const ref = getRepositoryLink();
 getCurrentFileHref();
+
+//initialise database
+if (ref != null) {
+  database.setActiveRepo(ref);
+  console.info("Database initialised.");
+} else {
+  console.warn("Database not initialised - no github repo link found.");
+}
 
 render(() => <App />, root!);

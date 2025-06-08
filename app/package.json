@@ -11,9 +11,9 @@
     "build": "vite build",
     "serve": "vite preview",
     "lint": "eslint src",
-    "lint:fix": "eslint --fix src",
-    "prettier": "prettier --check src",
-    "prettier:fix": "prettier --write src",
+    "lint:fix": "eslint --fix src tests",
+    "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\" \"tests/**/*.{ts,tsx,js,jsx}\"",
+    "prettier:fix": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\" \"tests/**/*.{ts,tsx,js,jsx}\"",
     "check": "npm run prettier && npm run lint",
     "format": "npm run prettier:fix && npm run lint:fix"
   },
@@ -30,6 +30,7 @@
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.3",
     "eslint-plugin-solid": "^0.14.5",
+    "fake-indexeddb": "^6.0.1",
     "jsdom": "^26.1.0",
     "knip": "^5.56.0",
     "myst-spec": "^0.0.5",
@@ -46,6 +47,7 @@
   "dependencies": {
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
+    "idb": "^8.0.3",
     "myst-common": "^1.7.11",
     "myst-parser": "^1.5.13",
     "prosemirror-commands": "^1.7.1",
