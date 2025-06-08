@@ -1,6 +1,7 @@
-import { Suspense } from "solid-js";
 /* @refresh reload */
+import { Suspense } from "solid-js";
 import { render } from "solid-js/web";
+
 import "./index.css";
 import App from "./App";
 import {
@@ -46,4 +47,11 @@ window.addEventListener("beforeunload", async () => {
   }
 });
 
-render(() => <Suspense><App /></Suspense>, root!);
+render(
+  () => (
+    <Suspense>
+      <App />
+    </Suspense>
+  ),
+  root!,
+);

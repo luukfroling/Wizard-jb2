@@ -296,6 +296,24 @@ export const schema = new Schema({
             group: "phrasingContent",
             inline: true,
         },
+        // HACK: Prosemirror doesn't support mixed inline and non-inline content
+        imageWrapper: {
+            group: "flowContent",
+            content: "image",
+            toDOM(node) {
+                const img = node.children[0];
+                return [
+                    "img",
+                    {
+                        src: img.attrs.url,
+                        title: img.attrs.title,
+                        style: `width: ${img.attrs.width}`,
+                        alt: img.attrs.alt,
+                        class: img.attrs.class,
+                    },
+                ];
+            },
+        },
         image: {
             group: "phrasingContent",
             inline: true,
@@ -340,6 +358,7 @@ export const schema = new Schema({
                 title: string({ default: "" }),
                 alt: string({ default: "" }),
                 reference: {
+                    default: null,
                     validate(value: unknown) {
                         return (
                             value === null ||
@@ -374,6 +393,47 @@ export const schema = new Schema({
                 return ["br"];
             },
             parseDOM: [{ tag: "br" }],
+        },
+        aside: {
+            group: "flowContent",
+            content: "admonitionTitle? flowContent*",
+            attrs: {
+                kind: oneOf({
+                    values: ["sidebar", "margin", "topic"] as const,
+                    optional: true,
+                }),
+                class: string({ optional: true }),
+            },
+            toDOM(node) {
+                return [
+                    "aside",
+                    { class: node.attrs.class + " aside-" + node.attrs.kind },
+                    0,
+                ];
+            },
+        },
+        caption: {
+            group: "flowContent",
+            content: "flowContent",
+            toDOM() {
+                return ["p", { class: "caption" }, 0];
+            },
+        },
+        captionNumber: {
+            group: "phrasingContent",
+            content: "phrasingContent+",
+            inline: true,
+            atom: true,
+            toDOM(node) {
+                const captionKind =
+                    node.attrs.kind?.charAt(0).toUpperCase() +
+                    node.attrs.kind?.slice(1);
+                return [
+                    "span",
+                    { class: "caption-number" },
+                    `${captionKind} ${node.textContent}`,
+                ];
+            },
         },
     },
     marks: {

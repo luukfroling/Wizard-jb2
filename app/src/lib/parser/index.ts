@@ -57,16 +57,13 @@ import type {
     Container,
     Math,
     InlineMath,
-    PhrasingContent,
-    Break,
-    BlockBreak,
-    Table,
-    FootnoteDefinition,
     Image,
+    Caption,
 } from "myst-spec";
 import type { GenericNode, GenericParent } from "myst-common";
-import { Mark, Node, Schema } from "prosemirror-model";
+import { Mark, Node } from "prosemirror-model";
 import { VFile } from "vfile";
+import { Aside, CaptionNumber } from "myst-spec-ext";
 
 type DefinitionMap = Map<string, Definition>;
 
@@ -247,7 +244,17 @@ const handlers = {
     admonitionTitle: (node: AdmonitionTitle, defs: DefinitionMap) =>
         schema.node("admonitionTitle", {}, children(node, defs)),
     container: (node: Container, defs: DefinitionMap) =>
-        schema.node("container", { kind: node.kind }, children(node, defs)),
+        schema.node(
+            "container",
+            { kind: node.kind },
+            node.children?.flatMap((x) => {
+                const res =
+                    x.type === "image"
+                        ? schema.node("imageWrapper", {}, transformAst(x, defs))
+                        : transformAst(x, defs);
+                return Array.isArray(res) ? res : [res];
+            }),
+        ),
     emphasis: (node: Emphasis, defs: DefinitionMap) =>
         markChildren(node, defs, schema.mark("emphasis")),
     strong: (node: Strong, defs: DefinitionMap) =>
@@ -277,6 +284,28 @@ const handlers = {
         ),
     inlineMath: (node: InlineMath) =>
         schema.node("inlineMath", {}, schema.text(node.value)),
+
+    image: (node: Image) =>
+        schema.node(
+            "image",
+            pick(node, "class", "width", "align", "url", "title", "alt"),
+        ),
+
+    caption: (node: Caption, defs: DefinitionMap) =>
+        schema.node("caption", {}, children(node, defs)),
+    captionNumber: (node: CaptionNumber, defs: DefinitionMap) =>
+        schema.node(
+            "captionNumber",
+            pick(node, "identifier", "kind", "label", "html_id", "enumerator"),
+            children(node, defs),
+        ),
+    // Extension types
+    aside: (node: Aside, defs: DefinitionMap) =>
+        schema.node(
+            "aside",
+            { kind: node.kind, class: node.class },
+            children(node, defs),
+        ),
 };
 
 function transformAst(
@@ -286,8 +315,10 @@ function transformAst(
     // TODO: Maybe add some kind of fallback here for unsupported types. This
     // might not be necessary, because the core specification should remain
     // pretty stable, and we only parse directives that we know we can handle.
-    if (!(myst.type in handlers))
+    if (!(myst.type in handlers)) {
+        console.log(myst);
         throw new RangeError(`Unknown node type '${myst.type}'`);
+    }
     const handler = (
         handlers as unknown as Record<
             string,
@@ -295,32 +326,6 @@ function transformAst(
         >
     )[myst.type];
     return handler(myst, definitions);
-}
-
-type NodeName = typeof schema extends Schema<infer T> ? T : never;
-
-function mystNode(
-    type: string,
-    node: Node,
-): MystNode & { children?: MystNode[] } {
-    return {
-        type,
-        children: node.children.map((x) => proseMirrorToMyst(x)),
-    };
-}
-
-const proseMirrorToMystHandlers = {
-    paragraph: (node: Node): Paragraph => ({
-        type: "paragraph",
-        children: node.children.map((x) =>
-            proseMirrorToMyst(x),
-        ) as PhrasingContent[],
-    }),
-    code: (node: Node): Code => mystNode("code", node, {}),
-} satisfies Record<NodeName, (node: Node) => MystNode>;
-
-export function proseMirrorToMyst(node: Node): MystNode {
-    return proseMirrorToMystHandlers[node.type.name as NodeName];
 }
 
 async function parse(text: string, defaultFrontmatter?: PageFrontmatter) {
