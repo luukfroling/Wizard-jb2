@@ -1,4 +1,5 @@
-import { createSignal, JSX } from "solid-js";
+/* eslint-disable solid/prefer-for */
+import { createSignal, JSX, Show } from "solid-js";
 import { useEditorState, useDispatchCommand } from "../Editor";
 import {
   setFontFamily,
@@ -9,6 +10,7 @@ import {
   insertLink,
   insertImage,
   insertMath,
+  insertTable,
 } from "./toolbar_commands";
 import {
   ToolbarDropdownWithLabels,
@@ -18,11 +20,9 @@ import { FONT_OPTIONS, HEADER_OPTIONS } from "./toolbar_options";
 import { getCurrentListType } from "./toolbar_utils";
 
 // --- Signals for Table Grid Selector popup state and position ---
-export const [showTableSelector, setShowTableSelector] = createSignal(false);
-export const [selectorPos, setSelectorPos] = createSignal<{
-  top: number;
-  left: number;
-}>({ top: 0, left: 0 });
+const [showTableSelector, setShowTableSelector] = createSignal(false);
+const [hoverX, setHoverX] = createSignal(0);
+const [hoverY, setHoverY] = createSignal(0);
 
 // --- Toolbar Dropdowns Object ---
 export const toolbarDropdowns: {
@@ -141,36 +141,117 @@ export const toolbarDropdowns: {
     // --- Insert Dropdown (Link, Image, Table, Equation) ---
 
     this.insertDropdown = (
-      <ToolbarDropdown
-        icon="bi-plus-lg"
-        options={[
-          {
-            label: "Insert Link",
-            icon: "bi-link-45deg",
-            onClick: () => {
-              const url = prompt("Enter link URL:");
-              if (url) dispatchCommand(insertLink(url));
+      <div>
+        <ToolbarDropdown
+          icon="bi-plus-lg"
+          options={[
+            {
+              label: "Insert Link",
+              icon: "bi-link-45deg",
+              onClick: () => {
+                const url = prompt("Enter link URL:");
+                if (url) dispatchCommand(insertLink(url));
+              },
             },
-          },
-          {
-            label: "Insert Image",
-            icon: "bi-image",
-            onClick: () => {
-              const url = prompt("Enter image URL:");
-              if (url) dispatchCommand(insertImage(url));
+            {
+              label: "Insert Image",
+              icon: "bi-image",
+              onClick: () => {
+                const url = prompt("Enter image URL:");
+                if (url) dispatchCommand(insertImage(url));
+              },
             },
-          },
-          {
-            label: "Insert Equation",
-            icon: "bi-calculator", // Use a valid Bootstrap icon
-            onClick: () => {
-              const equation = prompt("Enter LaTeX equation:", "E=mc^2");
-              if (equation !== null) dispatchCommand(insertMath(equation));
+            {
+              label: "Insert Equation",
+              icon: "bi-calculator", // Use a valid Bootstrap icon
+              onClick: () => {
+                const equation = prompt("Enter LaTeX equation:", "E=mc^2");
+                if (equation !== null) dispatchCommand(insertMath(equation));
+              },
             },
-          },
-        ]}
-        title="Insert"
-      />
+            {
+              label: "Insert Table",
+              icon: "bi-table",
+              onClick: () => {
+                setShowTableSelector(true);
+              },
+            },
+          ]}
+          title="Insert"
+        />
+        <Show when={showTableSelector()}>
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#fff",
+              padding: "8px",
+              border: "1px solid #d7e1ff",
+              "border-radius": "10px",
+              "box-shadow": "0 2px 8px 0 #d7e1ff55",
+              "z-index": 10000,
+              display: "inline-block",
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseLeave={() => {
+              setShowTableSelector(false);
+            }}
+          >
+            <div style={{ display: "flex", "flex-direction": "column" }}>
+              {[...Array(8)].map((_, r) => (
+                <div style={{ display: "flex" }}>
+                  {[...Array(8)].map((_, c) => {
+                    const selected = r <= hoverY() && c <= hoverX();
+                    return (
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          border: "1px solid #d7e1ff",
+                          background: selected ? "#D7E1FF" : "#fff",
+                          cursor: "pointer",
+                          "border-radius": "4px",
+                          margin: "1px",
+                          transition: "background 0.1s",
+                          display: "flex",
+                          "align-items": "center",
+                          "justify-content": "center",
+                        }}
+                        onMouseEnter={() => {
+                          setHoverY(r);
+                          setHoverX(c);
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log("Selected", r + 1, c + 1);
+                          setShowTableSelector(false);
+                          dispatchCommand(insertTable(r + 1, c + 1));
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                "text-align": "center",
+                "margin-top": "6px",
+                "font-size": "13px",
+                color: "#333",
+              }}
+            >
+              {hoverY() + 1} × {hoverX() + 1}
+            </div>
+          </div>
+        </Show>
+      </div>
     );
   },
 };

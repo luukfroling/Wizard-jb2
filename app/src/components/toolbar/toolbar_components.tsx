@@ -1,5 +1,4 @@
 import { FONT_OPTIONS, ACCENT } from "./toolbar_options";
-import { showTableSelector } from "./toolbar_dropdowns";
 import {
   Component,
   createSignal,
@@ -252,7 +251,6 @@ export const ToolbarDropdownWithLabels: Component<{
           "min-width": "40px",
           top: "100%",
           left: "0",
-          ...(showTableSelector?.() && { pointerEvents: "none" }), // <-- add this line
         }}
       >
         <For each={props.options}>
