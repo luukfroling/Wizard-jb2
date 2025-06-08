@@ -6,7 +6,7 @@ import { openDB, IDBPDatabase } from "idb";
 export const config = {
     /** The name of the IndexedDB database. */
     name: "test_database",
-    
+
     /**
      * The version of the database. Must be the same across all tabs;
      * mismatches will trigger an upgrade and may cause lock contention.

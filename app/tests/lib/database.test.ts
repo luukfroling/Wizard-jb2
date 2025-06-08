@@ -272,7 +272,7 @@ describe("database module", () => {
         // Save to different stores
         await database.save("markdown", "mdfile.md", "Markdown Content");
         await database.save("images", "image.png", "Base64ImageData");
-        await database.save("metadata", "meta.json", "{ \"author\": \"alice\" }");
+        await database.save("metadata", "meta.json", '{ "author": "alice" }');
 
         // Load back each value and assert correctness
         const md = await database.load("markdown", "mdfile.md");
@@ -281,7 +281,7 @@ describe("database module", () => {
 
         expect(md).toBe("Markdown Content");
         expect(img).toBe("Base64ImageData");
-        expect(meta).toBe("{ \"author\": \"alice\" }");
+        expect(meta).toBe('{ "author": "alice" }');
 
         // Keys should be isolated per store
         const markdownKeys = await database.keys("markdown");
