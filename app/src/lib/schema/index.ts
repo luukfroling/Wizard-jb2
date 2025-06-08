@@ -275,7 +275,7 @@ export const schema = new Schema({
             content: "text*",
         },
         table: {
-            group: "block",
+            group: "block flowContent",
             content: "table_row+",
             tableRole: "table",
             isolating: true,
