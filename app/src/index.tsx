@@ -5,6 +5,7 @@ import App from "./App";
 import { getRepositoryLink, getCurrentFileHref } from "./lib/github";
 import { database } from "./lib/localStorage/database";
 import { showModal } from "./components/popups/popup_modal";
+import { showToast } from "./components/popups/popup_toast";
 
 const root = document.getElementById("root");
 
@@ -26,6 +27,8 @@ if (ref != null) {
   console.warn("Database not initialised - no github repo link found.");
 }
 
+let n = 0;
+
 render(
   () => (
     <div>
@@ -41,7 +44,16 @@ render(
       >
         Open Modal
       </button>
+      <button
+        onClick={() =>
+          showToast("Toast " + n++)
+        }
+      >
+        Show Toast
+      </button>
+
       <App />
+      
     </div>
   ),
   root!,
