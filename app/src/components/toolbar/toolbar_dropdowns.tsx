@@ -8,13 +8,11 @@ import {
   toggleOrderedList,
   insertLink,
   insertImage,
-  insertTable,
   insertMath,
 } from "./toolbar_commands";
 import {
   ToolbarDropdownWithLabels,
   ToolbarDropdown,
-  TableGridSelector,
 } from "./toolbar_components";
 import { FONT_OPTIONS, HEADER_OPTIONS } from "./toolbar_options";
 import { getCurrentListType } from "./toolbar_utils";
@@ -25,9 +23,6 @@ export const [selectorPos, setSelectorPos] = createSignal<{
   top: number;
   left: number;
 }>({ top: 0, left: 0 });
-
-// --- Ref to the Insert Dropdown button, used for positioning the grid selector ---
-let insertButtonRef: HTMLButtonElement | undefined;
 
 // --- Toolbar Dropdowns Object ---
 export const toolbarDropdowns: {
@@ -144,7 +139,6 @@ export const toolbarDropdowns: {
     );
 
     // --- Insert Dropdown (Link, Image, Table, Equation) ---
-    let closeInsertDropdown: ((open: boolean) => void) | undefined;
 
     this.insertDropdown = (
       <ToolbarDropdown
@@ -167,11 +161,6 @@ export const toolbarDropdowns: {
             },
           },
           {
-            label: "Insert Table",
-            icon: "bi-table",
-            onClick: () => setShowTableSelector(true),
-          },
-          {
             label: "Insert Equation",
             icon: "bi-calculator", // Use a valid Bootstrap icon
             onClick: () => {
@@ -181,38 +170,7 @@ export const toolbarDropdowns: {
           },
         ]}
         title="Insert"
-        ref={(el: HTMLButtonElement | undefined) => (insertButtonRef = el)}
-        showTableSelector={showTableSelector}
-        setOpenRef={(fn) => {
-          closeInsertDropdown = fn;
-        }}
-      >
-        {showTableSelector() && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: "100%",
-              "z-index": 2000,
-            }}
-          >
-            <TableGridSelector
-              maxRows={8}
-              maxCols={8}
-              onSelect={(rows, cols) => {
-                console.log("Grid cell clicked", rows, cols);
-                setShowTableSelector(false);
-                if (closeInsertDropdown) closeInsertDropdown(false);
-                dispatchCommand(insertTable(rows, cols));
-              }}
-              onClose={() => {
-                setShowTableSelector(false);
-                if (closeInsertDropdown) closeInsertDropdown(false);
-              }}
-            />
-          </div>
-        )}
-      </ToolbarDropdown>
+      />
     );
   },
 };
