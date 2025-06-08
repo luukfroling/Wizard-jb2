@@ -1,6 +1,6 @@
 import { openDB, IDBPDatabase } from "idb";
 
-const config = {
+export const config = {
     name: "test_database",
     version: 1,
     stores: ["metadata", "markdown", "images"], //...
@@ -27,10 +27,12 @@ const _validateStore = (store: string): void => {
 
 export const database = {
     dbPromise: null as Promise<IDBPDatabase> | null,
-    activeRepo: "" as string, // MUST be set on startup
+    activeRepo: "" as string,
+
     getActiveRepo(): string {
         return this.activeRepo;
     },
+
     setActiveRepo(repo: string) {
         if (this.isInitialised()) {
             throw new Error(
@@ -67,45 +69,61 @@ export const database = {
     async save<T>(store: string, key: IDBValidKey, value: T): Promise<void> {
         _validateStore(store);
         const db = await this.getDB();
+        const tx = db.transaction(store, "readwrite");
         const fullKey = _makePrefixedKey(this.activeRepo, key);
-        await db.put(store, value, fullKey);
+        await tx.store.put(value, fullKey);
+        await tx.done;
     },
 
     async load<T>(store: string, key: IDBValidKey): Promise<T | undefined> {
         _validateStore(store);
         const db = await this.getDB();
+        const tx = db.transaction(store, "readonly");
         const fullKey = _makePrefixedKey(this.activeRepo, key);
-        return db.get(store, fullKey);
+        const result = await tx.store.get(fullKey);
+        await tx.done;
+        return result;
     },
 
     async loadAll<T>(store: string): Promise<[IDBValidKey, T][]> {
         _validateStore(store);
         const db = await this.getDB();
-        const allKeys = await this.keys(store);
+        const tx = db.transaction(store, "readonly");
+        const allKeys = await tx.store.getAllKeys();
         const results: [IDBValidKey, T][] = [];
+
         for (const key of allKeys) {
-            const value = await db.get(
-                store,
-                _makePrefixedKey(this.activeRepo, key),
-            );
-            if (value !== undefined) {
-                results.push([key, value]);
+            if (
+                typeof key === "string" &&
+                key.startsWith(`${this.activeRepo}::`)
+            ) {
+                const strippedKey = _stripPrefix(this.activeRepo, key);
+                const value = await tx.store.get(key);
+                if (value !== undefined) {
+                    results.push([strippedKey, value]);
+                }
             }
         }
+
+        await tx.done;
         return results;
     },
 
     async delete(store: string, key: IDBValidKey): Promise<void> {
         _validateStore(store);
         const db = await this.getDB();
+        const tx = db.transaction(store, "readwrite");
         const fullKey = _makePrefixedKey(this.activeRepo, key);
-        await db.delete(store, fullKey);
+        await tx.store.delete(fullKey);
+        await tx.done;
     },
 
     async keys(store: string): Promise<IDBValidKey[]> {
         _validateStore(store);
         const db = await this.getDB();
-        const allKeys = await db.getAllKeys(store);
+        const tx = db.transaction(store, "readonly");
+        const allKeys = await tx.store.getAllKeys();
+        await tx.done;
         return allKeys
             .filter(
                 (k) =>
@@ -118,17 +136,27 @@ export const database = {
     async clear(store: string): Promise<void> {
         _validateStore(store);
         const db = await this.getDB();
-        const allKeys = await this.keys(store);
+        const tx = db.transaction(store, "readwrite");
+        const allKeys = await tx.store.getAllKeys();
         for (const key of allKeys) {
-            await db.delete(store, _makePrefixedKey(this.activeRepo, key));
+            if (
+                typeof key === "string" &&
+                key.startsWith(`${this.activeRepo}::`)
+            ) {
+                await tx.store.delete(key);
+            }
         }
+        await tx.done;
     },
 
     async has(store: string, key: IDBValidKey): Promise<boolean> {
         _validateStore(store);
         const db = await this.getDB();
+        const tx = db.transaction(store, "readonly");
         const fullKey = _makePrefixedKey(this.activeRepo, key);
-        return (await db.getKey(store, fullKey)) !== undefined;
+        const exists = (await tx.store.getKey(fullKey)) !== undefined;
+        await tx.done;
+        return exists;
     },
 
     async destroy({ preserveRepo = false } = {}): Promise<void> {

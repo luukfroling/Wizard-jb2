@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render } from "solid-js/web";
 import App from "../src/App";
 
 describe("<App />", () => {
   afterEach(() => {
-    vi.resetModules()
+    vi.resetModules();
     document.body.innerHTML = "";
   });
 
@@ -19,14 +19,14 @@ describe("<App />", () => {
 
   it("renders the editor root element", () => {
     render(() => <App />, document.body);
-    const pmRoot = document.querySelector('.ProseMirror');
+    const pmRoot = document.querySelector(".ProseMirror");
     expect(pmRoot).not.toBeNull();
     expect(pmRoot?.getAttribute("contenteditable")).toBe("true");
   });
 
   it("renders the toolbar", () => {
     render(() => <App />, document.body);
-    const toolbar = document.querySelector('.d-flex.align-items-center');
+    const toolbar = document.querySelector(".d-flex.align-items-center");
     expect(toolbar).not.toBeNull();
   });
 });
