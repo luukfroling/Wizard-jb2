@@ -70,7 +70,9 @@ export const GitHubUserPanel = (props: Props) => {
         content,
         commitMsg,
       });
-      setStatus(`Committed to branch ${result.branch} at ${commitMsg}. Please wait at least a minute before attemtping to commit changes to the same files on the same branch!`);
+      setStatus(
+        `Committed to branch ${result.branch} at ${commitMsg}. Please wait at least a minute before attemtping to commit changes to the same files on the same branch!`,
+      );
     } catch (err) {
       if (err instanceof Error) {
         setStatus(`Error: ${err.message}`);

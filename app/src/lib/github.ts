@@ -116,7 +116,7 @@ export async function createBranch(
  * If the file does not exist, it creates a new file.
  * If a file has been committed to a branch recently, the Github API requires
  * the latest SHA of the file to be provided in the commit request. That causes
- * the commit to fail shortly after the first commit. The mean time between 
+ * the commit to fail shortly after the first commit. The mean time between
  * commits is about 1 - 1.5 minutes.
  * @param owner Repository owner
  * @param repo Repository name
@@ -145,7 +145,13 @@ export async function commitFileToBranch(
     // Always fetch the latest SHA before committing
     let sha: string | undefined = undefined;
     try {
-        const file = await getFileFromBranch(owner, repo, filePath, branch, token);
+        const file = await getFileFromBranch(
+            owner,
+            repo,
+            filePath,
+            branch,
+            token,
+        );
         if (file && file.sha) {
             sha = file.sha;
         }
