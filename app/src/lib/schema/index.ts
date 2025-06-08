@@ -60,6 +60,10 @@ export const schema = new Schema({
         },
         definition: {
             group: "flowContent",
+            attrs: {
+                url: string({ optional: false }),
+                identifier: string({ optional: false }),
+            },
             toDOM() {
                 return ["div", { class: "definition" }, 0];
             },

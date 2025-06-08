@@ -41,6 +41,9 @@ importers:
       myst-ext-tabs:
         specifier: ^1.0.9
         version: 1.0.9
+      myst-frontmatter:
+        specifier: ^1.7.11
+        version: 1.7.11
       myst-parser:
         specifier: ^1.5.13
         version: 1.5.13
@@ -80,6 +83,9 @@ importers:
       unist-util-visit:
         specifier: ^5.0.0
         version: 5.0.0
+      vfile:
+        specifier: ^5.3.7
+        version: 5.3.7
     devDependencies:
       '@eslint/js':
         specifier: ^9.26.0

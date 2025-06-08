@@ -5,8 +5,15 @@ import { schema } from "../src/lib/schema";
 import { EXAMPLE_1 } from "./parser_constants";
 
 describe("Markdown parser", () => {
-    it("parses a basic paragraph", () => {
-        const parsed = parseMyst("Hello, world!");
+    async function parse(myst: string) {
+        const parsed = await parseMyst(myst);
+        expect(parsed).toBeInstanceOf(Node);
+        expect(parsed.type.name).toBe("root");
+        expect(parsed.children).toHaveLength(1);
+        return parsed.children[0];
+    }
+    it("parses a basic paragraph", async () => {
+        const parsed = await parse("Hello, world!");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         expect(parsed.children[0]).toBeInstanceOf(Node);
@@ -19,68 +26,68 @@ describe("Markdown parser", () => {
         { heading: "####", level: 4 },
         { heading: "#####", level: 5 },
         { heading: "######", level: 6 },
-    ])("parses a heading level $level and paragraph", ({ heading, level }) => {
-        const parsed = parseMyst(
-            heading + " Hello, world!\n\nNice to see you!",
-        );
-        expect(parsed).toBeInstanceOf(Node);
-        expect(parsed.children).toHaveLength(2);
-        expect(parsed.children[0]).toBeInstanceOf(Node);
-        expect(parsed.children[0].type).toBe(schema.nodes.heading);
-        expect(parsed.children[0].attrs).toHaveProperty("level", level);
-    });
-    it("parses thematic break", () => {
-        const parsed = parseMyst("Paragraph 1\n\n---\n\nParagraph 2");
+    ])(
+        "parses a heading level $level and paragraph",
+        async ({ heading, level }) => {
+            const parsed = await parse(
+                heading + " Hello, world!\n\nNice to see you!",
+            );
+            expect(parsed).toBeInstanceOf(Node);
+            expect(parsed.children).toHaveLength(2);
+            expect(parsed.children[0]).toBeInstanceOf(Node);
+            expect(parsed.children[0].type.name).toBe("heading");
+            expect(parsed.children[0].attrs).toHaveProperty("level", level);
+        },
+    );
+    it("parses thematic break", async () => {
+        const parsed = await parse("Paragraph 1\n\n---\n\nParagraph 2");
 
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(3);
-        expect(parsed.children[1].type).toBe(schema.nodes.thematicBreak);
+        expect(parsed.children[1].type.name).toBe("thematicBreak");
     });
-    it.for([1, 2, 3])("parses blockquote nested %i times", (nesting) => {
-        const parsed = parseMyst("> ".repeat(nesting) + "Hello world");
+    it.for([1, 2, 3])("parses blockquote nested %i times", async (nesting) => {
+        const parsed = await parse("> ".repeat(nesting) + "Hello world");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         let node = parsed.children[0];
         do {
             expect(node.children).toHaveLength(1);
-            expect(node.type).toBeOneOf([
-                schema.nodes.blockquote,
-                schema.nodes.paragraph,
-            ]);
+            expect(node.type.name).toBeOneOf(["blockquote", "paragraph"]);
             node = node.children[0];
         } while (node.type === schema.nodes.blockquote);
-        expect(node.type).toBe(schema.nodes.paragraph);
+        expect(node.type.name).toBe("paragraph");
         expect(node.textContent).toBe("Hello world");
     });
-    it("parses a list", () => {
-        const parsed = parseMyst("- item 1\n- item 2\n- item 3");
+    it("parses a list", async () => {
+        const parsed = await parse("- item 1\n- item 2\n- item 3");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
-        expect(parsed.children[0].type).toBe(schema.nodes.list);
+        expect(parsed.children[0].type.name).toBe("list");
         expect(parsed.children[0].children).toHaveLength(3);
         for (const child of parsed.children[0].children) {
-            expect(child.type).toBe(schema.nodes.listItem);
+            expect(child.type.name).toBe("listItem");
             expect(child.textContent).toMatch(/^item \d$/);
         }
     });
-    it("parses a code block", () => {
-        const parsed = parseMyst(
+    it("parses a code block", async () => {
+        const parsed = await parse(
             "```javascript\nconsole.log('Hello, world!');\n```",
         );
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
-        expect(parsed.children[0].type).toBe(schema.nodes.code);
+        expect(parsed.children[0].type.name).toBe("code");
         expect(parsed.children[0].textContent).toBe(
             "console.log('Hello, world!');",
         );
         expect(parsed.children[0].attrs).toHaveProperty("lang", "javascript");
     });
-    it("parses a target label", () => {
-        const parsed = parseMyst("(test_123)=\n# Header");
+    it("parses a target label", async () => {
+        const parsed = await parse("(test_123)=\n# Header");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(2);
-        expect(parsed.children[0].type).toBe(schema.nodes.target);
-        expect(parsed.children[1].type).toBe(schema.nodes.heading);
+        expect(parsed.children[0].type.name).toBe("target");
+        expect(parsed.children[1].type.name).toBe("heading");
     });
     it.for([
         {
@@ -101,12 +108,12 @@ describe("Markdown parser", () => {
             args: undefined,
             value: ":key: value\n\nHello world!",
         },
-    ])("parses directive $name", ({ myst, args, value, name }) => {
-        const parsed = parseMyst(myst);
+    ])("parses directive $name", async ({ myst, args, value, name }) => {
+        const parsed = await parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         const node = parsed.children[0];
-        expect(node.type).toBe(schema.nodes.directive);
+        expect(node.type.name).toBe("directive");
         expect(node.attrs).toHaveProperty("value", value);
         expect(node.attrs).toHaveProperty("args", args);
         expect(node.attrs).toHaveProperty("name", name);
@@ -122,32 +129,28 @@ describe("Markdown parser", () => {
             kind: "note",
             title: "Hello",
         },
-    ])("parses admonition kind $kind", ({ myst, kind, title }) => {
-        const parsed = parseMyst(myst);
+    ])("parses admonition kind $kind", async ({ myst, kind, title }) => {
+        const parsed = await parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
-        const node = parsed.children[0];
-        expect(node.type).toBe(schema.nodes.directive);
-        expect(node.children).toHaveLength(1);
-        const admonition = node.children[0];
+        const admonition = parsed.children[0];
+        expect(admonition.type.name).toBe("admonition");
         expect(admonition.attrs).toHaveProperty("kind", kind);
-        expect(admonition.children).toHaveLength(title === undefined ? 1 : 2);
+        expect(admonition.children).toHaveLength(2);
         if (title !== undefined) {
-            expect(admonition.children[0].type).toBe(
-                schema.nodes.admonitionTitle,
-            );
+            expect(admonition.children[0].type.name).toBe("admonitionTitle");
             expect(admonition.children[0].textContent).toBe(title);
         }
     });
-    it("parses reference-style link", () => {
+    it("parses reference-style link", async () => {
         const myst =
             "[TeachBooks][teachbooks]\n\n[teachbooks]: https://teachbooks.io";
-        const parsed = parseMyst(myst);
+        const parsed = await parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
 
         const paragraph = parsed.children[0];
-        expect(paragraph.type).toBe(schema.nodes.paragraph);
+        expect(paragraph.type.name).toBe("paragraph");
         expect(paragraph.children).toHaveLength(1);
 
         const node = paragraph.children[0];
@@ -155,13 +158,13 @@ describe("Markdown parser", () => {
         expect(node.textContent).toBe("TeachBooks");
 
         const mark = node.marks[0];
-        expect(mark.type).toBe(schema.marks.link);
+        expect(mark.type.name).toBe("link");
         expect(mark.attrs).toHaveProperty("url", "https://teachbooks.io");
     });
     it.for([{ myst: EXAMPLE_1, desc: "example_1" }])(
         "parses document $desc",
-        ({ myst, desc }) => {
-            const parsed = parseMyst(myst);
+        async ({ myst, desc }) => {
+            const parsed = await parse(myst);
             const json = parsed.toJSON();
             expect(json).toMatchFileSnapshot(`./snapshot/parse_${desc}.json`);
         },
@@ -192,12 +195,12 @@ describe("Markdown parser", () => {
             myst: "[**Bold** link](https://example.org)",
             marks: [["strong", "link"], ["link"]],
         },
-    ])("parses marks $marks", ({ myst, marks }) => {
-        const parsed = parseMyst(myst);
+    ])("parses marks $marks", async ({ myst, marks }) => {
+        const parsed = await parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         const paragraph = parsed.children[0];
-        expect(paragraph.type).toBe(schema.nodes.paragraph);
+        expect(paragraph.type.name).toBe("paragraph");
         expect(
             paragraph.children.map((x) => x.marks.map((m) => m.type.name)),
         ).toEqual(marks);

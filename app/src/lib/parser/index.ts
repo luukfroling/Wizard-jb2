@@ -2,13 +2,13 @@ import { mystParse } from "myst-parser";
 import { schema } from "../schema";
 import { visit } from "unist-util-visit";
 import { unified } from "unified";
-import mystToHtml from "myst-to-html";
 import { buttonRole } from "myst-ext-button";
 import { cardDirective } from "myst-ext-card";
 import { gridDirective } from "myst-ext-grid";
 import { tabDirectives } from "myst-ext-tabs";
 import { proofDirective } from "myst-ext-proof";
-import { exerciseDirectives } from "myt-ext-exercise";
+import { exerciseDirectives } from "myst-ext-exercise";
+import { PageFrontmatter, validatePageFrontmatter } from "myst-frontmatter";
 import {
     mathPlugin,
     footnotesPlugin,
@@ -28,6 +28,7 @@ import {
     abbreviationPlugin,
     glossaryPlugin,
     joinGatesPlugin,
+    getFrontmatter,
 } from "myst-transforms";
 
 import type {
@@ -57,9 +58,15 @@ import type {
     Math,
     InlineMath,
     PhrasingContent,
+    Break,
+    BlockBreak,
+    Table,
+    FootnoteDefinition,
+    Image,
 } from "myst-spec";
-import type { GenericNode, GenericParent, References } from "myst-common";
+import type { GenericNode, GenericParent } from "myst-common";
 import { Mark, Node, Schema } from "prosemirror-model";
+import { VFile } from "vfile";
 
 type DefinitionMap = Map<string, Definition>;
 
@@ -81,8 +88,8 @@ export function findDefinitions(
 
 /** Parse raw MyST into a ProseMirror document.
  */
-export function parseMyst(source: string): Node {
-    const parsed = mystParse(source);
+export async function parseMyst(source: string): Promise<Node> {
+    const parsed = await parse(source);
     return mystToProseMirror(parsed);
 }
 
@@ -176,7 +183,10 @@ const handlers = {
     paragraph: (node: Paragraph, defs: DefinitionMap) =>
         schema.node("paragraph", {}, children(node, defs)),
     definition: (node: Definition) =>
-        schema.node("definition", { url: node.url, type: node.type }),
+        schema.node("definition", {
+            url: node.url,
+            identifier: node.identifier,
+        }),
     heading: (node: Heading, defs: DefinitionMap) =>
         schema.node(
             "heading",
@@ -313,15 +323,8 @@ export function proseMirrorToMyst(node: Node): MystNode {
     return proseMirrorToMystHandlers[node.type.name as NodeName];
 }
 
-async function parse(
-    text: string,
-    defaultFrontmatter?: PageFrontmatter,
-    options?: {
-        renderers?: Record<string, NodeRenderer>;
-        removeHeading?: boolean;
-        jats?: { fullArticle?: boolean };
-    },
-) {
+async function parse(text: string, defaultFrontmatter?: PageFrontmatter) {
+    const vfile = new VFile();
     const parseMyst = (content: string) =>
         mystParse(content, {
             markdownit: { linkify: true },
@@ -343,26 +346,24 @@ async function parse(
         new RRIDTransformer(),
         new RORTransformer(),
     ];
-    // For the mdast that we show, duplicate, strip positions and dump to yaml
-    // Also run some of the transforms, like the links
-    const references: References = {
-        cite: { order: [], data: {} },
-    };
-    // const frontmatterRaw = getFrontmatter(vfile, mdast);
-    // const frontmatter: Omit<PageFrontmatter, "parts"> = validatePageFrontmatter(
-    //     frontmatterRaw,
-    //     {
-    //         property: "frontmatter",
-    //         messages: {},
-    //     },
-    // );
-    // const state = new ReferenceState("", {
-    //     frontmatter: {
-    //         ...frontmatter,
-    //         numbering: frontmatter.numbering ?? defaultFrontmatter?.numbering,
-    //     },
-    //     vfile,
-    // });
+    // const references: References = {
+    //     cite: { order: [], data: {} },
+    // };
+    const frontmatterRaw = getFrontmatter(vfile, mdast);
+    const frontmatter: Omit<PageFrontmatter, "parts"> = validatePageFrontmatter(
+        frontmatterRaw,
+        {
+            property: "frontmatter",
+            messages: {},
+        },
+    );
+    const state = new ReferenceState("", {
+        frontmatter: {
+            ...frontmatter,
+            numbering: frontmatter.numbering ?? defaultFrontmatter?.numbering,
+        },
+        vfile,
+    });
     visit(mdast, (n) => {
         // Before we put in the citation render, we can mark them as errors
         if (n.type === "cite") {
@@ -382,6 +383,7 @@ async function parse(
         .use(joinGatesPlugin)
         .use(resolveReferencesPlugin, { state })
         .use(keysPlugin)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .runSync(mdast as any, vfile);
 
     return mdast;
