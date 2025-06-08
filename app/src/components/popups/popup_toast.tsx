@@ -5,19 +5,18 @@ import { render } from "solid-js/web";
  * Options for toast popups, currently only the duration.
  */
 type ToastOptions = {
-    /**
-     * Duration before the toast popup automatically closes, in ms.
-     */
+  /**
+   * Duration before the toast popup automatically closes, in ms.
+   */
   duration: number; // ms
 };
-
 
 /**
  * Gets the container that holds the toast popups.
  * @returns the container to put the popups in.
  */
 function getToastContainer(): HTMLElement {
-    const toastContainerId = "solid-toast-container";
+  const toastContainerId = "solid-toast-container";
   let container = document.getElementById(toastContainerId);
   if (!container) {
     container = document.createElement("div");
@@ -43,7 +42,7 @@ function getToastContainer(): HTMLElement {
  */
 export function showToast(
   message: JSX.Element | string,
-  options: ToastOptions = {duration: 10000}
+  options: ToastOptions = { duration: 10000 },
 ) {
   const container = getToastContainer();
   const toast = document.createElement("div");
@@ -65,7 +64,10 @@ export function showToast(
       const elapsed = now - start;
 
       if (elapsed >= fadeStart) {
-        const fadeProgress = Math.min((elapsed - fadeStart) / (options.duration - fadeStart), 1);
+        const fadeProgress = Math.min(
+          (elapsed - fadeStart) / (options.duration - fadeStart),
+          1,
+        );
         const newOpacity = 1 - fadeProgress * 0.5; // fade to 50% opacity
         setFadeLevel(newOpacity);
       }
