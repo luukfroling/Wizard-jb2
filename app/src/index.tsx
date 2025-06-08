@@ -2,7 +2,11 @@
 import { render } from "solid-js/web";
 import "./index.css";
 import App from "./App";
-import { getRepositoryLink, getCurrentFileHref, getFilePathFromHref } from "./lib/github/GitHubUtility";
+import {
+  getRepositoryLink,
+  getCurrentFileHref,
+  getFilePathFromHref,
+} from "./lib/github/GitHubUtility";
 import { database } from "./lib/localStorage/database";
 
 const root = document.getElementById("root");

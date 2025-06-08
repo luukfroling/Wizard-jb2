@@ -1,4 +1,3 @@
-
 /**
  * Commits multiple files in a single commit to a branch.
  * @param owner Repository owner
@@ -13,28 +12,39 @@ export async function commitMultipleFilesToBranch(
     owner: string,
     repo: string,
     branch: string,
-    files: { path: string; content: string; }[],
+    files: { path: string; content: string }[],
     commitMsg: string,
     token: string,
-    baseBranch: string // Optionally specify a base branch for new branch creation
+    baseBranch: string, // Optionally specify a base branch for new branch creation
 ): Promise<void> {
-    const headers: Record<string, string> = {
-        Authorization: `token ${token}`,
-        Accept: "application/vnd.github.v3+json",
-        "Content-Type": "application/json",
-    };
-
     // Check if the branch exists, create if not
-    const branchSha = await ensureBranchAndGetSha(owner, repo, branch, baseBranch, token);
+    const branchSha = await ensureBranchAndGetSha(
+        owner,
+        repo,
+        branch,
+        baseBranch,
+        token,
+    );
 
     // Get the tree SHA of the latest commit on the branch
-    const baseTreeSha = await getTreeShaFromCommit(owner, repo, branchSha, token);
+    const baseTreeSha = await getTreeShaFromCommit(
+        owner,
+        repo,
+        branchSha,
+        token,
+    );
 
     // Create blobs for each file
     const blobs = await createBlobsForFiles(owner, repo, files, token);
 
     // Create a new tree with all blobs
-    const treeSha = await createTreeWithBlobs(owner, repo, baseTreeSha, blobs, token);
+    const treeSha = await createTreeWithBlobs(
+        owner,
+        repo,
+        baseTreeSha,
+        blobs,
+        token,
+    );
 
     // Create a new commit with the new tree
     const commitSha = await createCommitWithTree(
@@ -43,7 +53,7 @@ export async function commitMultipleFilesToBranch(
         commitMsg,
         treeSha,
         branchSha,
-        token
+        token,
     );
 
     // Update the branch reference to point to the new commit
@@ -65,7 +75,7 @@ export async function ensureBranchAndGetSha(
     repo: string,
     branch: string,
     baseBranch: string,
-    token: string
+    token: string,
 ): Promise<string> {
     const baseSha = await getBranchSha(owner, repo, baseBranch, token);
     const exists = await branchExists(owner, repo, branch, token);
@@ -89,7 +99,7 @@ export async function getTreeShaFromCommit(
     owner: string,
     repo: string,
     commitSha: string,
-    token: string
+    token: string,
 ): Promise<string> {
     const headers: Record<string, string> = {
         Authorization: `token ${token}`,
@@ -98,7 +108,7 @@ export async function getTreeShaFromCommit(
     };
     const commitResp = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/git/commits/${commitSha}`,
-        { headers }
+        { headers },
     );
     if (!commitResp.ok) throw new Error("Failed to get commit");
     const commitData = await commitResp.json();
@@ -117,9 +127,9 @@ export async function getTreeShaFromCommit(
 export async function createBlobsForFiles(
     owner: string,
     repo: string,
-    files: { path: string; content: string; }[],
-    token: string
-): Promise<{ path: string; sha: string; }[]> {
+    files: { path: string; content: string }[],
+    token: string,
+): Promise<{ path: string; sha: string }[]> {
     const headers: Record<string, string> = {
         Authorization: `token ${token}`,
         Accept: "application/vnd.github.v3+json",
@@ -136,9 +146,10 @@ export async function createBlobsForFiles(
                     content: file.content,
                     encoding: "utf-8",
                 }),
-            }
+            },
         );
-        if (!blobResp.ok) throw new Error("Failed to create blob for " + file.path);
+        if (!blobResp.ok)
+            throw new Error("Failed to create blob for " + file.path);
         const blobData = await blobResp.json();
         blobs.push({ path: file.path, sha: blobData.sha });
     }
@@ -159,8 +170,8 @@ export async function createTreeWithBlobs(
     owner: string,
     repo: string,
     baseTreeSha: string,
-    blobs: { path: string; sha: string; }[],
-    token: string
+    blobs: { path: string; sha: string }[],
+    token: string,
 ): Promise<string> {
     const headers: Record<string, string> = {
         Authorization: `token ${token}`,
@@ -181,7 +192,7 @@ export async function createTreeWithBlobs(
                     sha: b.sha,
                 })),
             }),
-        }
+        },
     );
     if (!treeResp.ok) throw new Error("Failed to create tree");
     const treeData = await treeResp.json();
@@ -205,7 +216,7 @@ export async function createCommitWithTree(
     commitMsg: string,
     treeSha: string,
     parentSha: string,
-    token: string
+    token: string,
 ): Promise<string> {
     const headers: Record<string, string> = {
         Authorization: `token ${token}`,
@@ -222,7 +233,7 @@ export async function createCommitWithTree(
                 tree: treeSha,
                 parents: [parentSha],
             }),
-        }
+        },
     );
     if (!commitResp.ok) throw new Error("Failed to create commit");
     const commitData = await commitResp.json();
@@ -243,7 +254,7 @@ export async function updateBranchRefToCommit(
     repo: string,
     branch: string,
     commitSha: string,
-    token: string
+    token: string,
 ): Promise<void> {
     const headers: Record<string, string> = {
         Authorization: `token ${token}`,
@@ -256,7 +267,7 @@ export async function updateBranchRefToCommit(
             method: "PATCH",
             headers,
             body: JSON.stringify({ sha: commitSha }),
-        }
+        },
     );
     if (!updateResp.ok) throw new Error("Failed to update branch ref");
 }
@@ -273,7 +284,7 @@ export async function branchExists(
     owner: string,
     repo: string,
     branch: string,
-    token?: string
+    token?: string,
 ): Promise<boolean> {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`;
     const headers: Record<string, string> = {
@@ -300,7 +311,7 @@ export async function getBranchSha(
     owner: string,
     repo: string,
     branch: string,
-    token: string
+    token: string,
 ): Promise<string> {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${branch}`;
     const headers: Record<string, string> = {
@@ -314,6 +325,7 @@ export async function getBranchSha(
     const refData = JSON.parse(refText);
     return refData.object.sha;
 }
+
 /**
  * Creates a new branch in the given GitHub repository from a base SHA.
  * @param owner The repository owner
@@ -323,13 +335,12 @@ export async function getBranchSha(
  * @param token GitHub token
  * @throws Error if branch creation fails
  */
-
 export async function createBranch(
     owner: string,
     repo: string,
     newBranch: string,
     baseSha: string,
-    token: string
+    token: string,
 ): Promise<void> {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/refs`;
     const headers: Record<string, string> = {
@@ -349,4 +360,3 @@ export async function createBranch(
     });
     if (!resp.ok) throw new Error("Failed to create branch");
 }
-

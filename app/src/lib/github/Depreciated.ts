@@ -15,8 +15,8 @@ export async function getFileFromBranch(
     repo: string,
     path: string,
     branch: string,
-    token?: string
-): Promise<{ content: string; encoding: string; sha: string; } | null> {
+    token?: string,
+): Promise<{ content: string; encoding: string; sha: string } | null> {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
     const headers: Record<string, string> = {
         Accept: "application/vnd.github.v3+json",
@@ -44,7 +44,14 @@ export async function getFileFromBranch(
  * @returns The branch name and file path where the content was committed
  */
 export async function comitToGitHub({
-    token, owner, repo, baseBranch, newBranch, filePath, content, commitMsg,
+    token,
+    owner,
+    repo,
+    baseBranch,
+    newBranch,
+    filePath,
+    content,
+    commitMsg,
 }: {
     token: string;
     owner: string;
@@ -54,7 +61,7 @@ export async function comitToGitHub({
     filePath: string;
     content: string;
     commitMsg: string;
-}): Promise<{ branch: string; filePath: string; }> {
+}): Promise<{ branch: string; filePath: string }> {
     // 1. Get the SHA of the base branch
     const baseSha = await getBranchSha(owner, repo, baseBranch, token);
 
@@ -74,7 +81,7 @@ export async function comitToGitHub({
         filePath,
         content,
         commitMsg,
-        token
+        token,
     );
 
     return { branch: newBranch, filePath };
@@ -104,7 +111,7 @@ export async function commitFileToBranch(
     filePath: string,
     content: string,
     commitMsg: string,
-    token: string
+    token: string,
 ): Promise<void> {
     const headers: Record<string, string> = {
         Authorization: `token ${token}`,
@@ -120,7 +127,7 @@ export async function commitFileToBranch(
             repo,
             filePath,
             branch,
-            token
+            token,
         );
         if (file && file.sha) {
             sha = file.sha;
@@ -149,8 +156,7 @@ export async function commitFileToBranch(
             method: "PUT",
             headers,
             body: JSON.stringify(body),
-        }
+        },
     );
     if (!resp.ok) throw new Error("Failed to commit file");
 }
-

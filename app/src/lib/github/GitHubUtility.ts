@@ -123,5 +123,3 @@ export function getLocalHumanTimeString(date: Date = new Date()): string {
     // Example: 2024-06-06T16-23-45+02:00
     return `${year}-${month}-${day}T${hour}-${min}-${sec}${tzString}`;
 }
-
-

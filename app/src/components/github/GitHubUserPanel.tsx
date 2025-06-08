@@ -8,7 +8,6 @@ import {
   getFilePathFromHref,
   currentFileHref,
 } from "../../lib/github/GitHubUtility";
-import { comitToGitHub } from "../../lib/github/Depreciated";
 import { commitMultipleFilesToBranch } from "../../lib/github/GitHubCommit";
 import { database } from "../../lib/localStorage/database";
 
@@ -38,7 +37,9 @@ export const GitHubUserPanel = (props: Props) => {
 
     // Save the current editor content to the database before committing
     const filePathValue = filePath();
-    const content = window.__getEditorContent ? window.__getEditorContent() : "";
+    const content = window.__getEditorContent
+      ? window.__getEditorContent()
+      : "";
 
     if (filePathValue && content && database.isInitialised()) {
       await database.save("markdown", filePathValue, content);
@@ -48,9 +49,9 @@ export const GitHubUserPanel = (props: Props) => {
     let files: [string, string][] = [];
     try {
       files = (await database.loadAll<string>("markdown")).map(
-        ([key, value]) => [key.toString(), value] as [string, string]
+        ([key, value]) => [key.toString(), value] as [string, string],
       );
-    } catch (err) {
+    } catch {
       setStatus("Failed to load files from database.");
       return;
     }
@@ -86,14 +87,16 @@ export const GitHubUserPanel = (props: Props) => {
         filesToCommit,
         commitMsg,
         props.token,
-        baseBranch()
+        baseBranch(),
       );
       await database.clear("markdown"); // <-- Reset the markdown store after commit
       setStatus(
-        `Committed ${filesToCommit.length} file(s) to branch ${newBranch} at ${commitMsg}. Please wait at least a minute before attempting to commit changes to the same files on the same branch!`
+        `Committed ${filesToCommit.length} file(s) to branch ${newBranch} at ${commitMsg}. Please wait at least a minute before attempting to commit changes to the same files on the same branch!`,
       );
     } catch (err) {
-      setStatus("Failed to commit files: " + (err instanceof Error ? err.message : err));
+      setStatus(
+        "Failed to commit files: " + (err instanceof Error ? err.message : err),
+      );
     }
   };
 
