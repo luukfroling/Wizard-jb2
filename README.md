@@ -54,7 +54,7 @@ pnpm build
 3. Copy the resulting `dist` folder into the `_static` folder of the extension so we get `_static/dist`
 ```shell
 cd ..
-xcopy /E /I /Y app\dist sphinx_extension\extension_name\_static\dist
+xcopy /E /I /Y app\dist sphinx_extension\teachbooks_software_project_extension_name\_static\dist
 ```
 
 3. Pip install the extension by running the following in the root folder: 
@@ -62,7 +62,7 @@ xcopy /E /I /Y app\dist sphinx_extension\extension_name\_static\dist
 pip install -e ./sphinx_extension
 ```
 
-4. Add `extension_name` to the `_config.yml` of a TeachBooks repo under `extra_extensions`
+4. Add `teachbooks_software_project_extension_name` to the `_config.yml` of a TeachBooks repo under `extra_extensions`
 
 5. In said TeachBooks repo run
 ```shell
@@ -73,6 +73,8 @@ jupyter-book build book
 ```shell
 jupyter-book clean book
 ```
+
+7. If in VS Code navigate to `book\build\html\index.html`, right click it and select `Open with Live Server`
 
 
 # Vitest

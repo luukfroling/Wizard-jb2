@@ -32,6 +32,11 @@ export const GitHubTokenInput = (props: Props) => {
         placeholder="Paste fine grained PAT here"
         value={token()}
         onInput={(e) => setToken(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            handleSave();
+          }
+        }}
       />
       <div class="w-full flex justify-center">
         <button
