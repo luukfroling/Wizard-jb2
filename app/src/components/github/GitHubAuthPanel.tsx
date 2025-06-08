@@ -15,7 +15,6 @@ async function validateAndSetToken(
   token: string,
   setToken: Setter<string | null>,
 ): Promise<boolean> {
-  // Try to fetch user info to validate the token
   try {
     const res = await fetch("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${token}` },
@@ -45,9 +44,6 @@ export const GitHubAuthPanel = (props: Props) => {
             user={user}
             onLogout={props.onLogout}
             token={props.token ?? ""}
-            owner="Lopalov"
-            repo="test"
-            baseBranch="main"
             getEditorContent={getEditorContent}
           />
         )}
