@@ -44,16 +44,9 @@ render(
       >
         Open Modal
       </button>
-      <button
-        onClick={() =>
-          showToast("Toast " + n++)
-        }
-      >
-        Show Toast
-      </button>
+      <button onClick={() => showToast("Toast " + n++)}>Show Toast</button>
 
       <App />
-      
     </div>
   ),
   root!,

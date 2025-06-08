@@ -26,63 +26,66 @@ function ensureToastContainer(): HTMLElement {
   return container;
 }
 
-export function showToast(message: JSX.Element | string, options: ToastOptions = {}) {
+export function showToast(
+  message: JSX.Element | string,
+  options: ToastOptions = {},
+) {
   const container = ensureToastContainer();
   const toast = document.createElement("div");
 
   const Toast = () => {
-  const [visible, setVisible] = createSignal(true);
+    const [visible, setVisible] = createSignal(true);
 
-  const duration = options.duration ?? 30000;
+    const duration = options.duration ?? 30000;
 
-  const close = () => setVisible(false);
+    const close = () => setVisible(false);
 
-  // Auto-dismiss after duration
-  if (duration > 0) {
-    setTimeout(close, duration);
-  }
-
-  // When visible becomes false, remove toast DOM node
-  createEffect(() => {
-    if (!visible()) {
-      toast.remove();
+    // Auto-dismiss after duration
+    if (duration > 0) {
+      setTimeout(close, duration);
     }
-  });
 
-  return (
-    <Show when={visible()}>
-      <div
-        style={{
-          padding: "12px 16px",
-          background: "#333",
-          color: "#fff",
-          "border-radius": "6px",
-          "box-shadow": "0 2px 6px rgba(0,0,0,0.2)",
-          "font-size": "14px",
-          "min-width": "180px",
-          display: "flex",
-          "justify-content": "space-between",
-          "align-items": "center",
-          gap: "8px",
-        }}
-      >
-        <span>{message}</span>
-        <button
+    // When visible becomes false, remove toast DOM node
+    createEffect(() => {
+      if (!visible()) {
+        toast.remove();
+      }
+    });
+
+    return (
+      <Show when={visible()}>
+        <div
           style={{
-            background: "transparent",
+            padding: "12px 16px",
+            background: "#333",
             color: "#fff",
-            border: "none",
-            cursor: "pointer",
-            "font-size": "16px",
+            "border-radius": "6px",
+            "box-shadow": "0 2px 6px rgba(0,0,0,0.2)",
+            "font-size": "14px",
+            "min-width": "180px",
+            display: "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+            gap: "8px",
           }}
-          onClick={close}
         >
-          ×
-        </button>
-      </div>
-    </Show>
-  );
-};
+          <span>{message}</span>
+          <button
+            style={{
+              background: "transparent",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              "font-size": "16px",
+            }}
+            onClick={close}
+          >
+            ×
+          </button>
+        </div>
+      </Show>
+    );
+  };
 
   render(() => <Toast />, toast);
   container.appendChild(toast);
