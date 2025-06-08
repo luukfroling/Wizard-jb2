@@ -114,6 +114,10 @@ export async function createBranch(
  * Commits a file to a specific branch in a GitHub repository.
  * If the file exists, it updates the file (requires the file's SHA).
  * If the file does not exist, it creates a new file.
+ * If a file has been committed to a branch recently, the Github API requires
+ * the latest SHA of the file to be provided in the commit request. That causes
+ * the commit to fail shortly after the first commit. The mean time between
+ * commits is about 1 - 1.5 minutes.
  * @param owner Repository owner
  * @param repo Repository name
  * @param branch Branch to commit to
@@ -138,7 +142,7 @@ export async function commitFileToBranch(
         "Content-Type": "application/json",
     };
 
-    // Check if the file exists on the branch
+    // Always fetch the latest SHA before committing
     let sha: string | undefined = undefined;
     try {
         const file = await getFileFromBranch(
@@ -152,11 +156,9 @@ export async function commitFileToBranch(
             sha = file.sha;
         }
     } catch {
-        // If the file does not exist, getFileFromBranch will return null or throw, which is fine
         sha = undefined;
     }
 
-    // Prepare the request body
     const body: {
         message: string;
         content: string;
@@ -168,7 +170,7 @@ export async function commitFileToBranch(
         branch,
     };
     if (sha) {
-        body.sha = sha; // Required for updating an existing file
+        body.sha = sha;
     }
 
     const resp = await fetch(
