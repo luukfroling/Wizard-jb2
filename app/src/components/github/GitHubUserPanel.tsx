@@ -1,4 +1,4 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onMount, createEffect } from "solid-js";
 import type { GitHubUser } from "../../lib/github/GitHubLogin";
 import {
   repositoryHref,
@@ -22,6 +22,8 @@ export const GitHubUserPanel = (props: Props) => {
   const [status, setStatus] = createSignal<string | null>(null);
   const [baseBranch, setBaseBranch] = createSignal<string>("main");
   const [filePath, setFilePath] = createSignal<string | null>(null);
+  const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>([]);
+  const [selectedFiles, setSelectedFiles] = createSignal<Set<string>>(new Set());
 
   onMount(async () => {
     const href = repositoryHref();
@@ -29,7 +31,26 @@ export const GitHubUserPanel = (props: Props) => {
       const branch = await getDefaultBranchFromHref(href, props.token);
       if (branch) setBaseBranch(branch);
     }
-    setFilePath(getFilePathFromHref(currentFileHref()));
+    const currentPath = getFilePathFromHref(currentFileHref());
+    setFilePath(currentPath);
+
+    // Load all markdown files for the active repo
+    const files = await database.loadAll<string>("markdown");
+    setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
+    setSelectedFiles(new Set<string>()); // <-- Start with no files selected
+  });
+
+  // Reactively ensure the current file is always in the selection menu
+  createEffect(() => {
+    const current = filePath();
+    const files = availableFiles();
+    if (
+      current &&
+      !files.some(([key]) => key === current)
+    ) {
+      setAvailableFiles([[current, ""], ...files]);
+      setSelectedFiles(new Set<string>()); // <-- Keep all files unselected when adding current file
+    }
   });
 
   const handleCommit = async () => {
@@ -48,9 +69,9 @@ export const GitHubUserPanel = (props: Props) => {
     // Now load all markdown files for the active repo
     let files: [string, string][] = [];
     try {
-      files = (await database.loadAll<string>("markdown")).map(
-        ([key, value]) => [key.toString(), value] as [string, string],
-      );
+      files = (await database.loadAll<string>("markdown"))
+        .filter(([key]) => selectedFiles().has(key.toString()))
+        .map(([key, value]) => [key.toString(), value] as [string, string]);
     } catch {
       setStatus("Failed to load files from database.");
       return;
@@ -92,6 +113,7 @@ export const GitHubUserPanel = (props: Props) => {
       setStatus(
         `Committed ${filesToCommit.length} file(s) to branch ${newBranch} at ${commitMsg}. Please wait at least a minute before attempting to commit changes to the same files on the same branch!`,
       );
+      setSelectedFiles(new Set<string>());
     } catch (err) {
       setStatus(
         "Failed to commit files: " + (err instanceof Error ? err.message : err),
@@ -119,6 +141,61 @@ export const GitHubUserPanel = (props: Props) => {
             }
           }}
         />
+
+        {/* File selection submenu moved above the commit button */}
+        <div class="mb-4">
+          <label class="block font-semibold mb-1">Select files to commit:</label>
+          <div
+            class="border rounded p-2 bg-white overflow-y-auto"
+            style={{ "max-height": "180px" }} // Limit menu height to 200px, scroll if needed
+          >
+            {availableFiles().length === 0 && (
+              <div class="text-gray-500">No files in database.</div>
+            )}
+            {availableFiles().length > 0 && (
+              <div class="mb-2">
+                <label class="block cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedFiles().size === availableFiles().length &&
+                      availableFiles().length > 0
+                    }
+                    onChange={e => {
+                      if (e.currentTarget.checked) {
+                        setSelectedFiles(new Set(availableFiles().map(([key]) => key)));
+                      } else {
+                        setSelectedFiles(new Set<string>());
+                      }
+                    }}
+                  />
+                  <span class="ml-2">Select all</span>
+                </label>
+              </div>
+            )}
+            {availableFiles().map(([key]) => (
+              <div class="mb-1">
+                <label class="block cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedFiles().has(key)}
+                    onChange={e => {
+                      const newSet = new Set(selectedFiles());
+                      if (e.currentTarget.checked) {
+                        newSet.add(key);
+                      } else {
+                        newSet.delete(key);
+                      }
+                      setSelectedFiles(newSet);
+                    }}
+                  />
+                  <span class="ml-2">{key}</span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <button
           class="bg-black text-white px-4 py-2 rounded w-full"
           onClick={handleCommit}
