@@ -1,4 +1,4 @@
-import { createSignal, onMount, createEffect } from "solid-js";
+import { createSignal, onMount, createEffect, For } from "solid-js";
 import type { GitHubUser } from "../../lib/github/GitHubLogin";
 import {
   repositoryHref,
@@ -22,8 +22,12 @@ export const GitHubUserPanel = (props: Props) => {
   const [status, setStatus] = createSignal<string | null>(null);
   const [baseBranch, setBaseBranch] = createSignal<string>("main");
   const [filePath, setFilePath] = createSignal<string | null>(null);
-  const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>([]);
-  const [selectedFiles, setSelectedFiles] = createSignal<Set<string>>(new Set());
+  const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
+    [],
+  );
+  const [selectedFiles, setSelectedFiles] = createSignal<Set<string>>(
+    new Set(),
+  );
 
   onMount(async () => {
     const href = repositoryHref();
@@ -44,10 +48,7 @@ export const GitHubUserPanel = (props: Props) => {
   createEffect(() => {
     const current = filePath();
     const files = availableFiles();
-    if (
-      current &&
-      !files.some(([key]) => key === current)
-    ) {
+    if (current && !files.some(([key]) => key === current)) {
       setAvailableFiles([[current, ""], ...files]);
       setSelectedFiles(new Set<string>()); // <-- Keep all files unselected when adding current file
     }
@@ -144,7 +145,9 @@ export const GitHubUserPanel = (props: Props) => {
 
         {/* File selection submenu moved above the commit button */}
         <div class="mb-4">
-          <label class="block font-semibold mb-1">Select files to commit:</label>
+          <label class="block font-semibold mb-1">
+            Select files to commit:
+          </label>
           <div
             class="border rounded p-2 bg-white overflow-y-auto"
             style={{ "max-height": "180px" }} // Limit menu height to 200px, scroll if needed
@@ -161,9 +164,11 @@ export const GitHubUserPanel = (props: Props) => {
                       selectedFiles().size === availableFiles().length &&
                       availableFiles().length > 0
                     }
-                    onChange={e => {
+                    onChange={(e) => {
                       if (e.currentTarget.checked) {
-                        setSelectedFiles(new Set(availableFiles().map(([key]) => key)));
+                        setSelectedFiles(
+                          new Set(availableFiles().map(([key]) => key)),
+                        );
                       } else {
                         setSelectedFiles(new Set<string>());
                       }
@@ -173,13 +178,13 @@ export const GitHubUserPanel = (props: Props) => {
                 </label>
               </div>
             )}
-            {availableFiles().map(([key]) => (
+            <For each={availableFiles()}>{([key]) => (
               <div class="mb-1">
                 <label class="block cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedFiles().has(key)}
-                    onChange={e => {
+                    onChange={(e) => {
                       const newSet = new Set(selectedFiles());
                       if (e.currentTarget.checked) {
                         newSet.add(key);
@@ -192,7 +197,7 @@ export const GitHubUserPanel = (props: Props) => {
                   <span class="ml-2">{key}</span>
                 </label>
               </div>
-            ))}
+            )}</For>
           </div>
         </div>
 
