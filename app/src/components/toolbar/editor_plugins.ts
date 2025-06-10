@@ -1,4 +1,4 @@
-import { Plugin, Transaction, Selection, EditorState } from "prosemirror-state";
+import { Plugin, Transaction, Selection, EditorState, NodeSelection } from "prosemirror-state";
 import { keymap } from "prosemirror-keymap";
 import {
     splitListItem,
@@ -113,18 +113,77 @@ function insertParagraphAfterTable() {
   };
 }
 
-function canInsertParagraph(state: EditorState, pos: number) {
-    const $pos = state.doc.resolve(pos);
-    // Check if we can insert a paragraph at this position
+function deleteTable(): import("prosemirror-state").Command {
+    return (state, dispatch) => {
+        const { $from } = state.selection;
+        // 1. If selection is inside a table, delete it
+        for (let d = $from.depth; d > 0; d--) {
+            const node = $from.node(d);
+            if (node.type.name === "table") {
+                const pos = $from.before(d);
+                if (dispatch) {
+                    let tr = state.tr.delete(pos, pos + node.nodeSize);
+                    // Try to set selection after the deleted table, or insert a paragraph if needed
+                    let selPos = Math.min(pos, tr.doc.content.size - 1);
+                    // If there's no valid node to select, insert a paragraph if allowed
+                    if (tr.doc.nodeAt(selPos)?.type.name === "table") {
+                        // Still a table, move after it
+                        selPos = selPos + tr.doc.nodeAt(selPos)!.nodeSize;
+                    }
+                    // If selection is not valid, try to insert a paragraph
+                    if (!tr.doc.nodeAt(selPos) || tr.doc.nodeAt(selPos)?.type.isTextblock === false) {
+                        const paragraph = state.schema.nodes.paragraph.create();
+                        if (canInsertParagraph(tr, selPos)) {
+                            tr = tr.insert(selPos, paragraph);
+                        }
+                    }
+                    tr = tr.setSelection(Selection.near(tr.doc.resolve(selPos)));
+                    dispatch(tr.scrollIntoView());
+                }
+                return true;
+            }
+        }
+        // 2. If selection is just after a table, delete the table before the cursor
+        const indexBefore = $from.index($from.depth - 1);
+        if (indexBefore > 0) {
+            const beforePos = $from.before($from.depth - 1);
+            const nodeBefore = state.doc.nodeAt(beforePos);
+            if (nodeBefore && nodeBefore.type.name === "table") {
+                if (dispatch) {
+                    let tr = state.tr.delete(beforePos, beforePos + nodeBefore.nodeSize);
+                    let selPos = Math.min(beforePos, tr.doc.content.size - 1);
+                    if (!tr.doc.nodeAt(selPos) || tr.doc.nodeAt(selPos)?.type.isTextblock === false) {
+                        const paragraph = state.schema.nodes.paragraph.create();
+                        if (canInsertParagraph(tr, selPos)) {
+                            tr = tr.insert(selPos, paragraph);
+                        }
+                    }
+                    tr = tr.setSelection(Selection.near(tr.doc.resolve(selPos)));
+                    dispatch(tr.scrollIntoView());
+                }
+                return true;
+            }
+        }
+        return false;
+    };
+}
+
+// Helper: accepts a Transaction as first arg
+function canInsertParagraph(stateOrTr: EditorState | Transaction, pos: number) {
+    const $pos = stateOrTr.doc.resolve(pos);
+    // Get schema from EditorState or Transaction
+    const schema = (stateOrTr as EditorState).schema ?? (stateOrTr as Transaction).doc.type.schema;
     for (let d = $pos.depth; d >= 0; d--) {
         const index = $pos.index(d);
         const parent = $pos.node(d);
-        if (parent && parent.canReplaceWith(index, index, state.schema.nodes.paragraph)) {
+        if (parent && parent.canReplaceWith(index, index, schema.nodes.paragraph)) {
             return true;
         }
     }
     return false;
 }
+
+
 export function tableAndCodeExitKeymap(schema: Schema) {
     return keymap({
         "Shift-Enter": chainCommands(
@@ -147,5 +206,50 @@ export function tableAndCodeExitKeymap(schema: Schema) {
             }
         ),
     });
+}
+
+export function tableDeleteKeymap() {
+  return keymap({
+    "Mod-Backspace": deleteTable(),
+    "Mod-Delete": deleteTable(),
+  });
+}
+
+export function mathDeleteKeymap(schema: Schema) {
+  return keymap({
+    "Mod-Backspace": (state, dispatch) => {
+      const { $from } = state.selection;
+      for (let d = $from.depth; d > 0; d--) {
+        const node = $from.node(d);
+        if (node.type === schema.nodes.math) {
+          const pos = $from.before(d);
+          if (dispatch) {
+            let tr = state.tr.setSelection(NodeSelection.create(state.doc, pos));
+            tr = tr.deleteSelection();
+            dispatch(tr.scrollIntoView());
+          }
+          return true;
+        }
+      }
+      return false;
+    },
+    "Mod-Delete": (state, dispatch) => {
+      // Same as above
+      const { $from } = state.selection;
+      for (let d = $from.depth; d > 0; d--) {
+        const node = $from.node(d);
+        if (node.type === schema.nodes.math) {
+          const pos = $from.before(d);
+          if (dispatch) {
+            let tr = state.tr.setSelection(NodeSelection.create(state.doc, pos));
+            tr = tr.deleteSelection();
+            dispatch(tr.scrollIntoView());
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+  });
 }
 

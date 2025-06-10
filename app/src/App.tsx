@@ -1,3 +1,4 @@
+import "katex/dist/katex.min.css";
 import { Editor } from "./components/Editor";
 import Toolbar from "./components/toolbar/toolbar";
 import { schema } from "./lib/schema";
