@@ -62,9 +62,9 @@ function inLastTableCell(state: EditorState) {
             const table = node;
             const tableMap = TableMap.get(table);
             // Find the cell position relative to the table
-            let cellPos = $from.pos - $from.start(d);
+            const cellPos = $from.pos - $from.start(d);
             // Find the actual cell index in the table map
-            let cellIndex = tableMap.map.findIndex((pos) => pos === cellPos);
+            const cellIndex = tableMap.map.findIndex((pos) => pos === cellPos);
             return cellIndex === tableMap.map.length - 1;
         }
     }
@@ -72,45 +72,45 @@ function inLastTableCell(state: EditorState) {
 }
 
 function insertParagraphAfterCodeBlock() {
-  return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-    const { $from } = state.selection;
-    for (let d = $from.depth; d > 0; d--) {
-      const node = $from.node(d);
-      if (node.type.name === "code") {
-        const pos = $from.after(d);
-        if (dispatch) {
-          const paragraph = state.schema.nodes.paragraph.create();
-          let tr = state.tr.insert(pos, paragraph);
-          const sel = Selection.near(tr.doc.resolve(pos + 1));
-          tr = tr.setSelection(sel);
-          dispatch(tr.scrollIntoView());
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { $from } = state.selection;
+        for (let d = $from.depth; d > 0; d--) {
+            const node = $from.node(d);
+            if (node.type.name === "code") {
+                const pos = $from.after(d);
+                if (dispatch) {
+                    const paragraph = state.schema.nodes.paragraph.create();
+                    let tr = state.tr.insert(pos, paragraph);
+                    const sel = Selection.near(tr.doc.resolve(pos + 1));
+                    tr = tr.setSelection(sel);
+                    dispatch(tr.scrollIntoView());
+                }
+                return true;
+            }
         }
-        return true;
-      }
-    }
-    return false;
-  };
+        return false;
+    };
 }
 
 function insertParagraphAfterTable() {
-  return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-    const { $from } = state.selection;
-    for (let d = $from.depth; d > 0; d--) {
-      const node = $from.node(d);
-      if (node.type.name === "table") {
-        const pos = $from.after(d);
-        if (dispatch && canInsertParagraph(state, pos)) {
-          const paragraph = state.schema.nodes.paragraph.create();
-          let tr = state.tr.insert(pos, paragraph);
-          const sel = Selection.near(tr.doc.resolve(pos + 1));
-          tr = tr.setSelection(sel);
-          dispatch(tr.scrollIntoView());
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { $from } = state.selection;
+        for (let d = $from.depth; d > 0; d--) {
+            const node = $from.node(d);
+            if (node.type.name === "table") {
+                const pos = $from.after(d);
+                if (dispatch && canInsertParagraph(state, pos)) {
+                    const paragraph = state.schema.nodes.paragraph.create();
+                    let tr = state.tr.insert(pos, paragraph);
+                    const sel = Selection.near(tr.doc.resolve(pos + 1));
+                    tr = tr.setSelection(sel);
+                    dispatch(tr.scrollIntoView());
+                }
+                return true;
+            }
         }
-        return true;
-      }
-    }
-    return false;
-  };
+        return false;
+    };
 }
 
 function canInsertParagraph(state: EditorState, pos: number) {
@@ -119,7 +119,10 @@ function canInsertParagraph(state: EditorState, pos: number) {
     for (let d = $pos.depth; d >= 0; d--) {
         const index = $pos.index(d);
         const parent = $pos.node(d);
-        if (parent && parent.canReplaceWith(index, index, state.schema.nodes.paragraph)) {
+        if (
+            parent &&
+            parent.canReplaceWith(index, index, state.schema.nodes.paragraph)
+        ) {
             return true;
         }
     }
@@ -141,11 +144,16 @@ export function tableAndCodeExitKeymap(schema: Schema) {
             (state, dispatch) => {
                 // fallback: insert hard_break
                 if (dispatch) {
-                    dispatch(state.tr.replaceSelectionWith(schema.nodes.hard_break.create()).scrollIntoView());
+                    dispatch(
+                        state.tr
+                            .replaceSelectionWith(
+                                schema.nodes.hard_break.create(),
+                            )
+                            .scrollIntoView(),
+                    );
                 }
                 return true;
-            }
+            },
         ),
     });
 }
-

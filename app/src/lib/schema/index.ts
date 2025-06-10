@@ -408,7 +408,9 @@ export const schema = new Schema({
             inline: true,
             selectable: false,
             parseDOM: [{ tag: "br" }],
-            toDOM() { return ["br"]; }
+            toDOM() {
+                return ["br"];
+            },
         },
     },
     marks: {

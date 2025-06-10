@@ -15,8 +15,11 @@ import { EditorView } from "prosemirror-view";
 import { keymap } from "prosemirror-keymap";
 import { history, redo, undo } from "prosemirror-history";
 import { baseKeymap } from "prosemirror-commands";
-import { customListKeymap, preserveMarksPlugin, tableAndCodeExitKeymap } from "./toolbar/editor_plugins";
-import { table } from "console";
+import {
+  customListKeymap,
+  preserveMarksPlugin,
+  tableAndCodeExitKeymap,
+} from "./toolbar/editor_plugins";
 
 export interface EditorProps {
   schema: Schema;
