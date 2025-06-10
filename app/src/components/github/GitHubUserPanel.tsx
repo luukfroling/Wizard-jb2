@@ -1,20 +1,20 @@
-import { createSignal, onMount } from "solid-js";
-import type { GitHubUser } from "../../lib/github";
+import { createSignal, onMount, createEffect, For } from "solid-js";
+import type { GitHubUser } from "../../lib/github/GitHubLogin";
 import {
-  comitToGitHub,
   repositoryHref,
   parseOwnerRepoFromHref,
   getLocalHumanTimeString,
   getDefaultBranchFromHref,
   getFilePathFromHref,
   currentFileHref,
-} from "../../lib/github";
+} from "../../lib/github/GitHubUtility";
+import { commitMultipleFilesToBranch } from "../../lib/github/GitHubCommit";
+import { database } from "../../lib/localStorage/database";
 
 type Props = {
   user: GitHubUser;
   onLogout: () => void;
   token: string;
-  getEditorContent: () => string;
 };
 
 export const GitHubUserPanel = (props: Props) => {
@@ -22,6 +22,12 @@ export const GitHubUserPanel = (props: Props) => {
   const [status, setStatus] = createSignal<string | null>(null);
   const [baseBranch, setBaseBranch] = createSignal<string>("main");
   const [filePath, setFilePath] = createSignal<string | null>(null);
+  const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
+    [],
+  );
+  const [selectedFiles, setSelectedFiles] = createSignal<Set<string>>(
+    new Set(),
+  );
 
   onMount(async () => {
     const href = repositoryHref();
@@ -29,56 +35,90 @@ export const GitHubUserPanel = (props: Props) => {
       const branch = await getDefaultBranchFromHref(href, props.token);
       if (branch) setBaseBranch(branch);
     }
-    setFilePath(getFilePathFromHref(currentFileHref()));
+    const currentPath = getFilePathFromHref(currentFileHref());
+    setFilePath(currentPath);
+
+    // Load all markdown files for the active repo
+    const files = await database.loadAll<string>("markdown");
+    setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
+    setSelectedFiles(new Set<string>()); // <-- Start with no files selected
+  });
+
+  // Reactively ensure the current file is always in the selection menu
+  createEffect(() => {
+    const current = filePath();
+    const files = availableFiles();
+    if (current && !files.some(([key]) => key === current)) {
+      setAvailableFiles([[current, ""], ...files]);
+      setSelectedFiles(new Set<string>()); // <-- Keep all files unselected when adding current file
+    }
   });
 
   const handleCommit = async () => {
     setStatus("Committing...");
-    const content = props.getEditorContent();
 
-    // If filePath could not be determined, show an error and return
+    // Save the current editor content to the database before committing
     const filePathValue = filePath();
-    if (!filePathValue) {
-      setStatus("Could not determine the current file path.");
+    const content = window.__getEditorContent
+      ? window.__getEditorContent()
+      : "";
+
+    if (filePathValue && content && database.isInitialised()) {
+      await database.save("markdown", filePathValue, content);
+    }
+
+    // Now load all markdown files for the active repo
+    let files: [string, string][] = [];
+    try {
+      files = (await database.loadAll<string>("markdown"))
+        .filter(([key]) => selectedFiles().has(key.toString()))
+        .map(([key, value]) => [key.toString(), value] as [string, string]);
+    } catch {
+      setStatus("Failed to load files from database.");
       return;
     }
 
-    // Commit message is now the current time
+    if (files.length === 0) {
+      setStatus("No files to commit.");
+      return;
+    }
+
+    // Prepare commit info
     const now = new Date();
     const humanTime = getLocalHumanTimeString(now);
     const commitMsg = humanTime;
-
-    // Use the branch name from input, replacing all spaces with dashes, or the current time
     const inputBranch = branchName().replace(/\s+/g, "-");
     const newBranch = inputBranch || `branch-${humanTime}`;
-
-    // Get owner/repo from repositoryHref
     const repoInfo = parseOwnerRepoFromHref(repositoryHref());
     if (!repoInfo) {
       setStatus("Repository link not found or invalid.");
       return;
     }
 
+    // Commit each file
+    const filesToCommit = files.map(([path, content]) => ({
+      path,
+      content,
+    }));
+
     try {
-      const result = await comitToGitHub({
-        token: props.token,
-        owner: repoInfo.owner,
-        repo: repoInfo.repo,
-        baseBranch: baseBranch(),
+      await commitMultipleFilesToBranch(
+        repoInfo.owner,
+        repoInfo.repo,
         newBranch,
-        filePath: filePathValue,
-        content,
+        filesToCommit,
         commitMsg,
-      });
-      setStatus(
-        `Committed to branch ${result.branch} at ${commitMsg}. Please wait at least a minute before attemtping to commit changes to the same files on the same branch!`,
+        props.token,
+        baseBranch(),
       );
+      setStatus(
+        `Committed ${filesToCommit.length} file(s) to branch ${newBranch} at ${commitMsg}. Please wait at least a minute before attempting to commit changes to the same files on the same branch!`,
+      );
+      setSelectedFiles(new Set<string>());
     } catch (err) {
-      if (err instanceof Error) {
-        setStatus(`Error: ${err.message}`);
-      } else {
-        setStatus("An unknown error occurred.");
-      }
+      setStatus(
+        "Failed to commit files: " + (err instanceof Error ? err.message : err),
+      );
     }
   };
 
@@ -102,20 +142,85 @@ export const GitHubUserPanel = (props: Props) => {
             }
           }}
         />
-        <button
-          class="bg-black text-white px-4 py-2 rounded w-full"
-          onClick={handleCommit}
-        >
-          Commit
-        </button>
-        {status() && <div class="mt-2 text-center text-sm">{status()}</div>}
+
+        {/* File selection submenu moved above the commit button */}
+        <div class="mb-2">
+          <label class="block font-semibold mb-1">
+            Select files to commit:
+          </label>
+          <div
+            class="border rounded p-2 bg-white overflow-y-auto"
+            style={{ "max-height": "160px" }}
+          >
+            {availableFiles().length === 0 && (
+              <div class="text-gray-500">No files in database.</div>
+            )}
+            {availableFiles().length > 0 && (
+              <div class="mb-2">
+                <label class="block cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedFiles().size === availableFiles().length &&
+                      availableFiles().length > 0
+                    }
+                    onChange={(e) => {
+                      if (e.currentTarget.checked) {
+                        setSelectedFiles(
+                          new Set(availableFiles().map(([key]) => key)),
+                        );
+                      } else {
+                        setSelectedFiles(new Set<string>());
+                      }
+                    }}
+                  />
+                  <span class="ml-2">Select all</span>
+                </label>
+              </div>
+            )}
+            <For each={availableFiles()}>
+              {([key]) => (
+                <div class="mb-1">
+                  <label class="block cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedFiles().has(key)}
+                      onChange={(e) => {
+                        const newSet = new Set(selectedFiles());
+                        if (e.currentTarget.checked) {
+                          newSet.add(key);
+                        } else {
+                          newSet.delete(key);
+                        }
+                        setSelectedFiles(newSet);
+                      }}
+                    />
+                    <span class="ml-2">{key}</span>
+                  </label>
+                </div>
+              )}
+            </For>
+          </div>
+        </div>
+
+        {/* Status directly below the selection menu, no extra margin */}
+        {status() && <div class="text-center text-sm">{status()}</div>}
+
+        <div class="flex gap-8 mt-2">
+          <button
+            class="bg-black text-white px-4 py-2 rounded flex-1"
+            onClick={handleCommit}
+          >
+            Commit
+          </button>
+          <button
+            onClick={() => props.onLogout()}
+            class="bg-black text-white px-4 py-2 rounded flex-1"
+          >
+            Logout
+          </button>
+        </div>
       </div>
-      <button
-        onClick={() => props.onLogout()}
-        class="mt-4 bg-black text-white px-4 py-2 rounded"
-      >
-        Logout
-      </button>
     </div>
   );
 };
