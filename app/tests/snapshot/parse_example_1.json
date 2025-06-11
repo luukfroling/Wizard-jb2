@@ -3,19 +3,6 @@
     {
       "attrs": {
         "align": "left",
-        "level": 1,
-      },
-      "content": [
-        {
-          "text": "Setting up global equations directly",
-          "type": "text",
-        },
-      ],
-      "type": "heading",
-    },
-    {
-      "attrs": {
-        "align": "left",
       },
       "content": [
         {
@@ -27,11 +14,33 @@
     },
     {
       "attrs": {
-        "args": "Learning objective",
-        "name": "topic",
-        "value": "You'll look into how to setup the global formulation directly",
+        "class": null,
+        "kind": "topic",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "text": "Learning objective",
+              "type": "text",
+            },
+          ],
+          "type": "admonitionTitle",
+        },
+        {
+          "attrs": {
+            "align": "left",
+          },
+          "content": [
+            {
+              "text": "You’ll look into how to setup the global formulation directly",
+              "type": "text",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "type": "aside",
     },
     {
       "attrs": {
@@ -47,11 +56,54 @@
     },
     {
       "attrs": {
-        "args": "extension2fields.svg",
-        "name": "figure",
-        "value": "Extension bar with nodal load",
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "Extension bar with nodal load",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "extension2fields.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "content": [
+                    {
+                      "text": "Figure 1:",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "captionNumber",
+                },
+                {
+                  "text": "Extension bar with nodal load",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "caption",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -80,11 +132,28 @@
     },
     {
       "attrs": {
-        "args": "assembly1.svg",
-        "name": "figure",
-        "value": undefined,
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "assembly1.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -210,11 +279,28 @@
     },
     {
       "attrs": {
-        "args": "assembly2.svg",
-        "name": "figure",
-        "value": undefined,
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "assembly2.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -277,11 +363,28 @@
     },
     {
       "attrs": {
-        "args": "assembly3.svg",
-        "name": "figure",
-        "value": undefined,
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "assembly3.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -335,11 +438,28 @@
     },
     {
       "attrs": {
-        "args": "assembly4.svg",
-        "name": "figure",
-        "value": undefined,
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "assembly4.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -414,11 +534,28 @@
     },
     {
       "attrs": {
-        "args": "assembly5.svg",
-        "name": "figure",
-        "value": undefined,
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "assembly5.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -459,11 +596,28 @@
     },
     {
       "attrs": {
-        "args": "assembly5_2.svg",
-        "name": "figure",
-        "value": undefined,
+        "kind": "figure",
       },
-      "type": "directive",
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "center",
+                "alt": "",
+                "class": "",
+                "reference": null,
+                "title": "",
+                "url": "assembly5_2.svg",
+                "width": undefined,
+              },
+              "type": "image",
+            },
+          ],
+          "type": "imageWrapper",
+        },
+      ],
+      "type": "container",
     },
     {
       "attrs": {
@@ -555,7 +709,7 @@
       "attrs": {
         "ordered": false,
         "spread": false,
-        "start": 1,
+        "start": undefined,
       },
       "content": [
         {
@@ -618,5 +772,5 @@
       "type": "paragraph",
     },
   ],
-  "type": "root",
+  "type": "block",
 }

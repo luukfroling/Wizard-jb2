@@ -1,5 +1,36 @@
 import { mystParse } from "myst-parser";
 import { schema } from "../schema";
+import { visit } from "unist-util-visit";
+import { unified } from "unified";
+import { buttonRole } from "myst-ext-button";
+import { cardDirective } from "myst-ext-card";
+import { gridDirective } from "myst-ext-grid";
+import { tabDirectives } from "myst-ext-tabs";
+import { proofDirective } from "myst-ext-proof";
+import { exerciseDirectives } from "myst-ext-exercise";
+import { PageFrontmatter, validatePageFrontmatter } from "myst-frontmatter";
+import {
+    mathPlugin,
+    footnotesPlugin,
+    keysPlugin,
+    htmlPlugin,
+    reconstructHtmlPlugin,
+    basicTransformationsPlugin,
+    enumerateTargetsPlugin,
+    resolveReferencesPlugin,
+    WikiTransformer,
+    GithubTransformer,
+    DOITransformer,
+    RRIDTransformer,
+    RORTransformer,
+    linksPlugin,
+    ReferenceState,
+    abbreviationPlugin,
+    glossaryPlugin,
+    joinGatesPlugin,
+    getFrontmatter,
+} from "myst-transforms";
+
 import type {
     Node as MystNode,
     Block,
@@ -26,9 +57,13 @@ import type {
     Container,
     Math,
     InlineMath,
+    Image,
+    Caption,
 } from "myst-spec";
 import type { GenericNode, GenericParent } from "myst-common";
 import { Mark, Node } from "prosemirror-model";
+import { VFile } from "vfile";
+import { Aside, CaptionNumber } from "myst-spec-ext";
 
 type DefinitionMap = Map<string, Definition>;
 
@@ -50,8 +85,8 @@ export function findDefinitions(
 
 /** Parse raw MyST into a ProseMirror document.
  */
-export function parseMyst(source: string): Node {
-    const parsed = mystParse(source);
+export async function parseMyst(source: string): Promise<Node> {
+    const parsed = await parseToMystAST(source);
     return mystToProseMirror(parsed);
 }
 
@@ -145,7 +180,10 @@ const handlers = {
     paragraph: (node: Paragraph, defs: DefinitionMap) =>
         schema.node("paragraph", {}, children(node, defs)),
     definition: (node: Definition) =>
-        schema.node("definition", { url: node.url, type: node.type }),
+        schema.node("definition", {
+            url: node.url,
+            identifier: node.identifier,
+        }),
     heading: (node: Heading, defs: DefinitionMap) =>
         schema.node(
             "heading",
@@ -206,7 +244,17 @@ const handlers = {
     admonitionTitle: (node: AdmonitionTitle, defs: DefinitionMap) =>
         schema.node("admonitionTitle", {}, children(node, defs)),
     container: (node: Container, defs: DefinitionMap) =>
-        schema.node("container", { kind: node.kind }, children(node, defs)),
+        schema.node(
+            "container",
+            { kind: node.kind },
+            node.children?.flatMap((x) => {
+                const res =
+                    x.type === "image"
+                        ? schema.node("imageWrapper", {}, transformAst(x, defs))
+                        : transformAst(x, defs);
+                return Array.isArray(res) ? res : [res];
+            }),
+        ),
     emphasis: (node: Emphasis, defs: DefinitionMap) =>
         markChildren(node, defs, schema.mark("emphasis")),
     strong: (node: Strong, defs: DefinitionMap) =>
@@ -236,6 +284,28 @@ const handlers = {
         ),
     inlineMath: (node: InlineMath) =>
         schema.node("inlineMath", {}, schema.text(node.value)),
+
+    image: (node: Image) =>
+        schema.node(
+            "image",
+            pick(node, "class", "width", "align", "url", "title", "alt"),
+        ),
+
+    caption: (node: Caption, defs: DefinitionMap) =>
+        schema.node("caption", {}, children(node, defs)),
+    captionNumber: (node: CaptionNumber, defs: DefinitionMap) =>
+        schema.node(
+            "captionNumber",
+            pick(node, "identifier", "kind", "label", "html_id", "enumerator"),
+            children(node, defs),
+        ),
+    // Extension types
+    aside: (node: Aside, defs: DefinitionMap) =>
+        schema.node(
+            "aside",
+            { kind: node.kind, class: node.class },
+            children(node, defs),
+        ),
 };
 
 function transformAst(
@@ -245,8 +315,10 @@ function transformAst(
     // TODO: Maybe add some kind of fallback here for unsupported types. This
     // might not be necessary, because the core specification should remain
     // pretty stable, and we only parse directives that we know we can handle.
-    if (!(myst.type in handlers))
+    if (!(myst.type in handlers)) {
+        console.log(myst);
         throw new RangeError(`Unknown node type '${myst.type}'`);
+    }
     const handler = (
         handlers as unknown as Record<
             string,
@@ -254,4 +326,73 @@ function transformAst(
         >
     )[myst.type];
     return handler(myst, definitions);
+}
+
+export async function parseToMystAST(
+    text: string,
+    defaultFrontmatter?: PageFrontmatter,
+) {
+    const vfile = new VFile();
+    const parseMyst = (content: string) =>
+        mystParse(content, {
+            markdownit: { linkify: true },
+            directives: [
+                cardDirective,
+                gridDirective,
+                ...tabDirectives,
+                proofDirective,
+                ...exerciseDirectives,
+            ],
+            roles: [buttonRole],
+            vfile,
+        });
+    const mdast = parseMyst(text);
+    const linkTransforms = [
+        new WikiTransformer(),
+        new GithubTransformer(),
+        new DOITransformer(),
+        new RRIDTransformer(),
+        new RORTransformer(),
+    ];
+    // const references: References = {
+    //     cite: { order: [], data: {} },
+    // };
+    const frontmatterRaw = getFrontmatter(vfile, mdast);
+    const frontmatter: Omit<PageFrontmatter, "parts"> = validatePageFrontmatter(
+        frontmatterRaw,
+        {
+            property: "frontmatter",
+            messages: {},
+        },
+    );
+    const state = new ReferenceState("", {
+        frontmatter: {
+            ...frontmatter,
+            numbering: frontmatter.numbering ?? defaultFrontmatter?.numbering,
+        },
+        vfile,
+    });
+    visit(mdast, (n) => {
+        // Before we put in the citation render, we can mark them as errors
+        if (n.type === "cite") {
+            n.error = true;
+        }
+    });
+    unified()
+        .use(reconstructHtmlPlugin) // We need to group and link the HTML first
+        .use(htmlPlugin) // Some of the HTML plugins need to operate on the transformed html, e.g. figure caption transforms
+        .use(basicTransformationsPlugin, { parser: parseMyst })
+        .use(mathPlugin, { macros: frontmatter?.math ?? {} }) // This must happen before enumeration, as it can add labels
+        .use(glossaryPlugin) // This should be before the enumerate plugins
+        .use(abbreviationPlugin, { abbreviations: frontmatter.abbreviations })
+        .use(enumerateTargetsPlugin, { state })
+        .use(linksPlugin, { transformers: linkTransforms })
+        .use(footnotesPlugin)
+        .use(joinGatesPlugin)
+        .use(resolveReferencesPlugin, { state })
+        .use(keysPlugin)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .runSync(mdast as any, vfile);
+
+    return mdast;
 }

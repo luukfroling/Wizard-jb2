@@ -1,5 +1,8 @@
+import { createResource } from "solid-js";
+import { EXAMPLE_1 } from "../tests/parser_constants";
 import { Editor } from "./components/Editor";
 import Toolbar from "./components/toolbar/toolbar";
+import { parseMyst } from "./lib/parser";
 import { schema } from "./lib/schema";
 //import "prosemirror-view/style/prosemirror.css";
 
@@ -9,12 +12,10 @@ import { schema } from "./lib/schema";
  * [SolidJS]: https://docs.solidjs.com
  */
 export default function App() {
-  const initialDocument = schema.node("root", undefined, [
-    schema.node("paragraph"),
-  ]);
+  const [initialDocument] = createResource(() => parseMyst(EXAMPLE_1));
   return (
     <>
-      <Editor schema={schema} initialDocument={initialDocument}>
+      <Editor schema={schema} initialDocument={initialDocument()}>
         <Toolbar />
       </Editor>
     </>
