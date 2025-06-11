@@ -184,16 +184,28 @@ export const database = {
      * @param value - The value to save.
      */
     async save<T>(store: string, key: IDBValidKey, value: T): Promise<void> {
+        this.saveTo(store, this.activeRepo, this.activeBranch, key, value);
+    },
+
+    /**
+     * Saves a value into the specified store under a namespaced key.
+     * @param store - The name of the object store.
+     * @param key - The key to store the value under.
+     * @param value - The value to save.
+     */
+    async saveTo<T>(
+        store: string,
+        repo: string,
+        branch: string,
+        key: IDBValidKey,
+        value: T,
+    ): Promise<void> {
         const release = await _mutex.acquire();
         try {
             _validateStore(store);
             const db = await this.getDB();
             const tx = db.transaction(store, "readwrite");
-            const fullKey = _makePrefixedKey(
-                this.activeRepo,
-                this.activeBranch,
-                key,
-            );
+            const fullKey = _makePrefixedKey(repo, branch, key);
             await tx.store.put(value, fullKey);
             await tx.done;
         } finally {
@@ -227,7 +239,7 @@ export const database = {
     },
 
     /**
-     * Loads all key-value pairs for the current repo in the specified store.
+     * Loads all key-value pairs for the current repo and branch in the specified store.
      * @param store - The object store to load from.
      * @returns An array of [key, value] tuples.
      */
@@ -288,7 +300,7 @@ export const database = {
     },
 
     /**
-     * Gets all keys for the current repo in the specified store.
+     * Gets all keys for the current repo and branch in the specified store.
      * @param store - The store to list keys from.
      * @returns An array of repo-scoped keys.
      */
@@ -315,7 +327,7 @@ export const database = {
     },
 
     /**
-     * Clears all keys associated with the current repo in the given store.
+     * Clears all keys associated with the current repo and branch in the given store.
      * @param store - The store to clear.
      */
     async clear(store: string): Promise<void> {
@@ -340,7 +352,7 @@ export const database = {
     },
 
     /**
-     * Checks if a specific key exists in the store for the active repo.
+     * Checks if a specific key exists in the store for the active repo and active branch.
      * @param store - The store to check.
      * @param key - The key to look for.
      * @returns True if the key exists, false otherwise.
@@ -382,6 +394,48 @@ export const database = {
             if (!preserveBranch) this.activeBranch = "";
             if (!preserveRepo) this.activeRepo = "";
             await indexedDB.deleteDatabase(config.name);
+        } finally {
+            release();
+        }
+    },
+
+    /**
+     * Atomically re-prefixes every key from one namespace to another.
+     * @param oldRepo    The current repo namespace.
+     * @param oldBranch  The current branch namespace.
+     * @param newRepo    The new repo namespace.
+     * @param newBranch  The new branch namespace.
+     * @param deleteOldValues Set to true to delete the old key-value pairs from the database.
+     * @param stores The stores to execute the namespace change for.
+     */
+    async migrateNamespace(
+        oldRepo: string,
+        oldBranch: string,
+        newRepo: string,
+        newBranch: string,
+        deleteOldValues: boolean = false,
+        stores: string[] = config.stores,
+    ): Promise<void> {
+        const release = await _mutex.acquire();
+        try {
+            for (const store of stores) {
+                const keyDataPairs = await this.loadAll(store);
+                for (const [fullKey, value] of keyDataPairs) {
+                    if (deleteOldValues) await this.delete(store, fullKey);
+                    const strippedKey = _stripPrefix(
+                        oldRepo,
+                        oldBranch,
+                        fullKey,
+                    );
+                    await this.saveTo(
+                        store,
+                        newRepo,
+                        newBranch,
+                        strippedKey,
+                        value,
+                    );
+                }
+            }
         } finally {
             release();
         }
