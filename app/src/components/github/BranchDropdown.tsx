@@ -106,7 +106,10 @@ export const BranchDropdown: Component = () => {
         data-bs-toggle="dropdown"
         aria-expanded="false"
       >
-        <i class="bi bi-git" style={{"font-size":"1.2em","margin-right":"0.5em"}} />
+        <i
+          class="bi bi-git"
+          style={{ "font-size": "1.2em", "margin-right": "0.5em" }}
+        />
         <span>{branch()}</span>
       </button>
       <ul
@@ -114,17 +117,19 @@ export const BranchDropdown: Component = () => {
         aria-labelledby="branchDropdown"
         style={{ "min-width": "220px" }}
       >
-        <For each={branches()}>{(b) => (
-          <li>
-            <button
-              class={`dropdown-item${b === branch() ? " active" : ""}`}
-              type="button"
-              onClick={() => handleSelect(b)}
-            >
-              {b}
-            </button>
-          </li>
-        )}</For>
+        <For each={branches()}>
+          {(b) => (
+            <li>
+              <button
+                class={`dropdown-item${b === branch() ? " active" : ""}`}
+                type="button"
+                onClick={() => handleSelect(b)}
+              >
+                {b}
+              </button>
+            </li>
+          )}
+        </For>
         <li>
           <hr class="dropdown-divider" />
         </li>
