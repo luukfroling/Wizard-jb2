@@ -55,6 +55,12 @@ function addViteApp() {
     // We know this exists... Maybe let checkTheme() pass this.
     const articleContainer = document.querySelector('.bd-article');
 
+    // Remove all the sections within the articleContainer: old content
+    const sections = articleContainer.querySelectorAll('section');
+    sections.forEach(section => {
+        section.remove();
+      });
+
     // Add the script and style tag of the Vite app here
     const head = document.head;
 
