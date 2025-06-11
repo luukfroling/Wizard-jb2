@@ -349,7 +349,7 @@ export const schema = new Schema({
             },
             attrs: {
                 class: string({ default: "" }),
-                width: string({ default: "50%" }), // <-- default to 50%
+                width: string(),
                 align: oneOf({
                     values: ["left", "right", "center"] as const,
                     default: "left",
