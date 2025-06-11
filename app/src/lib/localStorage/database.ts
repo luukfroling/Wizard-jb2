@@ -26,8 +26,12 @@ export const config = {
  * @param key The name of the key.
  * @returns The key with the prefix added.
  */
-const _makePrefixedKey = (repo: string, key: IDBValidKey): IDBValidKey => {
-    return `${repo}::${key}`;
+const _makePrefixedKey = (
+    repo: string,
+    branch: string,
+    key: IDBValidKey,
+): IDBValidKey => {
+    return `${repo}::${branch}::${key}`;
 };
 
 /**
@@ -36,9 +40,14 @@ const _makePrefixedKey = (repo: string, key: IDBValidKey): IDBValidKey => {
  * @param fullKey The combination of the repo and the name of the key.
  * @returns The key with the prefix removed.
  */
-const _stripPrefix = (repo: string, fullKey: IDBValidKey): IDBValidKey => {
-    if (typeof fullKey === "string" && fullKey.startsWith(`${repo}::`)) {
-        return fullKey.slice(repo.length + 2); // +2 for '::'
+const _stripPrefix = (
+    repo: string,
+    branch: string,
+    fullKey: IDBValidKey,
+): IDBValidKey => {
+    const prefix = `${repo}::${branch}::`;
+    if (typeof fullKey === "string" && fullKey.startsWith(prefix)) {
+        return fullKey.slice(prefix.length);
     }
     return fullKey;
 };
@@ -74,6 +83,12 @@ export const database = {
     activeRepo: "" as string,
 
     /**
+     * The currently active branch.
+     * All keys are namespaced using this value to avoid collisions across branches.
+     */
+    activeBranch: "" as string,
+
+    /**
      * Gets the currently active repo namespace.
      * @returns The active repo string.
      */
@@ -82,18 +97,28 @@ export const database = {
     },
 
     /**
-     * Sets the active repo. This must be called before any database interaction.
-     * Cannot be changed once set.
+     * Sets the active repo.
      * @param repo - The GitHub repo name.
      * @throws Will throw if called after initialization.
      */
-    setActiveRepo(repo: string) {
-        if (this.isInitialised()) {
-            throw new Error(
-                "Attempting to change active repo after repo was already set. This is not supported!",
-            );
-        }
+    async setActiveRepo(repo: string) {
         this.activeRepo = repo;
+    },
+
+    /**
+     * Gets the currently active branch namespace.
+     * @returns The active branch string.
+     */
+    getActiveBranch(): string {
+        return this.activeBranch;
+    },
+
+    /**
+     * Sets the active branch.
+     * @param branch - The branch name.
+     */
+    async setActiveBranch(branch: string) {
+        this.activeBranch = branch;
     },
 
     /**
@@ -101,7 +126,7 @@ export const database = {
      * @returns True if initialized, false otherwise.
      */
     isInitialised() {
-        return this.activeRepo != "";
+        return this.activeRepo != "" && this.activeBranch != "";
     },
 
     /**
@@ -112,7 +137,7 @@ export const database = {
     async getDB(): Promise<IDBPDatabase> {
         if (!this.isInitialised()) {
             throw new Error(
-                "Attempting to access database before setting the active repo. Make sure the repo is set before any database interactions take place!",
+                "Attempting to access database before setting the active repo and or branch. Make sure the repo is set before any database interactions take place!",
             );
         }
         if (!this.dbPromise) {
@@ -136,10 +161,32 @@ export const database = {
      * @param value - The value to save.
      */
     async save<T>(store: string, key: IDBValidKey, value: T): Promise<void> {
+        await this.saveTo(
+            store,
+            this.activeRepo,
+            this.activeBranch,
+            key,
+            value,
+        );
+    },
+
+    /**
+     * Saves a value into the specified store under a namespaced key.
+     * @param store - The name of the object store.
+     * @param key - The key to store the value under.
+     * @param value - The value to save.
+     */
+    async saveTo<T>(
+        store: string,
+        repo: string,
+        branch: string,
+        key: IDBValidKey,
+        value: T,
+    ): Promise<void> {
         _validateStore(store);
         const db = await this.getDB();
         const tx = db.transaction(store, "readwrite");
-        const fullKey = _makePrefixedKey(this.activeRepo, key);
+        const fullKey = _makePrefixedKey(repo, branch, key);
         await tx.store.put(value, fullKey);
         await tx.done;
     },
@@ -154,14 +201,18 @@ export const database = {
         _validateStore(store);
         const db = await this.getDB();
         const tx = db.transaction(store, "readonly");
-        const fullKey = _makePrefixedKey(this.activeRepo, key);
+        const fullKey = _makePrefixedKey(
+            this.activeRepo,
+            this.activeBranch,
+            key,
+        );
         const result = await tx.store.get(fullKey);
         await tx.done;
         return result;
     },
 
     /**
-     * Loads all key-value pairs for the current repo in the specified store.
+     * Loads all key-value pairs for the current repo and branch in the specified store.
      * @param store - The object store to load from.
      * @returns An array of [key, value] tuples.
      */
@@ -177,7 +228,11 @@ export const database = {
                 typeof key === "string" &&
                 key.startsWith(`${this.activeRepo}::`)
             ) {
-                const strippedKey = _stripPrefix(this.activeRepo, key);
+                const strippedKey = _stripPrefix(
+                    this.activeRepo,
+                    this.activeBranch,
+                    key,
+                );
                 const value = await tx.store.get(key);
                 if (value !== undefined) {
                     results.push([strippedKey, value]);
@@ -198,13 +253,17 @@ export const database = {
         _validateStore(store);
         const db = await this.getDB();
         const tx = db.transaction(store, "readwrite");
-        const fullKey = _makePrefixedKey(this.activeRepo, key);
+        const fullKey = _makePrefixedKey(
+            this.activeRepo,
+            this.activeBranch,
+            key,
+        );
         await tx.store.delete(fullKey);
         await tx.done;
     },
 
     /**
-     * Gets all keys for the current repo in the specified store.
+     * Gets all keys for the current repo and branch in the specified store.
      * @param store - The store to list keys from.
      * @returns An array of repo-scoped keys.
      */
@@ -218,13 +277,13 @@ export const database = {
             .filter(
                 (k) =>
                     typeof k === "string" &&
-                    k.startsWith(`${this.activeRepo}::`),
+                    k.startsWith(`${this.activeRepo}::${this.activeBranch}::`),
             )
-            .map((k) => _stripPrefix(this.activeRepo, k));
+            .map((k) => _stripPrefix(this.activeRepo, this.activeBranch, k));
     },
 
     /**
-     * Clears all keys associated with the current repo in the given store.
+     * Clears all keys associated with the current repo and branch in the given store.
      * @param store - The store to clear.
      */
     async clear(store: string): Promise<void> {
@@ -235,7 +294,7 @@ export const database = {
         for (const key of allKeys) {
             if (
                 typeof key === "string" &&
-                key.startsWith(`${this.activeRepo}::`)
+                key.startsWith(`${this.activeRepo}::${this.activeBranch}::`)
             ) {
                 await tx.store.delete(key);
             }
@@ -244,7 +303,7 @@ export const database = {
     },
 
     /**
-     * Checks if a specific key exists in the store for the active repo.
+     * Checks if a specific key exists in the store for the active repo and active branch.
      * @param store - The store to check.
      * @param key - The key to look for.
      * @returns True if the key exists, false otherwise.
@@ -253,23 +312,67 @@ export const database = {
         _validateStore(store);
         const db = await this.getDB();
         const tx = db.transaction(store, "readonly");
-        const fullKey = _makePrefixedKey(this.activeRepo, key);
+        const fullKey = _makePrefixedKey(
+            this.activeRepo,
+            this.activeBranch,
+            key,
+        );
         const exists = (await tx.store.getKey(fullKey)) !== undefined;
         await tx.done;
         return exists;
     },
 
     /**
-     * Destroys the database connection and optionally resets the active repo.
+     * Destroys the database connection and deletes the database unless otherwise specified.
      * @param options - Options to control reset behavior.
      * @param options.preserveRepo - If true, does not clear the active repo.
+     * @param options.preserveBranch - If true, does not clear the active branch.
+     * @param options.preserveData - If true, does not delete database data
      */
-    async destroy({ preserveRepo = false } = {}): Promise<void> {
+    async destroy({
+        preserveRepo = false,
+        preserveBranch = false,
+        preserveData = false,
+    } = {}): Promise<void> {
         if (this.dbPromise) {
             (await this.dbPromise).close();
             this.dbPromise = null;
         }
+        if (!preserveBranch) this.activeBranch = "";
         if (!preserveRepo) this.activeRepo = "";
-        await indexedDB.deleteDatabase(config.name);
+        if (!preserveData) await indexedDB.deleteDatabase(config.name);
+    },
+
+    /**
+     * Atomically re-prefixes every key from one namespace to another.
+     * @param oldRepo    The current repo namespace.
+     * @param oldBranch  The current branch namespace.
+     * @param newRepo    The new repo namespace.
+     * @param newBranch  The new branch namespace.
+     * @param deleteOldValues Set to true to delete the old key-value pairs from the database.
+     * @param stores The stores to execute the namespace change for.
+     */
+    async migrateNamespace(
+        oldRepo: string,
+        oldBranch: string,
+        newRepo: string,
+        newBranch: string,
+        deleteOldValues: boolean = false,
+        stores: string[] = config.stores,
+    ): Promise<void> {
+        for (const store of stores) {
+            const keyDataPairs = await this.loadAll(store);
+            for (const [fullKey, value] of keyDataPairs) {
+                if (deleteOldValues) await this.delete(store, fullKey);
+                const strippedKey = _stripPrefix(oldRepo, oldBranch, fullKey);
+                await this.saveTo(
+                    store,
+                    newRepo,
+                    newBranch,
+                    strippedKey,
+                    value,
+                );
+            }
+        }
     },
 };
