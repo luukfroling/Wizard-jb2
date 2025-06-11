@@ -97,8 +97,7 @@ export const database = {
     },
 
     /**
-     * Sets the active repo. Is done using a mutex to prevent changing the branch
-     * in the middle of read or write operations.
+     * Sets the active repo.
      * @param repo - The GitHub repo name.
      * @throws Will throw if called after initialization.
      */
@@ -115,8 +114,7 @@ export const database = {
     },
 
     /**
-     * Sets the active branch. Is done using a mutex to prevent changing the branch
-     * in the middle of read or write operations.
+     * Sets the active branch.
      * @param branch - The branch name.
      */
     async setActiveBranch(branch: string) {
