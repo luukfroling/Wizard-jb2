@@ -1,6 +1,9 @@
-import { Component, createSignal, onMount } from "solid-js";
+import { Component, createSignal, onMount, For } from "solid-js";
 import { repositoryHref } from "../../lib/github/GithubUtility";
-import { getAllBranchesFromHref, getDefaultBranchFromHref } from "../../lib/github/GithubUtility";
+import {
+  getAllBranchesFromHref,
+  getDefaultBranchFromHref,
+} from "../../lib/github/GithubUtility";
 import { database } from "../../lib/localStorage/database";
 import { setCurrentBranch } from "../../lib/github/BranchSignal";
 
@@ -16,9 +19,14 @@ export const BranchDropdown: Component = () => {
     if (href) {
       const fetchedBranches = await getAllBranchesFromHref(href);
       // Get local branches from storage
-      const localBranches = JSON.parse(localStorage.getItem("localBranches") || "[]");
+      const localBranches = JSON.parse(
+        localStorage.getItem("localBranches") || "[]",
+      );
       // Combine local branches and fetched branches, prioritizing local branches
-      const allBranches = [...localBranches, ...fetchedBranches.filter(b => !localBranches.includes(b))];
+      const allBranches = [
+        ...localBranches,
+        ...fetchedBranches.filter((b) => !localBranches.includes(b)),
+      ];
       setBranches(allBranches);
       // Set current branch from localStorage or default to first branch
       const storedBranch = localStorage.getItem("currentBranch");
@@ -32,7 +40,8 @@ export const BranchDropdown: Component = () => {
         if (href) {
           // Try to get the default branch from GitHub
           try {
-            baseBranch = await getDefaultBranchFromHref(href) || allBranches[0];
+            baseBranch =
+              (await getDefaultBranchFromHref(href)) || allBranches[0];
           } catch {
             baseBranch = allBranches[0];
           }
@@ -77,8 +86,13 @@ export const BranchDropdown: Component = () => {
     localStorage.setItem("currentBranch", name);
     await database.setActiveBranch(name); // <-- set active branch here
     // Save local branches
-    const localBranches = JSON.parse(localStorage.getItem("localBranches") || "[]");
-    localStorage.setItem("localBranches", JSON.stringify([name, ...localBranches]));
+    const localBranches = JSON.parse(
+      localStorage.getItem("localBranches") || "[]",
+    );
+    localStorage.setItem(
+      "localBranches",
+      JSON.stringify([name, ...localBranches]),
+    );
     setShowInput(false);
     setNewBranchName("");
   };
@@ -92,11 +106,15 @@ export const BranchDropdown: Component = () => {
         data-bs-toggle="dropdown"
         aria-expanded="false"
       >
-        <i class="bi bi-git" style="font-size: 1.2em; margin-right: 0.5em;" />
+        <i class="bi bi-git" style={{"font-size":"1.2em","margin-right":"0.5em"}} />
         <span>{branch()}</span>
       </button>
-      <ul class="dropdown-menu p-2" aria-labelledby="branchDropdown" style={{ "min-width": "220px" }}>
-        {branches().map((b) => (
+      <ul
+        class="dropdown-menu p-2"
+        aria-labelledby="branchDropdown"
+        style={{ "min-width": "220px" }}
+      >
+        <For each={branches()}>{(b) => (
           <li>
             <button
               class={`dropdown-item${b === branch() ? " active" : ""}`}
@@ -106,8 +124,10 @@ export const BranchDropdown: Component = () => {
               {b}
             </button>
           </li>
-        ))}
-        <li><hr class="dropdown-divider" /></li>
+        )}</For>
+        <li>
+          <hr class="dropdown-divider" />
+        </li>
         <li>
           {!showInput() ? (
             <button
@@ -128,8 +148,8 @@ export const BranchDropdown: Component = () => {
                 class="form-control form-control-sm mb-1"
                 placeholder="New branch name"
                 value={newBranchName()}
-                onInput={e => setNewBranchName(e.currentTarget.value)}
-                onKeyDown={e => {
+                onInput={(e) => setNewBranchName(e.currentTarget.value)}
+                onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddLocalBranch();
                   if (e.key === "Escape") setShowInput(false);
                 }}

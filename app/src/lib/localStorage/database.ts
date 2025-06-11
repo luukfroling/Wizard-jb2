@@ -226,10 +226,7 @@ export const database = {
         // Only include keys for the current repo AND branch
         const prefix = `${this.activeRepo}::${this.activeBranch}::`;
         for (const key of allKeys) {
-            if (
-                typeof key === "string" &&
-                key.startsWith(prefix)
-            ) {
+            if (typeof key === "string" && key.startsWith(prefix)) {
                 const strippedKey = _stripPrefix(
                     this.activeRepo,
                     this.activeBranch,
