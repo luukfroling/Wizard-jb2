@@ -150,7 +150,9 @@ export const toolbarDropdowns: {
               icon: "bi-link-45deg",
               onClick: () => {
                 const url = prompt("Enter link URL:");
-                if (url) dispatchCommand(insertLink(url));
+                if (!url) return;
+                const text = prompt("Enter link text (displayed):", url) || url;
+                dispatchCommand(insertLink(url, text));
               },
             },
             {

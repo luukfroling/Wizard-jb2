@@ -71,3 +71,32 @@ a {
   background-color: #d7e1ff !important;
   color: #1a237e !important;
 }
+
+.math-input {
+  max-width: 100%;
+  width: 100%;
+  min-width: 200px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  resize: none;
+  font-size: 1em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.math-node {
+  display: block;
+  max-width: 100%;
+  max-width: 100%;
+  overflow-x: visible;
+}
+
+.math-render {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  word-break: break-word;
+}

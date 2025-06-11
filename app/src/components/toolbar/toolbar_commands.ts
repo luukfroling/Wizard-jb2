@@ -64,12 +64,11 @@ export function insertLink(url = "", title = "") {
         let tr = state.tr;
 
         if (empty) {
-            // Optionally, insert placeholder text and apply link
-            const text = state.schema.text(url);
-            tr = tr.insert(from, text);
+            const textNode = state.schema.text(title || url);
+            tr = tr.insert(from, textNode);
             tr = tr.addMark(
                 from,
-                from + url.length,
+                from + (title || url).length,
                 markType.create({ url, title, reference: null }),
             );
         } else {

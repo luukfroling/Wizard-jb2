@@ -109,8 +109,15 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
       new EditorView(ref()!, {
         state: editorState(),
         nodeViews: {
-          math(node) {
-            return new MathNodeView(node);
+          math(node, view, getPos) {
+            const safeGetPos = () => {
+              const pos = getPos?.();
+              if (typeof pos !== "number") {
+                throw new Error("getPos is undefined or not a number");
+              }
+              return pos;
+            };
+            return new MathNodeView(node, view, safeGetPos);
           },
         },
       }),

@@ -463,40 +463,30 @@ export const schema = new Schema({
         },
         link: {
             attrs: {
-                url: string(),
-                title: string({ optional: true }),
-                reference: {
-                    default: null,
-                    validate(value: unknown) {
-                        return (
-                            value === null ||
-                            (typeof value === "object" &&
-                                value !== null &&
-                                "referenceType" in value &&
-                                typeof (value as { referenceType?: unknown })
-                                    .referenceType === "string" &&
-                                (
-                                    [
-                                        "shortcut",
-                                        "collapsed",
-                                        "full",
-                                    ] as string[]
-                                ).includes(
-                                    (value as { referenceType: string })
-                                        .referenceType,
-                                ))
-                        );
+                url: {},
+                title: { default: "" },
+                reference: { default: null },
+            },
+            inclusive: false,
+            parseDOM: [
+                {
+                    tag: "a[href]",
+                    getAttrs(dom: HTMLElement) {
+                        return {
+                            url: dom.getAttribute("href"),
+                            title: dom.textContent || "",
+                        };
                     },
                 },
-            },
-            toDOM(node) {
+            ],
+            toDOM(mark) {
                 return [
                     "a",
                     {
-                        href: node.attrs.url,
-                        title: node.attrs.title,
+                    href: mark.attrs.url,
+                    title: mark.attrs.url,
                     },
-                    0,
+                    mark.attrs.title || mark.attrs.url,
                 ];
             },
         },
