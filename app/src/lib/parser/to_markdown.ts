@@ -27,10 +27,12 @@ import type {
     Table,
     FootnoteDefinition,
     Image,
+    Caption,
 } from "myst-spec";
 import { Node, Schema } from "prosemirror-model";
 import { unified } from "unified";
 import mystToMd from "myst-to-md";
+import { Aside, CaptionNumber } from "myst-spec-ext";
 
 type NodeName = typeof schema extends Schema<infer T> ? T : never;
 
@@ -140,7 +142,6 @@ const proseMirrorToMystHandlers = {
         value: node.textContent,
         enumerated: node.attrs.enumerated,
         enumerator: node.attrs.enumerator,
-        label: node.attrs.label,
     }),
     inlineMath: (node: Node): InlineMath => ({
         type: "inlineMath",
@@ -170,6 +171,43 @@ const proseMirrorToMystHandlers = {
         width: node.attrs.width,
         title: node.attrs.title,
     }),
+    imageWrapper: (wrapper: Node): Image => {
+        const node = wrapper.children[0];
+        return {
+            type: "image",
+            url: node.attrs.url,
+            class: node.attrs.class,
+            alt: node.attrs.alt,
+            align: node.attrs.align,
+            width: node.attrs.width,
+            title: node.attrs.title,
+        };
+    },
+    aside: (node: Node): Aside => ({
+        type: "aside",
+        ...(node.attrs.label !== undefined ? { label: node.attrs.label } : {}),
+        kind: node.attrs.kind,
+        // FIXME: Types for mdast are not very nice, so use any for now
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        children: mystChildren(node) as any,
+    }),
+    caption: (node: Node): Caption => ({
+        type: "caption",
+        // FIXME: Types for mdast are not very nice, so use any for now
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        children: mystChildren(node) as any,
+    }),
+    captionNumber: (node: Node): CaptionNumber => ({
+        type: "captionNumber",
+        kind: node.attrs.kind,
+        label: node.attrs.label,
+        html_id: node.attrs.html_id,
+        enumerator: node.attrs.enumerator,
+        identifier: node.attrs.identifier,
+        // FIXME: Types for mdast are not very nice, so use any for now
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        children: mystChildren(node) as any,
+    }),
 } satisfies Record<NodeName, (node: Node) => MystNode>;
 
 export function proseMirrorToMyst(node: Node): MystNode {
@@ -182,12 +220,8 @@ export function prosemirrorToMarkdown(node: Node): string {
         .use(mystToMd)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .stringify(ast as any).result;
-    const value =
-        typeof result === "object" && result !== null && "value" in result
-            ? result.value
-            : undefined;
-    if (!value || typeof value !== "string") {
+    if (typeof result !== "string") {
         throw new Error("invalid result");
     }
-    return value;
+    return result;
 }

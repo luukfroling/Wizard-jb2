@@ -112,7 +112,7 @@ export const schema = new Schema({
         list: {
             attrs: {
                 ordered: boolean({ default: false }),
-                start: integer({ default: 1 }),
+                start: integer({ default: undefined }),
                 spread: boolean({ default: false }),
             },
             group: "flowContent",

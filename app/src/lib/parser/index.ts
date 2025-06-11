@@ -86,7 +86,7 @@ export function findDefinitions(
 /** Parse raw MyST into a ProseMirror document.
  */
 export async function parseMyst(source: string): Promise<Node> {
-    const parsed = await parse(source);
+    const parsed = await parseToMystAST(source);
     return mystToProseMirror(parsed);
 }
 
@@ -328,7 +328,10 @@ function transformAst(
     return handler(myst, definitions);
 }
 
-async function parse(text: string, defaultFrontmatter?: PageFrontmatter) {
+export async function parseToMystAST(
+    text: string,
+    defaultFrontmatter?: PageFrontmatter,
+) {
     const vfile = new VFile();
     const parseMyst = (content: string) =>
         mystParse(content, {

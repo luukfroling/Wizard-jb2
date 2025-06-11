@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { parseMyst } from "../src/lib/parser";
+import {
+    mystToProseMirror,
+    parseMyst,
+    parseToMystAST,
+} from "../src/lib/parser";
 import { Node } from "prosemirror-model";
 import { schema } from "../src/lib/schema";
 import { EXAMPLE_1 } from "./parser_constants";
+import {
+    prosemirrorToMarkdown,
+    proseMirrorToMyst,
+} from "../src/lib/parser/to_markdown";
+import { visit } from "unist-util-visit";
 
 describe("Markdown parser", () => {
     async function parse(myst: string) {
@@ -164,14 +173,6 @@ describe("Markdown parser", () => {
         expect(mark.type.name).toBe("link");
         expect(mark.attrs).toHaveProperty("url", "https://teachbooks.io");
     });
-    it.for([{ myst: EXAMPLE_1, desc: "example_1" }])(
-        "parses document $desc",
-        async ({ myst, desc }) => {
-            const parsed = await parse(myst);
-            const json = parsed.toJSON();
-            expect(json).toMatchFileSnapshot(`./snapshot/parse_${desc}.json`);
-        },
-    );
     it.for([
         {
             myst: "**bold**",
@@ -207,5 +208,29 @@ describe("Markdown parser", () => {
         expect(
             paragraph.children.map((x) => x.marks.map((m) => m.type.name)),
         ).toEqual(marks);
+    });
+
+    const MYST_DOCUMENTS = [
+        {
+            myst: EXAMPLE_1,
+            desc: "example_1",
+        },
+    ];
+
+    it.for(MYST_DOCUMENTS)("parses document $desc", async ({ myst, desc }) => {
+        const parsed = await parse(myst);
+        const json = parsed.toJSON();
+        expect(json).toMatchFileSnapshot(`./snapshot/parse_${desc}.json`);
+    });
+
+    it.for(MYST_DOCUMENTS)("round-trips $desc", async ({ myst }) => {
+        // We round-trip twice, because
+        // However, this does not catch details lost in the conversion...
+        // The problem is, if we miss something in the AST
+        const parsed = await parse(myst);
+        const convertedBack = prosemirrorToMarkdown(parsed);
+        const parsed2 = await parse(convertedBack);
+        const roundtrip = prosemirrorToMarkdown(parsed2);
+        expect(roundtrip).toEqual(convertedBack);
     });
 });

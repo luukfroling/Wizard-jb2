@@ -709,7 +709,7 @@
       "attrs": {
         "ordered": false,
         "spread": false,
-        "start": 1,
+        "start": undefined,
       },
       "content": [
         {
