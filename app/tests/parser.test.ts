@@ -265,7 +265,7 @@ describe("Markdown → ProseMirror → Markdown", () => {
             myst: "[{u}`u` text](https://example.com)",
         },
         { name: "nesting", myst: "*one **two three** four*" },
-        { name: "nesting2", myst: "*one **two *three*** four*" },
+        { name: "nesting2", myst: "*one **two *three*** four*" }, //only failing test case
         { name: "nesting3", myst: "*one ***two* three** four*" },
         { name: "nesting4", myst: "*one **two*** test ***three** four*" },
         { name: "nestingb", myst: "**one *two three* four**" },
