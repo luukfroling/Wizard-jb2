@@ -31,11 +31,14 @@ import type {
     Link,
     PhrasingContent,
     Strong,
+    Subscript,
+    Superscript,
+    Underline,
 } from "myst-spec";
-import { Fragment, Mark, Node, Schema } from "prosemirror-model";
+import { Mark, Node, Schema } from "prosemirror-model";
 import { unified } from "unified";
 import mystToMd from "myst-to-md";
-import { Aside, CaptionNumber } from "myst-spec-ext";
+import { Aside, CaptionNumber, Delete } from "myst-spec-ext";
 
 type ChildrenOf<T extends MystNode> = T extends { children: infer C }
     ? C
@@ -43,18 +46,32 @@ type ChildrenOf<T extends MystNode> = T extends { children: infer C }
 
 type NodeName = typeof schema extends Schema<infer T> ? T : never;
 
+/**
+ * Convert all ProseMirror child nodes of `node` into corresponding MyST nodes.
+ * @param node - A ProseMirror node
+ * @returns Array of MyST AST nodes for each child
+ */
 function mystChildren(node: Node): MystNode[] {
     return node.children.map((x) => proseMirrorToMyst(x));
 }
 
+/**
+ * Apply inline marks to a text node, producing an array of MyST phrasing-content fragments.
+ * @param textNode - ProseMirror text node with marks
+ * @returns Array of PhrasingContent nodes representing the wrapped text
+ */
 function applyMarks(textNode: Node): PhrasingContent[] {
     const base: PhrasingContent = { type: "text", value: textNode.text! };
 
     const priority: Record<string, number> = {
+        superscript: -1,
+        subscript: -1,
         emphasis: 0,
         em: 0,
         strong: 1,
-        link: 2,
+        underline: 2,
+        delete: 3,
+        link: 4,
     };
 
     const sorted = [...textNode.marks].sort(
@@ -70,19 +87,45 @@ function applyMarks(textNode: Node): PhrasingContent[] {
     );
 }
 
+/**
+ * Wrap a sequence of MyST phrasing content with a single mark.
+ * @param mark - ProseMirror mark to convert
+ * @param children - Array of existing PhrasingContent nodes
+ * @returns A new PhrasingContent node with the given mark applied
+ */
 function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
     switch (mark.type.name) {
         case "strong":
             return { type: "strong", children } as Strong;
+
         case "em":
         case "emphasis":
             return { type: "emphasis", children } as Emphasis;
+
+        case "superscript":
+            return { type: "superscript", children } as Superscript;
+
+        case "subscript":
+            return { type: "subscript", children } as Subscript;
+
+        case "underline":
+            return { type: "underline", children } as Underline;
+
+        case "strikethrough":
+        case "delete":
+            return {
+                type: "delete",
+                children,
+            } as Delete as unknown as PhrasingContent;
+
         case "link": {
             const url = (mark.attrs.href ?? mark.attrs.url) as string;
             const title = (mark.attrs.title ?? "") as string;
             return { type: "link", url, title, children } as Link;
         }
+
         default:
+            // fallback to plain text
             return {
                 type: "text",
                 value: children.map((c) => (c as Text).value).join(""),
@@ -90,37 +133,47 @@ function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
     }
 }
 
+/**
+ * Flatten a ProseMirror node's content into MyST phrasing content, merging adjacent runs of the same mark.
+ * @param node - A ProseMirror node whose content is phrasing
+ * @returns The array of MyST phrasing-content nodes corresponding to the input
+ */
 function handleChildren<T extends MystNode>(node: Node): ChildrenOf<T> {
     // first get all phrasing‐content items
-    const items = fragmentToArray(node.content).flatMap((child) => {
+    const items = node.content.content.flatMap((child) => {
         if (child.isText) {
             return applyMarks(child);
         }
         return proseMirrorToMyst(child);
     });
 
-    // now merge any adjacent <strong> nodes back into one node TODO maybe do this for all types if needed?
+    // merge any adjacent runs of the same mark type:
     const merged: PhrasingContent[] = [];
-    for (const item of items as PhrasingContent[]) {
+    for (const item of items) {
+        const last = merged[merged.length - 1];
         if (
-            item.type === "strong" &&
-            merged.length > 0 &&
-            merged[merged.length - 1].type === "strong"
+            last &&
+            item.type === last.type &&
+            // only these inline-with-children nodes need merging:
+            [
+                "strong",
+                "emphasis",
+                "superscript",
+                "subscript",
+                "underline",
+                "delete",
+                "link",
+            ].includes(item.type)
         ) {
-            const prev = merged[merged.length - 1] as Strong;
-            prev.children = prev.children.concat((item as Strong).children);
+            (last as unknown as Paragraph).children.push(
+                ...(item as Paragraph).children,
+            );
         } else {
-            merged.push(item);
+            merged.push(item as PhrasingContent);
         }
     }
 
     return merged as ChildrenOf<T>;
-}
-
-function fragmentToArray(fragment: Fragment): Node[] {
-    const arr: Node[] = [];
-    fragment.forEach((child) => arr.push(child as Node));
-    return arr;
 }
 
 const proseMirrorToMystHandlers = {
@@ -263,17 +316,28 @@ const proseMirrorToMystHandlers = {
     }),
 } satisfies Record<NodeName, (node: Node) => MystNode>;
 
+/**
+ * Convert a ProseMirror node into its corresponding MyST AST node.
+ * @param node - ProseMirror Node
+ * @returns A MyST AST node
+ */
 export function proseMirrorToMyst(node: Node): MystNode {
     return proseMirrorToMystHandlers[node.type.name as NodeName](node);
 }
 
+/**
+ * Serialize a ProseMirror node back to MyST Markdown.
+ * @param node - ProseMirror AST node
+ * @returns Markdown string in MyST syntax
+ */
 export function prosemirrorToMarkdown(node: Node): string {
     const ast = proseMirrorToMyst(node);
-    const result = unified()
+    let result = unified()
         .use(mystToMd)
         .stringify(ast as Root).result;
     if (typeof result !== "string") {
         throw new Error("invalid result");
     }
-    return result;
+    result = result.replace(/\\~([^~]+)~/g, "~$1~"); // Un-escape \~foo~ → ~foo~)
+    return result as string;
 }

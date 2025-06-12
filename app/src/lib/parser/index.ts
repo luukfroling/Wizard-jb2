@@ -59,11 +59,14 @@ import type {
     InlineMath,
     Image,
     Caption,
+    Subscript,
+    Superscript,
+    Underline,
 } from "myst-spec";
 import type { GenericNode, GenericParent } from "myst-common";
 import { Mark, Node } from "prosemirror-model";
 import { VFile } from "vfile";
-import { Aside, CaptionNumber } from "myst-spec-ext";
+import { Aside, CaptionNumber, Delete } from "myst-spec-ext";
 
 type DefinitionMap = Map<string, Definition>;
 
@@ -265,6 +268,17 @@ const handlers = {
             defs,
             schema.mark("link", pick(node, "url", "title")),
         ),
+    superscript: (node: Superscript, defs: DefinitionMap) =>
+        markChildren(node, defs, schema.mark("superscript")),
+
+    subscript: (node: Subscript, defs: DefinitionMap) =>
+        markChildren(node, defs, schema.mark("subscript")),
+
+    underline: (node: Underline, defs: DefinitionMap) =>
+        markChildren(node, defs, schema.mark("underline")),
+
+    delete: (node: Delete, defs: DefinitionMap) =>
+        markChildren(node, defs, schema.mark("strikethrough")),
     linkReference: (node: LinkReference, defs: DefinitionMap) =>
         markChildren(
             node,

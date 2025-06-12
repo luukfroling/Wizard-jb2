@@ -243,6 +243,19 @@ describe("Markdown → ProseMirror → Markdown", () => {
         { name: "bold+italic", myst: "***both***" },
         { name: "nested mix", myst: "**bold *and italics***" },
         { name: "link + bold", myst: "[**BOLD LINK**](https://x)" },
+        { name: "superscript", myst: "{sup}`superscript`" },
+        { name: "subscript", myst: "{sub}`subscript`" },
+        { name: "superscript2", myst: "^superscript^" },
+        { name: "subscript2", myst: "~subscript~" },
+        { name: "underline", myst: "{u}`underlined`" },
+        { name: "delete (strikethrough)", myst: "{del}`deleted`" },
+        { name: "bold + subscript", myst: "**X{sub}`2`**" },
+        { name: "bold + subscript2", myst: "**X~2~**" },
+        { name: "link + superscript", myst: "[E=mc^2^](https://example.com)" },
+        {
+            name: "link + superscript2",
+            myst: "[E=mc{sup}`2`](https://example.com)",
+        },
     ];
 
     it.for(cases)("round-trips $name", async ({ myst }) => {
