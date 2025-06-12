@@ -177,14 +177,23 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     // Parse markdown into a ProseMirror Node
     const doc = await parseMyst(markdown);
 
-    // Update the editor state with the loaded document
-    setState((prev) =>
-      EditorState.create({
-        schema: prev.schema,
-        doc,
-        plugins: prev.plugins,
-      }),
-    );
+    // Debugging
+    // console.log("Markdown: \n" + markdown)
+    // console.log("Parsed: \n" + doc)
+
+    // Get the current view instance
+    const editorView = view();
+
+    // Create new state
+    const newState = EditorState.create({
+      schema: editorView.state.schema,
+      doc,
+      plugins: editorView.state.plugins,
+    })
+
+    // Set the new state
+    editorView.updateState(newState);
+    setState(newState);
   }
 
   return (
