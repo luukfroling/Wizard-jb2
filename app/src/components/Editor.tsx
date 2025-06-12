@@ -9,7 +9,7 @@ import {
   untrack,
   useContext,
 } from "solid-js";
-import type { Node, Schema } from "prosemirror-model";
+import type { Schema } from "prosemirror-model";
 import { Command, EditorState, Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { keymap } from "prosemirror-keymap";
@@ -25,7 +25,6 @@ import {
   getFilePathFromHref,
   currentFileHref,
   getFileContentFromRepo,
-  getDefaultBranchFromHref,
   repositoryHref,
   parseOwnerRepoFromHref,
 } from "../lib/github/GithubUtility";
@@ -143,7 +142,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
       try {
         return prosemirrorToMarkdown(doc);
       } catch (e) {
-        return doc.textContent;
+        return e.toString() +  " " + doc.textContent;
       }
     };
 

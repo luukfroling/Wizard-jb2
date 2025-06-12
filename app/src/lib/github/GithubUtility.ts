@@ -161,7 +161,7 @@ export async function getFileContentFromRepo(
     token?: string,
 ): Promise<string | null | undefined> {
     // Try to fetch from the given branch first
-    let content = await fetchFromBranch(owner, repo, filePath, branch, token);
+    const content = await fetchFromBranch(owner, repo, filePath, branch, token);
     if (content !== null) return content;
 
     // If not found, use getDefaultBranchFromHref to get the default branch
