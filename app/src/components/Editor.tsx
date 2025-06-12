@@ -21,7 +21,14 @@ import { prosemirrorToMarkdown } from "../lib/parser/to_markdown";
 import { parseMyst } from "../lib/parser/index";
 import { database } from "../lib/localStorage/database";
 import { currentBranch } from "../lib/github/BranchSignal";
-import { getFilePathFromHref, currentFileHref, getFileContentFromRepo, getDefaultBranchFromHref, repositoryHref, parseOwnerRepoFromHref } from "../lib/github/GithubUtility";
+import {
+  getFilePathFromHref,
+  currentFileHref,
+  getFileContentFromRepo,
+  getDefaultBranchFromHref,
+  repositoryHref,
+  parseOwnerRepoFromHref,
+} from "../lib/github/GithubUtility";
 
 export interface EditorProps {
   schema: Schema;
@@ -165,7 +172,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
           repoInfo.owner,
           repoInfo.repo,
           branch,
-          filePath
+          filePath,
         );
         if (markdownTemp == null) markdownTemp = undefined;
         markdown = markdownTemp;
@@ -189,7 +196,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
       schema: editorView.state.schema,
       doc,
       plugins: editorView.state.plugins,
-    })
+    });
 
     // Set the new state
     editorView.updateState(newState);

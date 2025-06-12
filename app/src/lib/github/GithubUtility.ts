@@ -131,22 +131,22 @@ export async function getAllBranchesFromHref(
  * Helper to fetch file content from a specific branch.
  */
 export async function fetchFromBranch(
-  owner: string,
-  repo: string,
-  filePath: string,
-  branchName: string,
-  token?: string
+    owner: string,
+    repo: string,
+    filePath: string,
+    branchName: string,
+    token?: string,
 ): Promise<string | null> {
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${encodeURIComponent(branchName)}`;
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3.raw",
-  };
-  if (token) {
-    headers.Authorization = `token ${token}`;
-  }
-  const resp = await fetch(apiUrl, { headers });
-  if (!resp.ok) return null;
-  return await resp.text();
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${encodeURIComponent(branchName)}`;
+    const headers: Record<string, string> = {
+        Accept: "application/vnd.github.v3.raw",
+    };
+    if (token) {
+        headers.Authorization = `token ${token}`;
+    }
+    const resp = await fetch(apiUrl, { headers });
+    if (!resp.ok) return null;
+    return await resp.text();
 }
 
 /**
@@ -154,23 +154,29 @@ export async function fetchFromBranch(
  * If not found in the given branch, tries the default branch.
  */
 export async function getFileContentFromRepo(
-  owner: string,
-  repo: string,
-  branch: string,
-  filePath: string,
-  token?: string
+    owner: string,
+    repo: string,
+    branch: string,
+    filePath: string,
+    token?: string,
 ): Promise<string | null | undefined> {
-  // Try to fetch from the given branch first
-  let content = await fetchFromBranch(owner, repo, filePath, branch, token);
-  if (content !== null) return content;
+    // Try to fetch from the given branch first
+    let content = await fetchFromBranch(owner, repo, filePath, branch, token);
+    if (content !== null) return content;
 
-  // If not found, use getDefaultBranchFromHref to get the default branch
-  const repoHref = `https://github.com/${owner}/${repo}`;
-  const defaultBranch = await getDefaultBranchFromHref(repoHref, token);
+    // If not found, use getDefaultBranchFromHref to get the default branch
+    const repoHref = `https://github.com/${owner}/${repo}`;
+    const defaultBranch = await getDefaultBranchFromHref(repoHref, token);
 
-  if (defaultBranch && defaultBranch !== branch) {
-    return await fetchFromBranch(owner, repo, filePath, defaultBranch, token);
-  }
+    if (defaultBranch && defaultBranch !== branch) {
+        return await fetchFromBranch(
+            owner,
+            repo,
+            filePath,
+            defaultBranch,
+            token,
+        );
+    }
 
-  return null;
+    return null;
 }
