@@ -142,7 +142,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
       try {
         return prosemirrorToMarkdown(doc);
       } catch (e) {
-        return e.toString() +  " " + doc.textContent;
+        return e.toString() + " " + doc.textContent;
       }
     };
 
