@@ -281,77 +281,98 @@ export function prosemirrorToMarkdown(node: Node): string {
     return result;
 }
 
-const MARK_PRECEDENCE: string[] = [
-    "link",
-    "strong",
-    "emphasis",
-    "underline",
-    "delete",
-    "superscript",
-    "subscript",
-    "inlineCode",
-] as const;
-
 /**
- * Should handle inline content, but does not work with complex nesting. TODO
- * For an example of how this breaks, run tests and look at the output of the deep nesting round trip:
- *    Expected: *one **two *three*** four*
- *    Received: *one **two ****three** four*
- *                        ^
- * This would render the same if not for the fact that the space in "**two **" doesn't allow "two" to become bold.
- * I think this can be fixed by replacing the sort by precedence approach with an approach that tracks the original nesting structure.
- * I am too tired to do that right now though.
+ * Convert a ProseMirror “inline” node (paragraph, heading, etc.) into a
+ * flat array of MyST PhrasingContent, preserving the exact nesting of marks.
+ * TODO There is still a bug, not every test case succeeds:
+ * Expected: *one **two *three*** four*
+ * Received: *one *two **three*** four*
  */
 function handleInline(node: Node): PhrasingContent[] {
-    const out: PhrasingContent[] = [];
     const tokens = Array.from(node.content.content);
-    let idx = 0;
 
-    while (idx < tokens.length) {
-        const tok = tokens[idx]!;
-        const marks = tok.marks.slice();
+    type Span = { mark: Mark; first: number; last: number; length: number };
 
-        if (marks.length === 0) {
-            if (tok.isText) out.push({ type: "text", value: tok.text! });
-            else out.push(proseMirrorToMyst(tok) as PhrasingContent);
-            idx++;
-            continue;
-        }
-
-        // Sort by precedence
-        marks.sort(
-            (a, b) =>
-                MARK_PRECEDENCE.indexOf(a.type.name) -
-                MARK_PRECEDENCE.indexOf(b.type.name),
-        );
-        const outer = marks.shift()!;
-
-        // Collect all consecutive tokens that also have *outer* in their marks
-        const innerChildren: PhrasingContent[] = [];
-
-        while (
-            idx < tokens.length &&
-            tokens[idx].marks.some((m) => m.eq(outer))
-        ) {
-            const t = tokens[idx]!;
-            let childNode: PhrasingContent = t.isText
-                ? ({ type: "text", value: t.text! } as Text)
-                : (proseMirrorToMyst(t) as PhrasingContent);
-
-            const others = t.marks
-                .filter((m) => !m.eq(outer))
-                .sort(
-                    (a, b) =>
-                        MARK_PRECEDENCE.indexOf(b.type.name) -
-                        MARK_PRECEDENCE.indexOf(a.type.name),
-                );
-            for (const m of others) {
-                childNode = wrapMark(m, [childNode]) as PhrasingContent;
+    // 1) Collect positions for each mark instance
+    const markMap = new Map<Mark, number[]>();
+    tokens.forEach((tok, i) => {
+        for (const m of tok.marks) {
+            let arr = markMap.get(m);
+            if (!arr) {
+                arr = [];
+                markMap.set(m, arr);
             }
-            innerChildren.push(childNode);
-            idx++;
+            arr.push(i);
         }
-        out.push(wrapMark(outer, innerChildren) as PhrasingContent);
+    });
+
+    // 2) Build spans only over truly contiguous runs for each mark,
+    //    but break any run if the next token in the doc doesn't have the mark.
+    const spans: Span[] = [];
+    for (const [mark, positions] of markMap) {
+        positions.sort((a, b) => a - b);
+        let runStart = positions[0],
+            prev = positions[0];
+        for (let j = 1; j < positions.length; j++) {
+            const cur = positions[j];
+            // if it's not adjacent *or* the token after `prev` doesn't carry the mark,
+            // end the previous run and start a new one.
+            const gap = cur !== prev + 1;
+            const sep = !tokens[prev].marks.some((m) => m.eq(mark));
+            if (gap || sep) {
+                spans.push({
+                    mark,
+                    first: runStart,
+                    last: prev,
+                    length: prev - runStart,
+                });
+                runStart = cur;
+            }
+            prev = cur;
+        }
+        // finish last run
+        spans.push({
+            mark,
+            first: runStart,
+            last: prev,
+            length: prev - runStart,
+        });
     }
-    return out;
+
+    // 3) Index opens & closes
+    const opens: Record<number, Span[]> = {};
+    const closes: Record<number, Span[]> = {};
+    for (const s of spans) {
+        (opens[s.first] ||= []).push(s);
+        (closes[s.last] ||= []).push(s);
+    }
+    // When multiple spans open at same index, open longer first
+    for (const a of Object.values(opens)) a.sort((x, y) => y.length - x.length);
+    // When multiple spans close at same index, close shorter first
+    for (const a of Object.values(closes))
+        a.sort((x, y) => x.length - y.length);
+
+    // 4) Sweep, maintaining a stack of child-arrays
+    const root: PhrasingContent[] = [];
+    const stack: PhrasingContent[][] = [root];
+
+    for (let i = 0; i < tokens.length; i++) {
+        // open spans
+        for (const _s of opens[i] || []) stack.push([]);
+
+        // emit token
+        const tok = tokens[i]!;
+        const leaf: PhrasingContent = tok.isText
+            ? ({ type: "text", value: tok.text! } as Text)
+            : (proseMirrorToMyst(tok) as PhrasingContent);
+        stack[stack.length - 1].push(leaf);
+
+        // close spans
+        for (const s of closes[i] || []) {
+            const children = stack.pop()!;
+            stack[stack.length - 1].push(wrapMark(s.mark, children));
+        }
+    }
+
+    return root;
 }
