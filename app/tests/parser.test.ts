@@ -242,6 +242,7 @@ describe("Markdown → ProseMirror → Markdown", () => {
         { name: "link", myst: "[link text](https://example.com)" },
         { name: "bold+italic", myst: "***both***" },
         { name: "nested mix", myst: "**bold *and italics***" },
+        { name: "nested mix inverted", myst: "*italic **and bold!***" },
         { name: "link + bold", myst: "[**BOLD LINK**](https://x)" },
         { name: "superscript", myst: "{sup}`superscript`" },
         { name: "subscript", myst: "{sub}`subscript`" },

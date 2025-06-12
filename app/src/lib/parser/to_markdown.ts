@@ -68,7 +68,7 @@ function applyMarks(textNode: Node): PhrasingContent[] {
         subscript: -1,
         emphasis: 0,
         em: 0,
-        strong: 1,
+        strong: 0,
         underline: 2,
         delete: 3,
         link: 4,
