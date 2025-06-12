@@ -47,44 +47,12 @@ type ChildrenOf<T extends MystNode> = T extends { children: infer C }
 type NodeName = typeof schema extends Schema<infer T> ? T : never;
 
 /**
- * Convert all ProseMirror child nodes of `node` into corresponding MyST nodes.
+ * Convert all ProseMirror child nodes of node into corresponding MyST nodes.
  * @param node - A ProseMirror node
  * @returns Array of MyST AST nodes for each child
  */
 function mystChildren(node: Node): MystNode[] {
     return node.children.map((x) => proseMirrorToMyst(x));
-}
-
-/**
- * Apply inline marks to a text node, producing an array of MyST phrasing-content fragments.
- * @param textNode - ProseMirror text node with marks
- * @returns Array of PhrasingContent nodes representing the wrapped text
- */
-function applyMarks(textNode: Node): PhrasingContent[] {
-    const base: PhrasingContent = { type: "text", value: textNode.text! };
-
-    const priority: Record<string, number> = {
-        superscript: -1,
-        subscript: -1,
-        emphasis: 0,
-        em: 0,
-        strong: 0,
-        underline: 2,
-        delete: 3,
-        link: 4,
-    };
-
-    const sorted = [...textNode.marks].sort(
-        (a, b) => (priority[a.type.name] ?? 99) - (priority[b.type.name] ?? 99),
-    );
-
-    return sorted.reduce<PhrasingContent[]>(
-        (children, mark) => {
-            const wrapped = wrapMark(mark, children);
-            return [wrapped];
-        },
-        [base],
-    );
 }
 
 /**
@@ -133,47 +101,19 @@ function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
     }
 }
 
-/**
- * Flatten a ProseMirror node's content into MyST phrasing content, merging adjacent runs of the same mark.
- * @param node - A ProseMirror node whose content is phrasing
- * @returns The array of MyST phrasing-content nodes corresponding to the input
- */
 function handleChildren<T extends MystNode>(node: Node): ChildrenOf<T> {
-    // first get all phrasing‐content items
-    const items = node.content.content.flatMap((child) => {
-        if (child.isText) {
-            return applyMarks(child);
-        }
-        return proseMirrorToMyst(child);
-    });
-
-    // merge any adjacent runs of the same mark type:
-    const merged: PhrasingContent[] = [];
-    for (const item of items) {
-        const last = merged[merged.length - 1];
-        if (
-            last &&
-            item.type === last.type &&
-            // only these inline-with-children nodes need merging:
-            [
-                "strong",
-                "emphasis",
-                "superscript",
-                "subscript",
-                "underline",
-                "delete",
-                "link",
-            ].includes(item.type)
-        ) {
-            (last as unknown as Paragraph).children.push(
-                ...(item as Paragraph).children,
-            );
-        } else {
-            merged.push(item as PhrasingContent);
-        }
+    // if this is an inline container (paragraph, heading, etc.)
+    if (
+        node.isInline ||
+        /^(paragraph|heading|blockquote|link|emphasis|strong|delete|subscript|superscript|underline)$/.test(
+            node.type.name,
+        )
+    ) {
+        return handleInline(node) as ChildrenOf<T>;
+    } else {
+        // block‐level
+        return node.children.map((x) => proseMirrorToMyst(x)) as ChildrenOf<T>;
     }
-
-    return merged as ChildrenOf<T>;
 }
 
 const proseMirrorToMystHandlers = {
@@ -331,13 +271,87 @@ export function proseMirrorToMyst(node: Node): MystNode {
  * @returns Markdown string in MyST syntax
  */
 export function prosemirrorToMarkdown(node: Node): string {
-    const ast = proseMirrorToMyst(node);
-    let result = unified()
-        .use(mystToMd)
-        .stringify(ast as Root).result;
+    const mystAst = proseMirrorToMyst(node);
+    const processor = unified().use(mystToMd);
+    const mdast = processor.runSync(mystAst as Root);
+    const result = processor.stringify(mdast).result as string;
     if (typeof result !== "string") {
-        throw new Error("invalid result");
+        throw new Error("invalid result from remark-stringify");
     }
-    result = result.replace(/\\~([^~]+)~/g, "~$1~"); // Un-escape \~foo~ → ~foo~)
-    return result as string;
+    return result;
+}
+
+const MARK_PRECEDENCE: string[] = [
+    "link", 
+    "strong",
+    "emphasis",
+    "underline",
+    "delete",
+    "superscript",
+    "subscript",
+    "inlineCode",
+] as const;
+
+/**
+ * Should handle inline content, but does not work with complex nesting. TODO
+ * For an example of how this breaks, run tests and look at the output of the deep nesting round trip:
+ *    Expected: *one **two *three*** four*
+ *    Received: *one **two ****three** four*
+ *                        ^
+ * This would render the same if not for the fact that the space in "**two **" doesn't allow "two" to become bold.
+ * I think this can be fixed by replacing the sort by precedence approach with an approach that tracks the original nesting structure.
+ * I am too tired to do that right now though.
+ */
+function handleInline(node: Node): PhrasingContent[] {
+    const out: PhrasingContent[] = [];
+    const tokens = Array.from(node.content.content);
+    let idx = 0;
+
+    while (idx < tokens.length) {
+        const tok = tokens[idx]!;
+        const marks = tok.marks.slice();
+
+        if (marks.length === 0) {
+            if (tok.isText) out.push({ type: "text", value: tok.text! });
+            else out.push(proseMirrorToMyst(tok) as PhrasingContent);
+            idx++;
+            continue;
+        }
+
+        // Sort by precedence
+        marks.sort(
+            (a, b) =>
+                MARK_PRECEDENCE.indexOf(a.type.name) -
+                MARK_PRECEDENCE.indexOf(b.type.name),
+        );
+        const outer = marks.shift()!;
+
+        // Collect all consecutive tokens that also have *outer* in their marks
+        const innerChildren: PhrasingContent[] = [];
+
+        while (
+            idx < tokens.length &&
+            tokens[idx].marks.some((m) => m.eq(outer))
+        ) {
+            const t = tokens[idx]!;
+            let childNode: PhrasingContent = t.isText
+                ? ({ type: "text", value: t.text! } as Text)
+                : (proseMirrorToMyst(t) as PhrasingContent);
+
+            const others = t.marks
+                .filter((m) => !m.eq(outer))
+                .sort(
+                    (a, b) =>
+                        MARK_PRECEDENCE.indexOf(b.type.name) -
+                        MARK_PRECEDENCE.indexOf(a.type.name),
+                );
+            for (const m of others) {
+                childNode = wrapMark(m, [childNode]) as PhrasingContent;
+            }
+            innerChildren.push(childNode);
+            idx++;
+        }
+        out.push(wrapMark(outer, innerChildren) as PhrasingContent);
+    }
+    return out;
 }

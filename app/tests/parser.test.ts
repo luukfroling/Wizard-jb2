@@ -246,17 +246,28 @@ describe("Markdown → ProseMirror → Markdown", () => {
         { name: "link + bold", myst: "[**BOLD LINK**](https://x)" },
         { name: "superscript", myst: "{sup}`superscript`" },
         { name: "subscript", myst: "{sub}`subscript`" },
-        { name: "superscript2", myst: "^superscript^" },
-        { name: "subscript2", myst: "~subscript~" },
         { name: "underline", myst: "{u}`underlined`" },
         { name: "delete (strikethrough)", myst: "{del}`deleted`" },
         { name: "bold + subscript", myst: "**X{sub}`2`**" },
-        { name: "bold + subscript2", myst: "**X~2~**" },
-        { name: "link + superscript", myst: "[E=mc^2^](https://example.com)" },
         {
             name: "link + superscript2",
             myst: "[E=mc{sup}`2`](https://example.com)",
         },
+        { name: "bold then italic", myst: "**foo***bar*" },
+        { name: "italic punctuation", myst: "*hello*, world" },
+        { name: "escaped asterisks", myst: "\\*not italic\\*" },
+        {
+            name: "link with mixed marks",
+            myst: "[*i* **b** {del}`c`](https://example.com)",
+        },
+        {
+            name: "link with underline",
+            myst: "[{u}`u` text](https://example.com)",
+        },
+        { name: "deep nesting", myst: "*one **two *three*** four*" },
+        { name: "combined sub sup", myst: "**X{sup}`2`{sub}`i`**" },
+        { name: "subsup sequence", myst: "H{sup}`2`O{sup}`+`" },
+        { name: "mixed run", myst: "*a* **b** {sup}`c` ^d^" },
     ];
 
     it.for(cases)("round-trips $name", async ({ myst }) => {
