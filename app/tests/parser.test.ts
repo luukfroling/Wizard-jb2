@@ -226,3 +226,33 @@ describe("Markdown parser", () => {
         expect(roundtrip).toEqual(convertedBack);
     });
 });
+
+describe("Markdown → ProseMirror → Markdown", () => {
+    // first, re-use your existing helper
+    async function parseParagraph(myst: string): Promise<Node> {
+        const root = await parseMyst(myst);
+        expect(root.type.name).toBe("root");
+        expect(root.childCount).toBe(1);
+        return root.firstChild!;
+    }
+
+    const cases = [
+        { name: "bold", myst: "**bold**" },
+        { name: "italic", myst: "*italic*" },
+        { name: "link", myst: "[link text](https://example.com)" },
+        { name: "bold+italic", myst: "***both***" },
+        { name: "nested mix", myst: "**bold *and italics***" },
+        { name: "link + bold", myst: "[**BOLD LINK**](https://x)" },
+    ];
+
+    it.for(cases)("round-trips $name", async ({ myst }) => {
+        // 1. Parse the MYST into a ProseMirror paragraph Node
+        const pmPara = await parseParagraph(myst);
+
+        // 2. Convert that PM AST back to Markdown
+        const md = prosemirrorToMarkdown(pmPara);
+
+        // 3. It should match the original myst
+        expect(md.trim()).toBe("+++\n" + myst);
+    });
+});
