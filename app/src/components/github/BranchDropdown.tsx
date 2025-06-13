@@ -1,5 +1,8 @@
 import { Component, createSignal, onMount, For } from "solid-js";
-import { repositoryHref, getFilePathFromHref } from "../../lib/github/GithubUtility";
+import {
+  repositoryHref,
+  getFilePathFromHref,
+} from "../../lib/github/GithubUtility";
 import {
   getAllBranchesFromHref,
   getDefaultBranchFromHref,

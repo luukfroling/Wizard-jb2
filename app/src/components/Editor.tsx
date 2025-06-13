@@ -16,8 +16,28 @@ import { EditorView } from "prosemirror-view";
 import { keymap } from "prosemirror-keymap";
 import { history, redo, undo } from "prosemirror-history";
 import { baseKeymap } from "prosemirror-commands";
-import { sinkListItem, liftListItem } from "prosemirror-schema-list";
-import { preserveMarksPlugin } from "../lib/editor_plugins";
+import { currentBranch } from "../lib/github/BranchSignal";
+import {
+  currentFileHref,
+  getFilePathFromHref,
+  repositoryHref,
+  parseOwnerRepoFromHref,
+  getFileContentFromRepo,
+} from "../lib/github/GithubUtility";
+import { database } from "../lib/localStorage/database";
+import { parseMyst } from "../lib/parser";
+import { prosemirrorToMarkdown } from "../lib/parser/to_markdown";
+import { ImageNodeView } from "./ImageNodeView";
+import { MathNodeView } from "./MathNodeView";
+import {
+  customListKeymap,
+  tableAndCodeExitKeymap,
+  codeBlockKeymap,
+  mathDeleteKeymap,
+  tableAfterDeleteKeymap,
+  preserveMarksPlugin,
+} from "./toolbar/editor_plugins";
+import { tableEditing } from "prosemirror-tables";
 
 export interface EditorProps {
   schema: Schema;
