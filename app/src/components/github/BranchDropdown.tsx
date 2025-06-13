@@ -87,18 +87,12 @@ export const BranchDropdown: Component = () => {
     }
     if (branches().includes(name)) {
       // If branch exists, just switch to it
-      setBranch(name);
-      setCurrentBranch(name);
-      localStorage.setItem("currentBranch", name);
-      await database.setActiveBranch(name); // <-- set active branch here
-      setShowInput(false);
+      handleSelect(name);
       setNewBranchName("");
       return;
     }
     setBranches([name, ...branches()]);
-    setBranch(name);
-    localStorage.setItem("currentBranch", name);
-    await database.setActiveBranch(name); // <-- set active branch here
+    handleSelect(name);
     // Save local branches
     const localBranches = JSON.parse(
       localStorage.getItem("localBranches") || "[]",
@@ -107,7 +101,6 @@ export const BranchDropdown: Component = () => {
       "localBranches",
       JSON.stringify([name, ...localBranches]),
     );
-    setShowInput(false);
     setNewBranchName("");
   };
 
