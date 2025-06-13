@@ -36,7 +36,7 @@ export const schema = new Schema({
             },
         },
         paragraph: {
-            group: "block flowContent",
+            group: "flowContent",
             content: "phrasingContent*",
             marks: "_",
             attrs: {
