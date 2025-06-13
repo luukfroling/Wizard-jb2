@@ -3,6 +3,19 @@
     {
       "attrs": {
         "align": "left",
+        "level": 1,
+      },
+      "content": [
+        {
+          "text": "Exercise 1: First file edit",
+          "type": "text",
+        },
+      ],
+      "type": "heading",
+    },
+    {
+      "attrs": {
+        "align": "left",
       },
       "content": [
         {
