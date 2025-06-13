@@ -21,7 +21,6 @@ import type {
     Container,
     Math,
     InlineMath,
-    PhrasingContent,
     Break,
     BlockBreak,
     Table,
@@ -34,6 +33,10 @@ import { unified } from "unified";
 import mystToMd from "myst-to-md";
 import { Aside, CaptionNumber } from "myst-spec-ext";
 
+type ChildrenOf<T extends MystNode> = T extends { children: infer C }
+    ? C
+    : never;
+
 type NodeName = typeof schema extends Schema<infer T> ? T : never;
 
 function mystChildren(node: Node): MystNode[] {
@@ -44,21 +47,21 @@ const proseMirrorToMystHandlers = {
     code: (node: Node): Code => ({ type: "code", value: node.textContent }),
     root: (node: Node): Root => ({
         type: "root",
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: node.children.map((x) => proseMirrorToMyst(x)) as any,
+        children: node.children.map((x) =>
+            proseMirrorToMyst(x),
+        ) as ChildrenOf<Root>,
     }),
     block: (node: Node): Block => ({
         type: "block",
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: node.children.map((x) => proseMirrorToMyst(x)) as any,
+        children: node.children.map((x) =>
+            proseMirrorToMyst(x),
+        ) as ChildrenOf<Block>,
     }),
     paragraph: (node: Node): Paragraph => ({
         type: "paragraph",
         children: node.children.map((x) =>
             proseMirrorToMyst(x),
-        ) as PhrasingContent[],
+        ) as ChildrenOf<Paragraph>,
     }),
     definition: (node: Node): Definition => ({
         type: "definition",
@@ -68,33 +71,25 @@ const proseMirrorToMystHandlers = {
     heading: (node: Node): Heading => ({
         type: "heading",
         depth: node.attrs.depth as number,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Heading>,
     }),
     thematicBreak: (_node: Node): ThematicBreak => ({
         type: "thematicBreak",
     }),
     blockquote: (node: Node): Blockquote => ({
         type: "blockquote",
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Blockquote>,
     }),
     list: (node: Node): List => ({
         type: "list",
         start: node.attrs.start as number,
         spread: node.attrs.spread as boolean,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<List>,
     }),
     listItem: (node: Node): ListItem => ({
         type: "listItem",
         spread: node.attrs.spread,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<ListItem>,
     }),
     text: (node: Node): Text => ({
         type: "text",
@@ -113,29 +108,21 @@ const proseMirrorToMystHandlers = {
         name: node.attrs.name as string,
         args: node.attrs.args as string,
         value: node.attrs.value as string,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Directive>,
     }),
     admonition: (node: Node): Admonition => ({
         type: "admonition",
         kind: node.attrs.kind,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Admonition>,
     }),
     admonitionTitle: (node: Node): AdmonitionTitle => ({
         type: "admonitionTitle",
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<AdmonitionTitle>,
     }),
     container: (node: Node): Container => ({
         type: "container",
         kind: node.attrs.kind,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Container>,
     }),
     math: (node: Node): Math => ({
         type: "math",
@@ -157,9 +144,7 @@ const proseMirrorToMystHandlers = {
     footnoteDefinition: (node: Node): FootnoteDefinition => ({
         type: "footnoteDefinition",
         identifier: node.attrs.identifier,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<FootnoteDefinition>,
     }),
     break: (_node: Node): Break => ({ type: "break" }),
     image: (node: Node): Image => ({
@@ -187,15 +172,11 @@ const proseMirrorToMystHandlers = {
         type: "aside",
         ...(node.attrs.label !== undefined ? { label: node.attrs.label } : {}),
         kind: node.attrs.kind,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Aside>,
     }),
     caption: (node: Node): Caption => ({
         type: "caption",
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<Caption>,
     }),
     captionNumber: (node: Node): CaptionNumber => ({
         type: "captionNumber",
@@ -204,9 +185,7 @@ const proseMirrorToMystHandlers = {
         html_id: node.attrs.html_id,
         enumerator: node.attrs.enumerator,
         identifier: node.attrs.identifier,
-        // FIXME: Types for mdast are not very nice, so use any for now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children: mystChildren(node) as any,
+        children: mystChildren(node) as ChildrenOf<CaptionNumber>,
     }),
 } satisfies Record<NodeName, (node: Node) => MystNode>;
 
@@ -218,8 +197,7 @@ export function prosemirrorToMarkdown(node: Node): string {
     const ast = proseMirrorToMyst(node);
     const result = unified()
         .use(mystToMd)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .stringify(ast as any).result;
+        .stringify(ast as Root).result;
     if (typeof result !== "string") {
         throw new Error("invalid result");
     }
