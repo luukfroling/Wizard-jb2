@@ -345,7 +345,7 @@ function transformAst(
     return handler(myst, definitions);
 }
 
-export async function parseToMystAST(
+export function parseToMystAST(
     text: string,
     defaultFrontmatter?: PageFrontmatter,
 ) {
@@ -374,7 +374,9 @@ export async function parseToMystAST(
     // const references: References = {
     //     cite: { order: [], data: {} },
     // };
-    const frontmatterRaw = getFrontmatter(vfile, mdast);
+    const frontmatterRaw = getFrontmatter(vfile, mdast, {
+        keepTitleNode: true,
+    });
     const frontmatter: Omit<PageFrontmatter, "parts"> = validatePageFrontmatter(
         frontmatterRaw,
         {

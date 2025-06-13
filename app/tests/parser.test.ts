@@ -21,9 +21,7 @@ describe("Markdown parser", () => {
         expect(parsed.children[0].textContent).toBe("Hello, world!");
     });
     it.for([
-        // FIXME: Top-level header is handled differently now,
-        // apparently
-        // { heading: "#", level: 1 },
+        { heading: "#", level: 1 },
         { heading: "##", level: 2 },
         { heading: "###", level: 3 },
         { heading: "####", level: 4 },
