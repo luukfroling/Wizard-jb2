@@ -338,9 +338,9 @@ function transformAst(
         >
     )[myst.type];
     if (!(myst.type in handlers)) {
-        console.log(myst);
+        // FIXME: Handle this better
         console.warn(`Unknown node type '${myst.type}'`);
-        return handlers.text(myst as Text);
+        return [];
     }
     return handler(myst, definitions);
 }

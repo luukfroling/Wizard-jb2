@@ -1,0 +1,306 @@
+{
+  "content": [
+    {
+      "attrs": {
+        "align": "left",
+      },
+      "content": [
+        {
+          "text": "Let’s start with the most basic edit: add some text to a file and see that the website is updated.",
+          "type": "text",
+        },
+      ],
+      "type": "paragraph",
+    },
+    {
+      "attrs": {
+        "class": null,
+        "kind": "topic",
+      },
+      "content": [
+        {
+          "content": [
+            {
+              "text": "Exercise objective",
+              "type": "text",
+            },
+          ],
+          "type": "admonitionTitle",
+        },
+        {
+          "attrs": {
+            "align": "left",
+          },
+          "content": [
+            {
+              "text": "Can you add some content to the intro page?",
+              "type": "text",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "type": "aside",
+    },
+    {
+      "attrs": {
+        "ordered": true,
+        "spread": false,
+        "start": undefined,
+      },
+      "content": [
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Go to the the file  on your GitHub repository () -   -  -  -  ",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Add some text. Feeling brave? Have a look at the ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "attrs": {
+                        "reference": null,
+                        "title": null,
+                        "url": "https://jupyterbook.org/en/stable/reference/cheatsheet.html",
+                      },
+                      "type": "link",
+                    },
+                  ],
+                  "text": "MyST cheat sheet",
+                  "type": "text",
+                },
+                {
+                  "text": ". Don’t worry if that feels daunting, there will be exercises on this!",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Click ",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Add a message and description of your change. With this  you save your changes to the git-timeline. Any commit can always be reverted. Therefore, it’s useful to shortly explain what is included in your commit. Later on, you’ll make commits which may contain changes to many different files. In that case, a descriptive commit message and description is even more useful!",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Select  (this adds your change your change to the default version instead of making a new one)",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Click .",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Go to   - The most recent workflow run  - Wait for it to finish - In the summary, click on the link of your book shown in the table  and under ",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Do you see your change? If you don’t see it click +/+to refresh the page (your browser keeps a cached version of website you recently visit, but we actually want the most up-to-date version!).",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+      ],
+      "type": "list",
+    },
+    {
+      "attrs": {
+        "class": undefined,
+        "kind": "hint",
+      },
+      "content": [
+        {
+          "content": [
+            {
+              "text": "Watch the steps in action below",
+              "type": "text",
+            },
+          ],
+          "type": "admonitionTitle",
+        },
+        {
+          "attrs": {
+            "align": "left",
+          },
+          "content": [
+            {
+              "text": "class: dropdown",
+              "type": "text",
+            },
+          ],
+          "type": "paragraph",
+        },
+        {
+          "attrs": {
+            "kind": "figure",
+          },
+          "content": [
+            {
+              "content": [
+                {
+                  "attrs": {
+                    "align": "left",
+                    "alt": "Demonstration of all steps of this exercise, video available here",
+                    "class": "",
+                    "reference": null,
+                    "title": "",
+                    "url": "https://github.com/TeachBooks/template_figures/blob/main/excercise1.gif?raw=true",
+                    "width": undefined,
+                  },
+                  "type": "image",
+                },
+              ],
+              "type": "imageWrapper",
+            },
+            {
+              "content": [
+                {
+                  "attrs": {
+                    "align": "left",
+                  },
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Figure 1:",
+                          "type": "text",
+                        },
+                      ],
+                      "type": "captionNumber",
+                    },
+                    {
+                      "text": "Demonstration of all steps of this exercise, video available ",
+                      "type": "text",
+                    },
+                    {
+                      "marks": [
+                        {
+                          "attrs": {
+                            "reference": null,
+                            "title": null,
+                            "url": "https://youtu.be/gn1zBmmunco",
+                          },
+                          "type": "link",
+                        },
+                      ],
+                      "text": "here",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "paragraph",
+                },
+              ],
+              "type": "caption",
+            },
+          ],
+          "type": "container",
+        },
+      ],
+      "type": "admonition",
+    },
+  ],
+  "type": "block",
+}

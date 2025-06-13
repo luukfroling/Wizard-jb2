@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseMyst } from "../src/lib/parser";
 import { Node } from "prosemirror-model";
 import { schema } from "../src/lib/schema";
-import { EXAMPLE_1 } from "./parser_constants";
+import { EXAMPLE_1, EXAMPLE_2 } from "./parser_constants";
 import { prosemirrorToMarkdown } from "../src/lib/parser/to_markdown";
 
 describe("Markdown parser", () => {
@@ -206,6 +206,10 @@ describe("Markdown parser", () => {
         {
             myst: EXAMPLE_1,
             desc: "example_1",
+        },
+        {
+            myst: EXAMPLE_2,
+            desc: "example_2",
         },
     ];
 
