@@ -2,6 +2,7 @@ import { Component, createSignal, onMount, For } from "solid-js";
 import {
   repositoryHref,
   getFilePathFromHref,
+  getCurrentFileHref,
 } from "../../lib/github/GithubUtility";
 import {
   getAllBranchesFromHref,
@@ -59,13 +60,14 @@ export const BranchDropdown: Component = () => {
 
   // When a branch is selected, update state and localStorage
   const handleSelect = async (b: string) => {
-    const href = repositoryHref();
+    const href = getCurrentFileHref();
     const filePath = getFilePathFromHref(href);
     const content = window.__getEditorMarkdown
       ? window.__getEditorMarkdown()
       : "";
+    // console.log("Saved:", content, "to filePath:", filePath, "from href:", href);
     if (filePath && content && database.isInitialised()) {
-      await database.save("markdown", filePath, content);
+      await database.save<string>("markdown", filePath, content);
     }
     setBranch(b);
     setCurrentBranch(b); // <-- update the signal
