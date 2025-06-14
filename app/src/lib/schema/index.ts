@@ -295,7 +295,7 @@ export const schema = new Schema({
             parseDOM: [{ tag: "tr" }],
         },
         table_cell: {
-            content: "block+",
+            content: "flowContent+",
             attrs: { style: { default: null } },
             tableRole: "cell",
             isolating: true,

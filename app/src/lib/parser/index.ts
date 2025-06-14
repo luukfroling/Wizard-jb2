@@ -62,6 +62,9 @@ import type {
     Subscript,
     Superscript,
     Underline,
+    Table,
+    TableRow,
+    TableCell,
 } from "myst-spec";
 import type { GenericNode, GenericParent } from "myst-common";
 import { Mark, Node } from "prosemirror-model";
@@ -256,6 +259,21 @@ const handlers = {
         ),
     inlineCode: (node: { value: string }) =>
         schema.text(node.value, [schema.mark("code")]),
+    table: (node: Table, defs: DefinitionMap, safe: boolean) =>
+        schema.node("table", {}, children(node, defs, safe)),
+    tableRow: (node: TableRow, defs: DefinitionMap, safe: boolean) =>
+        schema.node("table_row", {}, children(node, defs, safe)),
+    tableCell: (node: TableCell, defs: DefinitionMap, safe: boolean) => {
+        const align = node.align;
+        const style = align ? `text-align:${align}` : null;
+        const processedChildren = children(node, defs, safe);
+        if (processedChildren && processedChildren.every((c) => c.isInline)) {
+             return schema.node("table_cell", { style }, [
+                schema.node("paragraph", {}, processedChildren),
+            ]);
+        }
+        return schema.node("table_cell", { style }, processedChildren);
+    },
     mystTarget: (node: Target) =>
         schema.node("target", { label: node.label?.trim()?.toLowerCase() }),
     mystDirective: (node: Directive, defs: DefinitionMap, safe) =>

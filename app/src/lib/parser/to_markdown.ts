@@ -25,6 +25,8 @@ import type {
     Break,
     BlockBreak,
     Table,
+    TableRow,
+    TableCell,
     FootnoteDefinition,
     Image,
     Caption,
@@ -270,8 +272,27 @@ const proseMirrorToMystHandlers = {
         type: "blockBreak",
         meta: node.attrs.meta,
     }),
-    table: (_node: Node): Table => {
-        throw new Error("not yet supported");
+    table: (node: Node): Table => ({
+        type: 'table',
+        children: handleChildren<Table>(node),
+    }),
+    table_row: (node: Node): TableRow => ({
+        type: 'tableRow',
+        children: handleChildren<TableRow>(node),
+    }),
+    table_cell: (node: Node): TableCell => {
+        const style = node.attrs.style as string | null;
+        let align: 'left' | 'right' | 'center' | undefined = undefined;
+        if (style) {
+            if (style.includes('text-align:center')) align = 'center';
+            else if (style.includes('text-align:right')) align = 'right';
+            else if (style.includes('text-align:left')) align = 'left';
+        }
+        return {
+            type: 'tableCell',
+            ...(align && { align }),
+            children: handleChildren<TableCell>(node),
+        };
     },
     footnoteDefinition: (node: Node): FootnoteDefinition => ({
         type: "footnoteDefinition",

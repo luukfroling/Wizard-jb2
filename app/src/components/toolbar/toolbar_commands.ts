@@ -25,6 +25,9 @@ export const toggleSuperscript = toggleMark(schema.marks.superscript);
 export const toggleSubscript = toggleMark(schema.marks.subscript);
 // Toggle strikethrough mark
 export const toggleStrikethrough = toggleMark(schema.marks.strikethrough);
+// Toggle inline code
+export const toggleInlineCode = toggleMark(schema.marks.code);
+
 
 // --- BLOCK COMMANDS ---
 
