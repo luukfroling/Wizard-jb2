@@ -208,7 +208,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     let markdown = await database.load<string>("markdown", filePath);
 
     // Debugging stuf
-    if (markdown) console.log("Database markdown: \n" + markdown);
+    // if (markdown) console.log("Database markdown: \n" + markdown);
 
     // If not found or empty, try to fetch from GitHub
     if (!markdown) {
@@ -229,7 +229,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
       }
 
       // Debugging stuff
-      console.log("Git markdown: \n" + markdown);
+      // console.log("Git markdown: \n" + markdown);
     }
 
     if (!markdown) return;
@@ -238,7 +238,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     const doc = await parseMyst(markdown);
 
     // Debugging
-    console.log("Parsed: \n" + doc);
+    // console.log("Parsed: \n" + doc);
 
     // Get the current view instance
     const editorView = view();

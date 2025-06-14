@@ -97,18 +97,38 @@ export async function parseMyst(source: string): Promise<Node> {
  */
 export function mystToProseMirror(myst: GenericParent): Node {
     const definitions = findDefinitions(myst);
-    const res = transformAst(myst, definitions);
-    if (Array.isArray(res)) {
-        throw new TypeError("Final parse result should not be array");
+    try {
+        console.log("Attempting standard mode");
+        const res = transformAst(myst, definitions, false);
+        if (Array.isArray(res)) {
+            throw new TypeError("Final parse result should not be array");
+        }
+        console.log("Standard successful.");
+        return res;
+    } catch (e) {
+        if (e instanceof RangeError && e.message.includes("Invalid content") ) {
+            console.warn("Standard parse failed, trying safe mode");
+            const res = transformAst(myst, definitions, true);
+            if (Array.isArray(res)) {
+                throw new TypeError("Final parse result should not be array");
+            }
+            console.log("Safe mode successful.");
+            return res;
+        } else {
+            console.warn("Safe mode failed")
+            throw e;
+        }
     }
-    return res;
+
+
+
 }
 
 /** Utility function to recursively convert children in a handler function.
  */
-function children(node: GenericNode, defs: DefinitionMap): Node[] | undefined {
+function children(node: GenericNode, defs: DefinitionMap, safe = false): Node[] | undefined {
     return node.children?.flatMap((x) => {
-        const res = transformAst(x, defs);
+        const res = transformAst(x, defs, safe);
         return Array.isArray(res) ? res : [res];
     });
 }
@@ -119,10 +139,11 @@ function children(node: GenericNode, defs: DefinitionMap): Node[] | undefined {
 function markChildren(
     node: GenericNode,
     defs: DefinitionMap,
+    safe: false,
     ...marks: Mark[]
 ): Node[] | undefined {
     return node?.children
-        ?.flatMap((n) => transformAst(n, defs))
+        ?.flatMap((n) => transformAst(n, defs, safe))
         ?.map((x) => x.mark([...x.marks, ...marks]));
 }
 
@@ -176,18 +197,18 @@ const SUPPORTED_DIRECTIVES = [
  * node, even though it is defined in the MyST specification.
  */
 const handlers = {
-    root: (node: Root, defs: DefinitionMap) =>
-        schema.node("root", {}, children(node, defs)),
-    block: (node: Block, defs: DefinitionMap) =>
-        schema.node("block", { meta: node.meta }, children(node, defs)),
-    paragraph: (node: Paragraph, defs: DefinitionMap) =>
-        schema.node("paragraph", {}, children(node, defs)),
+    root: (node: Root, defs: DefinitionMap, safe) =>
+        schema.node("root", {}, children(node, defs, safe)),
+    block: (node: Block, defs: DefinitionMap, safe) =>
+        schema.node("block", { meta: node.meta }, children(node, defs, safe)),
+    paragraph: (node: Paragraph, defs: DefinitionMap, safe) =>
+        schema.node("paragraph", {}, children(node, defs, safe)),
     definition: (node: Definition) =>
         schema.node("definition", {
             url: node.url,
             identifier: node.identifier,
         }),
-    heading: (node: Heading, defs: DefinitionMap) =>
+    heading: (node: Heading, defs: DefinitionMap, safe) =>
         schema.node(
             "heading",
             {
@@ -197,19 +218,19 @@ const handlers = {
                 identifier: node.identifier,
                 label: node.label,
             },
-            children(node, defs),
+            children(node, defs, safe),
         ),
     thematicBreak: (_node: ThematicBreak) => schema.node("thematicBreak"),
-    blockquote: (node: Blockquote, defs: DefinitionMap) =>
-        schema.node("blockquote", {}, children(node, defs)),
-    list: (node: List, defs: DefinitionMap) =>
+    blockquote: (node: Blockquote, defs: DefinitionMap, safe) =>
+        schema.node("blockquote", {}, children(node, defs, safe)),
+    list: (node: List, defs: DefinitionMap, safe) =>
         schema.node(
             "list",
             { spread: node.spread, ordered: node.ordered },
-            children(node, defs),
+            children(node, defs, safe),
         ),
-    listItem: (node: ListItem, defs: DefinitionMap) => {
-        let myChildren = children(node, defs);
+    listItem: (node: ListItem, defs: DefinitionMap, safe) => {
+        let myChildren = children(node, defs, safe);
         if (myChildren !== undefined && myChildren.every((x) => x.isInline)) {
             myChildren = [schema.node("paragraph", {}, myChildren)];
         }
@@ -236,59 +257,61 @@ const handlers = {
         schema.text(node.value, [schema.mark("code")]),
     mystTarget: (node: Target) =>
         schema.node("target", { label: node.label?.trim()?.toLowerCase() }),
-    mystDirective: (node: Directive, defs: DefinitionMap) =>
+    mystDirective: (node: Directive, defs: DefinitionMap, safe) =>
         schema.node(
             "directive",
             pick(node, "name", "value", "args"),
             SUPPORTED_DIRECTIVES.includes(node.name)
-                ? children(node, defs)
+                ? children(node, defs, safe)
                 : undefined,
         ),
-    admonition: (node: Admonition, defs: DefinitionMap) =>
+    admonition: (node: Admonition, defs: DefinitionMap, safe) =>
         schema.node(
             "admonition",
             { kind: node.kind, class: node.class },
-            children(node, defs),
+            children(node, defs, safe),
         ),
-    admonitionTitle: (node: AdmonitionTitle, defs: DefinitionMap) =>
-        schema.node("admonitionTitle", {}, children(node, defs)),
-    container: (node: Container, defs: DefinitionMap) =>
+    admonitionTitle: (node: AdmonitionTitle, defs: DefinitionMap, safe) =>
+        schema.node("admonitionTitle", {}, children(node, defs, safe)),
+    container: (node: Container, defs: DefinitionMap, safe) =>
         schema.node(
             "container",
             { kind: node.kind },
             node.children?.flatMap((x) => {
                 const res =
                     x.type === "image"
-                        ? schema.node("imageWrapper", {}, transformAst(x, defs))
-                        : transformAst(x, defs);
+                        ? schema.node("imageWrapper", {}, transformAst(x, defs, safe))
+                        : transformAst(x, defs, safe);
                 return Array.isArray(res) ? res : [res];
             }),
         ),
-    emphasis: (node: Emphasis, defs: DefinitionMap) =>
-        markChildren(node, defs, schema.mark("emphasis")),
-    strong: (node: Strong, defs: DefinitionMap) =>
-        markChildren(node, defs, schema.mark("strong")),
-    link: (node: Link, defs: DefinitionMap) =>
+    emphasis: (node: Emphasis, defs: DefinitionMap, safe) =>
+        markChildren(node, defs, safe, schema.mark("emphasis")),
+    strong: (node: Strong, defs: DefinitionMap, safe) =>
+        markChildren(node, defs, safe, schema.mark("strong")),
+    link: (node: Link, defs: DefinitionMap, safe) =>
         markChildren(
             node,
             defs,
+            safe,
             schema.mark("link", pick(node, "url", "title")),
         ),
-    superscript: (node: Superscript, defs: DefinitionMap) =>
-        markChildren(node, defs, schema.mark("superscript")),
+    superscript: (node: Superscript, defs: DefinitionMap, safe) =>
+        markChildren(node, defs, safe, schema.mark("superscript")),
 
-    subscript: (node: Subscript, defs: DefinitionMap) =>
-        markChildren(node, defs, schema.mark("subscript")),
+    subscript: (node: Subscript, defs: DefinitionMap, safe) =>
+        markChildren(node, defs, safe, schema.mark("subscript")),
 
-    underline: (node: Underline, defs: DefinitionMap) =>
-        markChildren(node, defs, schema.mark("underline")),
+    underline: (node: Underline, defs: DefinitionMap, safe) =>
+        markChildren(node, defs, safe, schema.mark("underline")),
 
-    delete: (node: Delete, defs: DefinitionMap) =>
-        markChildren(node, defs, schema.mark("strikethrough")),
-    linkReference: (node: LinkReference, defs: DefinitionMap) =>
+    delete: (node: Delete, defs: DefinitionMap, safe) =>
+        markChildren(node, defs, safe, schema.mark("strikethrough")),
+    linkReference: (node: LinkReference, defs: DefinitionMap, safe) =>
         markChildren(
             node,
             defs,
+            safe,
             schema.mark("link", {
                 url: defs.get(node.identifier!.trim().toLowerCase()),
                 reference: {
@@ -311,20 +334,20 @@ const handlers = {
             pick(node, "class", "width", "align", "url", "title", "alt"),
         ),
 
-    caption: (node: Caption, defs: DefinitionMap) =>
-        schema.node("caption", {}, children(node, defs)),
-    captionNumber: (node: CaptionNumber, defs: DefinitionMap) =>
+    caption: (node: Caption, defs: DefinitionMap, safe) =>
+        schema.node("caption", {}, children(node, defs, safe)),
+    captionNumber: (node: CaptionNumber, defs: DefinitionMap, safe) =>
         schema.node(
             "captionNumber",
             pick(node, "identifier", "kind", "label", "html_id", "enumerator"),
-            children(node, defs),
+            children(node, defs, safe),
         ),
     // Extension types
-    aside: (node: Aside, defs: DefinitionMap) =>
+    aside: (node: Aside, defs: DefinitionMap, safe) =>
         schema.node(
             "aside",
             { kind: node.kind, class: node.class },
-            children(node, defs),
+            children(node, defs, safe),
         ),
 
     default: (node: Text) => schema.text(node.value),
@@ -333,11 +356,12 @@ const handlers = {
 function transformAst(
     myst: MystNode,
     definitions: Map<string, Definition>,
+    safe: boolean = false
 ): Node | Node[] {
     const handler = (
         handlers as unknown as Record<
             string,
-            (node: MystNode, definitions: DefinitionMap) => Node
+            (node: MystNode, definitions: DefinitionMap, safe) => Node
         >
     )[myst.type];
     if (!(myst.type in handlers)) {
@@ -347,7 +371,26 @@ function transformAst(
         // console.log(nodeContent)
 
         // We return a ProseMirror `code_block` or `code` node.
-        if ("children" in myst) {
+        if (safe || !("children" in myst)) {
+            // No children so likely inline
+            let nodeContent: string;
+            let editable: boolean = false;
+            // Transform unsupported node to text
+            if (myst.data) {
+                nodeContent = JSON.stringify(myst.data, null, 2);
+                editable = true;
+            } else {
+                nodeContent =
+                    "Directive not supported and no text content found";
+            }
+
+            return schema.text(nodeContent, [
+                schema.mark("unsupported", {
+                    myst: myst,
+                    editable: editable,
+                }),
+            ]);
+        } else {
             // Likely a block Node because it has children
             let nodeContent: string;
             let editable = false;
@@ -367,28 +410,9 @@ function transformAst(
                 { myst: myst, editable: editable },
                 schema.text(nodeContent),
             );
-        } else {
-            // No children so likely inline
-            let nodeContent: string;
-            let editable: boolean = false;
-            // Transform unsupported node to text
-            if (myst.data) {
-                nodeContent = JSON.stringify(myst.data, null, 2);
-                editable = true;
-            } else {
-                nodeContent =
-                    "Directive not supported and no text content found";
-            }
-
-            return schema.text(nodeContent, [
-                schema.mark("unsupported", {
-                    myst: myst,
-                    editable: editable,
-                }),
-            ]);
         }
     }
-    return handler(myst, definitions);
+    return handler(myst, definitions, safe);
 }
 
 export function parseToMystAST(
