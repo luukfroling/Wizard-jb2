@@ -71,12 +71,11 @@ function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
             } as InlineCode;
 
         case "unsupported":
+            // Get the new content
+            const newTextContent = children
+                .map((c) => (c as Text).value)
+                .join("");
             if (mark.attrs.editable) {
-                // Get the new content
-                const newTextContent = children
-                    .map((c) => (c as Text).value)
-                    .join("");
-
                 // Copy the MystNode and update its value
                 const newMystNode = {
                     ...mark.attrs.myst,
@@ -86,7 +85,17 @@ function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
                 // Return with new text
                 return newMystNode as PhrasingContent;
             } else {
-                return mark.attrs.myst as PhrasingContent
+                try {
+                    // Try to parse the edited JSON.
+                    return JSON.parse(newTextContent) as PhrasingContent;
+                } catch (e) {
+                    // If it fails copy the old one
+                    console.warn(
+                        "Could not parse edited unsupported inline JSON. Reverting to original.",
+                        e,
+                    );
+                    return mark.attrs.myst as PhrasingContent;
+                }
             }
 
         case "strong":
