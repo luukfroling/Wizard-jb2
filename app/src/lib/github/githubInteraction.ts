@@ -4,81 +4,71 @@ interface RepoInfo {
     default_branch: string;
 }
 
-interface BranchInfo {
-    commit: { sha: string };
+interface BranchCommitInfo {
+    sha: string;
+    treeSha: string;
+    parents: { sha: string }[];
 }
 
-/**
- * Transactional functions for interacting with IndexedDB.
- * Uses the {@link https://www.npmjs.com/package/idb | idb} library.
- * TODO store variables in database.
- *
- * @property {string} activeRepo - The currently active GitHub repo.
- * @property {string} activeOwner - The owner of activeRepo.
- * @property {string} activeAuth - The PAT.
- * @property {string} activeBranch - The currently active branch in the repo, used to namespace keys.
- */
-export const github = {
-    /**
-     * The currently active GitHub repo.
-     */
-    activeRepo: "" as string,
+export class GitHubService {
+    private activeRepo = "";
+    private activeOwner = "";
+    private activeAuth = "";
+    private activeBranch = "";
 
-    /**
-     * The owner of activeRepo.
-     */
-    activeOwner: "" as string,
-
-    /**
-     * The PAT.
-     */
-    activeAuth: "" as string,
-
-    /**
-     * The currently active branch.
-     */
-    activeBranch: "" as string,
-
-    getActiveRepo(): string {
-        return this.activeRepo;
-    },
-
-    setActiveRepo(repo: string): void {
+    constructor(repo: string, owner: string, auth: string, branch: string) {
         this.activeRepo = repo;
-    },
-
-    getActiveOwner(): string {
-        return this.activeOwner;
-    },
-
-    setActiveAuth(auth: string): void {
-        this.activeAuth = auth;
-    },
-
-    getActiveAuth(): string {
-        return this.activeAuth;
-    },
-
-    setActiveOwner(owner: string): void {
         this.activeOwner = owner;
-    },
-
-    getActiveBranch(): string {
-        return this.activeBranch;
-    },
-
-    setActiveBranch(branch: string): void {
+        this.activeAuth = auth;
         this.activeBranch = branch;
-    },
+    }
 
-    isInitialised(): boolean {
-        return !!(
-            this.activeOwner &&
-            this.activeRepo &&
-            this.activeBranch &&
-            this.activeAuth
+    get headers(): Record<string, string> {
+        return {
+            Authorization: `token ${this.activeAuth}`,
+            Accept: "application/vnd.github.v3+json",
+            "Content-Type": "application/json",
+        };
+    }
+
+    setActiveOwner(owner: string) {
+        this.activeOwner = owner;
+    }
+    setActiveRepo(repo: string) {
+        this.activeRepo = repo;
+    }
+    setActiveBranch(branch: string) {
+        this.activeBranch = branch;
+    }
+    setActiveAuth(auth: string) {
+        this.activeAuth = auth;
+    }
+
+    async commitFiles<T>(message: string, files: [string, T][]): Promise<void> {
+        const {
+            activeOwner: owner,
+            activeRepo: repo,
+            activeBranch: branch,
+        } = this;
+
+        const baseCommit = await this.ensureBranchCommit(owner, repo, branch);
+
+        const treeCommit = await this.createTreeWithFiles(
+            owner,
+            repo,
+            files,
+            baseCommit,
         );
-    },
+
+        const newCommit = await this.createCommitFromTree(
+            owner,
+            repo,
+            message,
+            treeCommit,
+        );
+
+        await this.updateBranchRef(owner, repo, branch, newCommit.sha);
+    }
 
     async commitFromDatabase<T>(
         message: string,
@@ -94,7 +84,7 @@ export const github = {
         }
         if (file != undefined)
             await this.commitFiles<T>(message, [[key.toString(), file]]);
-    },
+    }
 
     async commitMultipleFromDatabase<T>(
         message: string,
@@ -114,7 +104,7 @@ export const github = {
             message,
             files.map((a: [IDBValidKey, T]) => [a[0].toString(), a[1]]),
         );
-    },
+    }
 
     async commitAllFromDatabase<T>(
         message: string,
@@ -129,86 +119,57 @@ export const github = {
             message,
             files.map((a: [IDBValidKey, T]) => [a[0].toString(), a[1]]),
         );
-    },
+    }
 
-    get headers(): Record<string, string> {
-        return {
-            Authorization: `token ${this.activeAuth}`,
-            Accept: "application/vnd.github.v3+json",
-            "Content-Type": "application/json",
-        };
-    },
-
-    async commitFiles<T>(message: string, files: [string, T][]): Promise<void> {
-        if (!this.isInitialised()) {
-            throw new Error(
-                "GitHub module not initialised: owner, repo, branch, or auth missing.",
-            );
-        }
-        const owner = this.activeOwner;
-        const repo = this.activeRepo;
-        const branch = this.activeBranch;
-
-        // 1. Get repo and branch info, create the branch if it does not yet exist
+    private async ensureBranchCommit(
+        owner: string,
+        repo: string,
+        branch: string,
+    ): Promise<BranchCommitInfo> {
         const repoInfo = await this.loadRepoInfo(owner, repo);
-        let branchInfo = await this.loadBranchInfo(owner, repo, branch);
-        if (branchInfo === undefined) {
+        let commit = await this.loadBranchCommitInfo(owner, repo, branch);
+        if (!commit) {
             await this.createBranch(
                 owner,
                 repo,
                 branch,
                 repoInfo.default_branch,
             );
-            branchInfo = await this.loadBranchInfo(owner, repo, branch);
-            if (branchInfo === undefined) {
-                throw new Error("404 after creating branch."); // Not sure if this is even reachable, but better safe than sorry
+            commit = await this.loadBranchCommitInfo(owner, repo, branch);
+            if (!commit) {
+                throw new Error(
+                    "Branch creation failed; could not load commit info.",
+                );
             }
         }
+        return commit;
+    }
 
-        // 3. Get base tree SHA
-        const baseTreeSha = await this.getTreeShaFromCommit(
-            owner,
-            repo,
-            repoInfo.default_branch,
-        );
+    private updateTreeInfo(
+        base: BranchCommitInfo,
+        newTreeSha: string,
+    ): BranchCommitInfo {
+        return {
+            sha: base.sha,
+            treeSha: newTreeSha,
+            parents: [{ sha: base.sha }],
+        };
+    }
 
-        // 4. Prepare blobs
-        const blobInputs = files.map(([path, content]) => ({
-            path,
-            content:
-                typeof content === "string" ? content : JSON.stringify(content),
-        }));
-        const blobs = await this.createBlobsForFiles(owner, repo, blobInputs);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private updateCommitInfo(response: any): BranchCommitInfo {
+        return {
+            sha: response.sha,
+            treeSha: response.tree.sha,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            parents: response.parents.map((p: any) => ({ sha: p.sha })),
+        };
+    }
 
-        // 5. Create new tree
-        const treeSha = await this.createTreeWithBlobs(
-            owner,
-            repo,
-            baseTreeSha,
-            blobs,
-        );
-
-        // 6. Create commit
-        const commitSha = await this.createCommitWithTree(
-            owner,
-            repo,
-            message,
-            treeSha,
-            repoInfo.default_branch,
-        );
-
-        // 7. Update branch ref
-        await this.updateBranchRefToCommit(owner, repo, branch, commitSha);
-    },
-
-    load(): void {},
-
-    async loadRepoInfo(owner: string, repo: string): Promise<RepoInfo> {
+    private async loadRepoInfo(owner: string, repo: string): Promise<RepoInfo> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}`,
-            {
-                headers: this.headers,
-            },
+            { headers: this.headers },
         );
         if (!resp.ok) {
             throw new Error(
@@ -216,33 +177,35 @@ export const github = {
             );
         }
         return resp.json();
-    },
+    }
 
-    async loadBranchInfo(
+    private async loadBranchCommitInfo(
         owner: string,
         repo: string,
         branch: string,
-    ): Promise<BranchInfo | undefined> {
+    ): Promise<BranchCommitInfo | undefined> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`,
             { headers: this.headers },
         );
+        if (resp.status === 404) return undefined;
         if (!resp.ok) {
-            if (resp.status == 404) {
-                return undefined;
-            }
-            throw new Error(
-                `Failed to load branch info for "${branch}": ${resp.status}`,
-            );
+            throw new Error(`Error loading branch: ${resp.status}`);
         }
-        return resp.json();
-    },
+        const data = await resp.json();
+        return {
+            sha: data.commit.sha,
+            treeSha: data.commit.commit.tree.sha,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            parents: data.commit.parents.map((p: any) => ({ sha: p.sha })),
+        };
+    }
 
-    async createBranch(
+    private async createBranch(
         owner: string,
         repo: string,
-        newBranch: string,
-        baseSha: string,
+        branch: string,
+        base: string,
     ): Promise<void> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/git/refs`,
@@ -250,93 +213,57 @@ export const github = {
                 method: "POST",
                 headers: this.headers,
                 body: JSON.stringify({
-                    ref: `refs/heads/${newBranch}`,
-                    sha: baseSha,
+                    ref: `refs/heads/${branch}`,
+                    sha: base,
                 }),
             },
         );
         if (!resp.ok) {
             throw new Error(
-                `Failed to create branch "${newBranch}": ${resp.status} ${await resp.text()}`,
+                `Create branch failed: ${resp.status} ${await resp.text()}`,
             );
         }
-    },
+    }
 
-    async getTreeShaFromCommit(
+    private async createTreeWithFiles<T>(
         owner: string,
         repo: string,
-        commitSha: string,
-    ): Promise<string> {
-        const resp = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/git/commits/${commitSha}`,
-            { headers: this.headers },
-        );
-        if (!resp.ok) throw new Error(`Failed to get commit ${commitSha}`);
-        const { tree } = await resp.json();
-        return tree.sha;
-    },
-
-    async createBlobsForFiles(
-        owner: string,
-        repo: string,
-        files: { path: string; content: string }[],
-    ): Promise<{ path: string; sha: string }[]> {
-        const results: { path: string; sha: string }[] = [];
-        for (const file of files) {
-            const resp = await fetch(
-                `https://api.github.com/repos/${owner}/${repo}/git/blobs`,
-                {
-                    method: "POST",
-                    headers: this.headers,
-                    body: JSON.stringify({
-                        content: file.content,
-                        encoding: "utf-8",
-                    }),
-                },
-            );
-            if (!resp.ok) {
-                throw new Error(`Failed to create blob for ${file.path}`);
-            }
-            const data = await resp.json();
-            results.push({ path: file.path, sha: data.sha });
-        }
-        return results;
-    },
-
-    async createTreeWithBlobs(
-        owner: string,
-        repo: string,
-        baseTreeSha: string,
-        blobs: { path: string; sha: string }[],
-    ): Promise<string> {
+        files: [string, T][],
+        base: BranchCommitInfo,
+    ): Promise<BranchCommitInfo> {
+        const entries = files.map(([path, content]) => ({
+            path,
+            mode: "100644",
+            type: "blob",
+            content:
+                typeof content === "string" ? content : JSON.stringify(content),
+        }));
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/git/trees`,
             {
                 method: "POST",
                 headers: this.headers,
                 body: JSON.stringify({
-                    base_tree: baseTreeSha,
-                    tree: blobs.map((b) => ({
-                        path: b.path,
-                        mode: "100644",
-                        type: "blob",
-                        sha: b.sha,
-                    })),
+                    base_tree: base.treeSha,
+                    tree: entries,
                 }),
             },
         );
-        if (!resp.ok) throw new Error(`Failed to create tree`);
+        if (!resp.ok) {
+            throw new Error(
+                `Tree creation failed: ${resp.status} ${await resp.text()}`,
+            );
+        }
         const data = await resp.json();
-        return data.sha;
-    },
+        return this.updateTreeInfo(base, data.tree.sha);
+    }
 
-    async createCommitWithTree(
+    private async createCommitFromTree(
         owner: string,
         repo: string,
         message: string,
-        treeSha: string,
-        parentSha: string,
-    ): Promise<string> {
+        base: BranchCommitInfo,
+    ): Promise<BranchCommitInfo> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/git/commits`,
             {
@@ -344,31 +271,38 @@ export const github = {
                 headers: this.headers,
                 body: JSON.stringify({
                     message,
-                    tree: treeSha,
-                    parents: [parentSha],
+                    tree: base.treeSha,
+                    parents: base.parents.map((p) => p.sha),
                 }),
             },
         );
-        if (!resp.ok) throw new Error(`Failed to create commit`);
+        if (!resp.ok) {
+            throw new Error(
+                `Commit creation failed: ${resp.status} ${await resp.text()}`,
+            );
+        }
         const data = await resp.json();
-        return data.sha;
-    },
+        return this.updateCommitInfo(data);
+    }
 
-    async updateBranchRefToCommit(
+    private async updateBranchRef(
         owner: string,
         repo: string,
         branch: string,
-        commitSha: string,
+        sha: string,
     ): Promise<void> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`,
             {
                 method: "PATCH",
                 headers: this.headers,
-                body: JSON.stringify({ sha: commitSha }),
+                body: JSON.stringify({ sha }),
             },
         );
-        if (!resp.ok)
-            throw new Error(`Failed to update branch ref: ${resp.status}`);
-    },
-};
+        if (!resp.ok) {
+            throw new Error(
+                `Update ref failed: ${resp.status} ${await resp.text()}`,
+            );
+        }
+    }
+}
