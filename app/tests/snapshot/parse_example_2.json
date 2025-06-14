@@ -70,7 +70,145 @@
               },
               "content": [
                 {
-                  "text": "Go to the the file  on your GitHub repository () -   -  -  -  ",
+                  "text": "Go to the the file ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "book/intro.md",
+                  "type": "text",
+                },
+                {
+                  "text": " on your GitHub repository (",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "https://github.com/<your_username>/<your_repo_name>",
+                  "type": "text",
+                },
+                {
+                  "text": ") - ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "attrs": {
+                        "editable": false,
+                        "myst": {
+                          "key": "DFAAjnjAN3",
+                          "name": "octicon",
+                          "position": {
+                            "end": {
+                              "column": 139,
+                              "line": 11,
+                            },
+                            "start": {
+                              "column": 120,
+                              "line": 11,
+                            },
+                          },
+                          "type": "mystRole",
+                          "value": "code;1em",
+                        },
+                      },
+                      "type": "unsupported",
+                    },
+                  ],
+                  "text": "Directive not supported and no text content found",
+                  "type": "text",
+                },
+                {
+                  "text": " ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Code",
+                  "type": "text",
+                },
+                {
+                  "text": " - ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Book",
+                  "type": "text",
+                },
+                {
+                  "text": " - ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "intro.md",
+                  "type": "text",
+                },
+                {
+                  "text": " - ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "attrs": {
+                        "editable": false,
+                        "myst": {
+                          "key": "lmTWOZMxKl",
+                          "name": "octicon",
+                          "position": {
+                            "end": {
+                              "column": 192,
+                              "line": 11,
+                            },
+                            "start": {
+                              "column": 171,
+                              "line": 11,
+                            },
+                          },
+                          "type": "mystRole",
+                          "value": "pencil;1em",
+                        },
+                      },
+                      "type": "unsupported",
+                    },
+                  ],
+                  "text": "Directive not supported and no text content found",
+                  "type": "text",
+                },
+                {
+                  "text": " ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Edit this file",
                   "type": "text",
                 },
               ],
@@ -125,21 +263,13 @@
                   "text": "Click ",
                   "type": "text",
                 },
-              ],
-              "type": "paragraph",
-            },
-          ],
-          "type": "listItem",
-        },
-        {
-          "content": [
-            {
-              "attrs": {
-                "align": "left",
-              },
-              "content": [
                 {
-                  "text": "Add a message and description of your change. With this  you save your changes to the git-timeline. Any commit can always be reverted. Therefore, it’s useful to shortly explain what is included in your commit. Later on, you’ll make commits which may contain changes to many different files. In that case, a descriptive commit message and description is even more useful!",
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Commit changes",
                   "type": "text",
                 },
               ],
@@ -156,7 +286,20 @@
               },
               "content": [
                 {
-                  "text": "Select  (this adds your change your change to the default version instead of making a new one)",
+                  "text": "Add a message and description of your change. With this ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "commit",
+                  "type": "text",
+                },
+                {
+                  "text": " you save your changes to the git-timeline. Any commit can always be reverted. Therefore, it’s useful to shortly explain what is included in your commit. Later on, you’ll make commits which may contain changes to many different files. In that case, a descriptive commit message and description is even more useful!",
                   "type": "text",
                 },
               ],
@@ -173,7 +316,20 @@
               },
               "content": [
                 {
-                  "text": "Click .",
+                  "text": "Select ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Commit directly to the main branch",
+                  "type": "text",
+                },
+                {
+                  "text": " (this adds your change your change to the default version instead of making a new one)",
                   "type": "text",
                 },
               ],
@@ -190,7 +346,20 @@
               },
               "content": [
                 {
-                  "text": "Go to   - The most recent workflow run  - Wait for it to finish - In the summary, click on the link of your book shown in the table  and under ",
+                  "text": "Click ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Commit changes",
+                  "type": "text",
+                },
+                {
+                  "text": ".",
                   "type": "text",
                 },
               ],
@@ -207,7 +376,156 @@
               },
               "content": [
                 {
-                  "text": "Do you see your change? If you don’t see it click +/+to refresh the page (your browser keeps a cached version of website you recently visit, but we actually want the most up-to-date version!).",
+                  "text": "Go to ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "attrs": {
+                        "editable": false,
+                        "myst": {
+                          "key": "mFA56JuBVh",
+                          "name": "octicon",
+                          "position": {
+                            "end": {
+                              "column": 26,
+                              "line": 17,
+                            },
+                            "start": {
+                              "column": 7,
+                              "line": 17,
+                            },
+                          },
+                          "type": "mystRole",
+                          "value": "play;1em",
+                        },
+                      },
+                      "type": "unsupported",
+                    },
+                  ],
+                  "text": "Directive not supported and no text content found",
+                  "type": "text",
+                },
+                {
+                  "text": " ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Actions",
+                  "type": "text",
+                },
+                {
+                  "text": " - The most recent workflow run ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Update intro.md / the commit message of the commit you just made",
+                  "type": "text",
+                },
+                {
+                  "text": " - Wait for it to finish - In the summary, click on the link of your book shown in the table ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Branches deployed",
+                  "type": "text",
+                },
+                {
+                  "text": " and under ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Primary book at root",
+                  "type": "text",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "type": "listItem",
+        },
+        {
+          "content": [
+            {
+              "attrs": {
+                "align": "left",
+              },
+              "content": [
+                {
+                  "text": "Do you see your change? If you don’t see it click ",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "CTRL",
+                  "type": "text",
+                },
+                {
+                  "text": "+",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "F5",
+                  "type": "text",
+                },
+                {
+                  "text": "/",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "Control",
+                  "type": "text",
+                },
+                {
+                  "text": "+",
+                  "type": "text",
+                },
+                {
+                  "marks": [
+                    {
+                      "type": "code",
+                    },
+                  ],
+                  "text": "F5",
+                  "type": "text",
+                },
+                {
+                  "text": "to refresh the page (your browser keeps a cached version of website you recently visit, but we actually want the most up-to-date version!).",
                   "type": "text",
                 },
               ],
@@ -313,6 +631,210 @@
         },
       ],
       "type": "admonition",
+    },
+    {
+      "attrs": {
+        "editable": false,
+        "myst": {
+          "children": [
+            {
+              "children": [
+                {
+                  "key": "qXgFIKEcMb",
+                  "position": {
+                    "end": {
+                      "column": 1,
+                      "line": 31,
+                    },
+                    "start": {
+                      "column": 1,
+                      "line": 31,
+                    },
+                  },
+                  "type": "text",
+                  "value": "Check your understanding",
+                },
+              ],
+              "key": "ydAjqPl7pi",
+              "type": "cardTitle",
+            },
+            {
+              "args": "https://home.teachbooks.io/wp-admin/admin-ajax.php?action=h5p_embed&id=2",
+              "key": "OkUtf31Opq",
+              "name": "h5p",
+              "options": undefined,
+              "position": {
+                "end": {
+                  "column": 1,
+                  "line": 33,
+                },
+                "start": {
+                  "column": 1,
+                  "line": 32,
+                },
+              },
+              "tight": undefined,
+              "type": "mystDirective",
+              "value": undefined,
+            },
+          ],
+          "key": "haL8Xwmp2p",
+          "type": "card",
+          "url": undefined,
+          "urlSource": undefined,
+        },
+      },
+      "content": [
+        {
+          "text": "{
+  "type": "card",
+  "children": [
+    {
+      "type": "cardTitle",
+      "children": [
+        {
+          "type": "text",
+          "value": "Check your understanding",
+          "position": {
+            "start": {
+              "line": 31,
+              "column": 1
+            },
+            "end": {
+              "line": 31,
+              "column": 1
+            }
+          },
+          "key": "qXgFIKEcMb"
+        }
+      ],
+      "key": "ydAjqPl7pi"
+    },
+    {
+      "type": "mystDirective",
+      "name": "h5p",
+      "args": "https://home.teachbooks.io/wp-admin/admin-ajax.php?action=h5p_embed&id=2",
+      "position": {
+        "start": {
+          "line": 32,
+          "column": 1
+        },
+        "end": {
+          "line": 33,
+          "column": 1
+        }
+      },
+      "key": "OkUtf31Opq"
+    }
+  ],
+  "key": "haL8Xwmp2p"
+}",
+          "type": "text",
+        },
+      ],
+      "type": "unsupported_block",
+    },
+    {
+      "attrs": {
+        "editable": false,
+        "myst": {
+          "children": [
+            {
+              "children": [
+                {
+                  "key": "ukOybPGjPo",
+                  "position": {
+                    "end": {
+                      "column": 1,
+                      "line": 36,
+                    },
+                    "start": {
+                      "column": 1,
+                      "line": 36,
+                    },
+                  },
+                  "type": "text",
+                  "value": "Check your understanding",
+                },
+              ],
+              "key": "TnJsxFGt4B",
+              "type": "cardTitle",
+            },
+            {
+              "args": "https://home.teachbooks.io/wp-admin/admin-ajax.php?action=h5p_embed&id=1",
+              "key": "vwcDWffLob",
+              "name": "h5p",
+              "options": undefined,
+              "position": {
+                "end": {
+                  "column": 1,
+                  "line": 38,
+                },
+                "start": {
+                  "column": 1,
+                  "line": 37,
+                },
+              },
+              "tight": undefined,
+              "type": "mystDirective",
+              "value": undefined,
+            },
+          ],
+          "key": "amu0ytst2e",
+          "type": "card",
+          "url": undefined,
+          "urlSource": undefined,
+        },
+      },
+      "content": [
+        {
+          "text": "{
+  "type": "card",
+  "children": [
+    {
+      "type": "cardTitle",
+      "children": [
+        {
+          "type": "text",
+          "value": "Check your understanding",
+          "position": {
+            "start": {
+              "line": 36,
+              "column": 1
+            },
+            "end": {
+              "line": 36,
+              "column": 1
+            }
+          },
+          "key": "ukOybPGjPo"
+        }
+      ],
+      "key": "TnJsxFGt4B"
+    },
+    {
+      "type": "mystDirective",
+      "name": "h5p",
+      "args": "https://home.teachbooks.io/wp-admin/admin-ajax.php?action=h5p_embed&id=1",
+      "position": {
+        "start": {
+          "line": 37,
+          "column": 1
+        },
+        "end": {
+          "line": 38,
+          "column": 1
+        }
+      },
+      "key": "vwcDWffLob"
+    }
+  ],
+  "key": "amu0ytst2e"
+}",
+          "type": "text",
+        },
+      ],
+      "type": "unsupported_block",
     },
   ],
   "type": "block",

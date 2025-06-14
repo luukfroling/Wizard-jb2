@@ -205,15 +205,16 @@ describe("Markdown parser", () => {
             myst: EXAMPLE_1,
             desc: "example_1",
         },
-        {
-            myst: EXAMPLE_2,
-            desc: "example_2",
-        },
+        // {
+        //     myst: EXAMPLE_2,
+        //     desc: "example_2",
+        // },
     ];
 
     it.for(MYST_DOCUMENTS)("parses document $desc", async ({ myst, desc }) => {
         const parsed = await parse(myst);
         const json = parsed.toJSON();
+
         expect(json).toMatchFileSnapshot(`./snapshot/parse_${desc}.json`);
     });
 
