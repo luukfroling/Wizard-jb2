@@ -2,6 +2,7 @@
 .DS_Store
 
 # Python builds
+/sphinx_extension/teachbooks_software_project_extension_name.egg-info/
 /sphinx_extension/extension_name.egg-info/
 /sphinx_extension/dist/
 
@@ -19,3 +20,4 @@
 # Test output
 /app/test-report.xml
 /app/coverage
+

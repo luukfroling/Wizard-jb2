@@ -148,7 +148,7 @@ export const schema = new Schema({
             },
             content: "phrasingContent*",
         },
-        code: {
+        code_block: {
             attrs: {
                 lang: string({ default: "text" }),
                 meta: string({ optional: true }),
@@ -192,6 +192,19 @@ export const schema = new Schema({
                     { class: `language-${node.attrs.lang}` },
                     ["code", 0],
                 ];
+            },
+            group: "flowContent",
+            content: "text*",
+        },
+        // Code block with hidden MyST for saving
+        // For now not editable
+        unsupported_block: {
+            attrs: {
+                myst: { default: null },
+                editable: { default: false },
+            },
+            toDOM(_node) {
+                return ["pre", { class: `unsupported_block` }, ["code", 0]];
             },
             group: "flowContent",
             content: "text*",
@@ -282,7 +295,7 @@ export const schema = new Schema({
             parseDOM: [{ tag: "tr" }],
         },
         table_cell: {
-            content: "block+",
+            content: "flowContent+",
             attrs: { style: { default: null } },
             tableRole: "cell",
             isolating: true,
@@ -491,6 +504,23 @@ export const schema = new Schema({
             ],
             toDOM() {
                 return ["strong"];
+            },
+        },
+        // Inline code
+        code: {
+            parseDOM: [{ tag: "code" }],
+            toDOM() {
+                return ["code"];
+            },
+        },
+        // Unsupported type
+        unsupported: {
+            attrs: {
+                myst: { default: null },
+                editable: { default: false },
+            },
+            toDOM() {
+                return ["code", { class: "unsupported-inline" }];
             },
         },
         subscript: {

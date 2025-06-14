@@ -14,6 +14,7 @@ import type {
     List,
     ListItem,
     Code,
+    InlineCode,
     Target,
     Directive,
     Admonition,
@@ -24,6 +25,8 @@ import type {
     Break,
     BlockBreak,
     Table,
+    TableRow,
+    TableCell,
     FootnoteDefinition,
     Image,
     Caption,
@@ -63,6 +66,40 @@ function mystChildren(node: Node): MystNode[] {
  */
 function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
     switch (mark.type.name) {
+        case "code":
+            return {
+                type: "inlineCode",
+                value: children.map((c) => (c as Text).value).join(""),
+            } as InlineCode;
+
+        case "unsupported": {
+            // Get the new content
+            const newTextContent = children
+                .map((c) => (c as Text).value)
+                .join("");
+            if (mark.attrs.editable) {
+                // Copy the MystNode and update its value
+                const newMystNode = {
+                    ...mark.attrs.myst,
+                    value: newTextContent,
+                };
+
+                // Return with new text
+                return newMystNode as PhrasingContent;
+            } else {
+                try {
+                    // Try to parse the edited JSON.
+                    return JSON.parse(newTextContent) as PhrasingContent;
+                } catch (e) {
+                    // If it fails copy the old one
+                    console.warn(
+                        "Could not parse edited unsupported inline JSON. Reverting to original.",
+                        e,
+                    );
+                    return mark.attrs.myst as PhrasingContent;
+                }
+            }
+        }
         case "strong":
             return { type: "strong", children } as Strong;
 
@@ -117,7 +154,36 @@ function handleChildren<T extends MystNode>(node: Node): ChildrenOf<T> {
 }
 
 const proseMirrorToMystHandlers = {
-    code: (node: Node): Code => ({ type: "code", value: node.textContent }),
+    code_block: (node: Node): Code => ({
+        type: "code",
+        lang: node.attrs.lang,
+        meta: node.attrs.meta,
+        value: node.textContent,
+    }),
+    unsupported_block: (node: Node) => {
+        if (node.attrs.editable) {
+            const newContent = node.textContent;
+            const newMystNode = {
+                ...node.attrs.myst,
+                value: newContent,
+            };
+            return newMystNode as MystNode;
+        } else {
+            // Dangerous! User might fuck up but I think this should be safe
+            const editedJson = node.textContent;
+            try {
+                // Try to parse the edited JSON.
+                return JSON.parse(editedJson) as MystNode;
+            } catch (e) {
+                // If parsing fails, log a warning and revert to the original node.
+                console.warn(
+                    "Could not parse edited JSON. Copying the original.",
+                    e,
+                );
+                return node.attrs.myst as MystNode;
+            }
+        }
+    },
     root: (node: Node): Root => ({
         type: "root",
         children: handleChildren<Root>(node),
@@ -180,6 +246,7 @@ const proseMirrorToMystHandlers = {
     admonition: (node: Node): Admonition => ({
         type: "admonition",
         kind: node.attrs.kind,
+        ...(node.attrs.class && { class: node.attrs.class }),
         children: mystChildren(node) as ChildrenOf<Admonition>,
     }),
     admonitionTitle: (node: Node): AdmonitionTitle => ({
@@ -205,8 +272,27 @@ const proseMirrorToMystHandlers = {
         type: "blockBreak",
         meta: node.attrs.meta,
     }),
-    table: (_node: Node): Table => {
-        throw new Error("not yet supported");
+    table: (node: Node): Table => ({
+        type: "table",
+        children: handleChildren<Table>(node),
+    }),
+    table_row: (node: Node): TableRow => ({
+        type: "tableRow",
+        children: handleChildren<TableRow>(node),
+    }),
+    table_cell: (node: Node): TableCell => {
+        const style = node.attrs.style as string | null;
+        let align: "left" | "right" | "center" | undefined = undefined;
+        if (style) {
+            if (style.includes("text-align:center")) align = "center";
+            else if (style.includes("text-align:right")) align = "right";
+            else if (style.includes("text-align:left")) align = "left";
+        }
+        return {
+            type: "tableCell",
+            ...(align && { align }),
+            children: handleChildren<TableCell>(node),
+        };
     },
     footnoteDefinition: (node: Node): FootnoteDefinition => ({
         type: "footnoteDefinition",

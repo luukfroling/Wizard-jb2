@@ -1,7 +1,0 @@
-Metadata-Version: 2.4
-Name: teachbooks_software_project_extension_name
-Version: 0.0.8
-Summary: A extension for editing TeachBooks
-Author-email: Leander Bindt <l.bindt@student.tudelft.nl>
-Requires-Dist: sphinx
-Requires-Dist: docutils
