@@ -349,7 +349,7 @@ function transformAst(
             let editable = false;
 
             // If the Node has a string value make it editable
-            if ('value' in myst && typeof myst.value === 'string') {
+            if ("value" in myst && typeof myst.value === "string") {
                 nodeContent = myst.value;
                 editable = true;
             } else {
