@@ -244,6 +244,7 @@ const proseMirrorToMystHandlers = {
     admonition: (node: Node): Admonition => ({
         type: "admonition",
         kind: node.attrs.kind,
+        ...(node.attrs.class && { class: node.attrs.class }),
         children: mystChildren(node) as ChildrenOf<Admonition>,
     }),
     admonitionTitle: (node: Node): AdmonitionTitle => ({

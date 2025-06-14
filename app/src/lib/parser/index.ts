@@ -245,7 +245,7 @@ const handlers = {
                 : undefined,
         ),
     admonition: (node: Admonition, defs: DefinitionMap) =>
-        schema.node("admonition", { kind: node.kind }, children(node, defs)),
+        schema.node("admonition", { kind: node.kind, class: node.class }, children(node, defs)),
     admonitionTitle: (node: AdmonitionTitle, defs: DefinitionMap) =>
         schema.node("admonitionTitle", {}, children(node, defs)),
     container: (node: Container, defs: DefinitionMap) =>
