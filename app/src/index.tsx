@@ -10,7 +10,7 @@ import {
   getFilePathFromHref,
 } from "./lib/github/GithubUtility";
 import { database } from "./lib/localStorage/database";
-import { currentBranch } from "./lib/github/BranchSignal";
+import { github } from "./lib/github/githubInteraction";
 
 const root = document.getElementById("root");
 
@@ -24,11 +24,8 @@ if (!(root instanceof HTMLElement)) {
 const ref = getRepositoryLink();
 getCurrentFileHref();
 
-//initialise database
 if (ref != null) {
-  database.setActiveRepo(ref);
-  database.setActiveBranch(currentBranch()); // Use the signal here
-  console.info("Database initialised.");
+  github.setRepo(ref); // TODO set branch
 } else {
   console.warn("Database not initialised - no github repo link found.");
 }

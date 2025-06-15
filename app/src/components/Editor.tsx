@@ -16,13 +16,11 @@ import { EditorView } from "prosemirror-view";
 import { keymap } from "prosemirror-keymap";
 import { history, redo, undo } from "prosemirror-history";
 import { baseKeymap } from "prosemirror-commands";
-import { currentBranch } from "../lib/github/BranchSignal";
 import {
   currentFileHref,
   getFilePathFromHref,
   repositoryHref,
   parseOwnerRepoFromHref,
-  getFileContentFromRepo,
 } from "../lib/github/GithubUtility";
 import { database } from "../lib/localStorage/database";
 import { parseMyst } from "../lib/parser";
@@ -38,6 +36,7 @@ import {
   preserveMarksPlugin,
 } from "./toolbar/editor_plugins";
 import { tableEditing } from "prosemirror-tables";
+import { github } from "../lib/github/githubInteraction";
 
 export interface EditorProps {
   schema: Schema;
@@ -194,7 +193,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
 
   // Add this effect to reload file when branch changes
   createEffect(() => {
-    currentBranch(); // Track the signal
+    github.getBranch();
     loadCurrentFileIntoEditor();
   });
 
@@ -212,18 +211,14 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     if (!markdown) {
       const repoHref = repositoryHref();
       const repoInfo = parseOwnerRepoFromHref(repoHref);
-      const branch = currentBranch(); // Use the signal here
+      const branch = github.getBranch(); // Use the signal here
 
       if (repoInfo && branch) {
         // Try to fetch from the current branch first (and fallback to default branch inside getFileContentFromRepo)
-        let markdownTemp = await getFileContentFromRepo(
-          repoInfo.owner,
-          repoInfo.repo,
-          branch,
+        markdown = await github.fetchFileFromBranch(
           filePath,
+          branch,
         );
-        if (markdownTemp == null) markdownTemp = undefined;
-        markdown = markdownTemp;
       }
     }
 
