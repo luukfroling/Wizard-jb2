@@ -1,4 +1,4 @@
-import { database, Database } from "../localStorage/database";
+import { database } from "../localStorage/database";
 import { createSignal } from "solid-js";
 
 interface RepoInfo {
@@ -135,7 +135,6 @@ class GitHubInteraction {
         message: string,
         key: IDBValidKey,
         store: string,
-        database: Database,
     ): Promise<void> {
         const file = await database.load<T>(store, key);
         if (file === undefined) {
@@ -178,6 +177,22 @@ class GitHubInteraction {
             message,
             files.map((a: [IDBValidKey, T]) => [a[0].toString(), a[1]]),
         );
+    }
+    
+    public async fetchRemoteBranches(): Promise<string[]> {
+        const owner = this.getOwner();
+        const repo  = this.getRepo();
+        // GitHub paginates at 30 per page by default; up to 100 works for most repos
+        const url = `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`;
+        const resp = await fetch(url, { headers: this.headers });
+        if (!resp.ok) {
+        throw new Error(
+            `Failed to list branches: ${resp.status} ${await resp.text()}`
+        );
+        }
+        // Each item looks like { name: string, commit: { sha: string }, protected: boolean, … }
+        const data: { name: string }[] = await resp.json();
+        return data.map((b) => b.name);
     }
 
     private async ensureBranchCommit(
@@ -369,10 +384,4 @@ class GitHubInteraction {
     }
 }
 
-// Create & configure your one instance:
-export const github = new GitHubInteraction(
-    /* initialRepo */ "",
-    /* initialOwner */ "",
-    /* initialAuth */ "",
-    /* initialBranch */ "",
-);
+export const github = new GitHubInteraction( "", "", "", "" ); //TODO needs to be initialised at some point, probably after logging in.

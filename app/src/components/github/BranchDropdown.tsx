@@ -4,7 +4,6 @@ import {
   getFilePathFromHref,
   getCurrentFileHref,
 } from "../../lib/github/GithubUtility";
-import { getAllBranchesFromHref } from "../../lib/github/GithubUtility";
 import { database } from "../../lib/localStorage/database";
 import { github } from "../../lib/github/githubInteraction";
 
@@ -14,18 +13,13 @@ export const BranchDropdown: Component = () => {
   const [newBranchName, setNewBranchName] = createSignal("");
   const [error, setError] = createSignal<string | null>(null);
 
-  onMount(async () => {
-    const href = repositoryHref();
-    if (href) {
-      const fetchedBranches = await getAllBranchesFromHref(href);
-      // Get local branches from storage
-      const localBranches = JSON.parse(
-        localStorage.getItem("localBranches") || "[]", //TODO Don't save this info in local storage, put it in the database (infer from keys)
-      );
+  onMount(async () => { 
+    const href = repositoryHref(); //todo this should probably only run after githubInteraction is initialised
+    if (href) { //
       // Combine local branches and fetched branches, prioritizing local branches
       const allBranches = [
-        ...localBranches,
-        ...fetchedBranches.filter((b) => !localBranches.includes(b)),
+        ...(database.loadLocalbranches("markdown")),
+        ...(await github.fetchRemoteBranches()),
       ];
       setBranches(allBranches);
       // Set current branch from localStorage or default to first branch

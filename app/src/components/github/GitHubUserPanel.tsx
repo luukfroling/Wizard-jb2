@@ -35,11 +35,12 @@ export const GitHubUserPanel = (props: Props) => {
   });
 
   // Dynamically update availableFiles when the branch changes
-  createEffect(async () => {
+  createEffect(() => {
     // This will re-run whenever branch() changes
-    const files = await database.loadAll<string>("markdown");
-    setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
-    setSelectedFiles(new Set<string>());
+    database.loadAll<string>("markdown").then((files) => {
+      setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
+      setSelectedFiles(new Set<string>());
+    });
   });
 
   // Reactively ensure the current file is always in the selection menu

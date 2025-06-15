@@ -54,6 +54,28 @@ const _stripPrefix = (
 };
 
 /**
+ * Extracts the branch name from a prefixed key of the form `${repo}::${branch}::${key}`.
+ * @param repo     The repo namespace you used when prefixing.
+ * @param fullKey  The fully-prefixed key (e.g. "my-repo::feature-foo::someFile.txt").
+ * @returns        The branch name ("feature-foo") or `undefined` if it doesn’t match.
+ */
+const getBranchFromKey = (
+  repo: string,
+  fullKey: IDBValidKey
+): string | undefined => {
+  if (typeof fullKey !== "string") return undefined;
+  const prefix = `${repo}::`;
+  if (!fullKey.startsWith(prefix)) return undefined;
+
+  // strip off "repo::"
+  const rest = fullKey.slice(prefix.length);
+
+  // split on "::" and take the first piece as branch
+  const [branch] = rest.split("::");
+  return branch || undefined;
+};
+
+/**
  * Throws an error if the specified store is not in {@link config.stores}.
  * @param store - The store to validate.
  * @throws Will throw if the store is not defined in {@link config.stores}.
@@ -66,62 +88,13 @@ const _validateStore = (store: string): void => {
     }
 };
 
-export type Database = {
-    dbPromise: Promise<IDBPDatabase> | null;
-
-    isInitialised(): boolean;
-
-    getDB(): Promise<IDBPDatabase>;
-
-    save<T>(store: string, key: IDBValidKey, value: T): Promise<void>;
-    saveTo<T>(
-        store: string,
-        repo: string,
-        branch: string,
-        key: IDBValidKey,
-        value: T,
-    ): Promise<void>;
-
-    load<T>(store: string, key: IDBValidKey): Promise<T | undefined>;
-
-    loadMultiple<T>(
-        store: string,
-        keys: IDBValidKey[],
-    ): Promise<[IDBValidKey, T][]>;
-
-    loadAll<T>(store: string): Promise<[IDBValidKey, T][]>;
-
-    delete(store: string, key: IDBValidKey): Promise<void>;
-
-    keys(store: string): Promise<IDBValidKey[]>;
-
-    clear(store: string): Promise<void>;
-
-    has(store: string, key: IDBValidKey): Promise<boolean>;
-
-    destroy(options?: {
-        preserveRepo?: boolean;
-        preserveBranch?: boolean;
-        preserveData?: boolean;
-    }): Promise<void>;
-
-    migrateNamespace(
-        oldRepo: string,
-        oldBranch: string,
-        newRepo: string,
-        newBranch: string,
-        deleteOldValues?: boolean,
-        stores?: string[],
-    ): Promise<void>;
-};
-
 /**
  * Transactional functions for interacting with IndexedDB.
  * Uses the {@link https://www.npmjs.com/package/idb | idb} library.
  *
  * @property {Promise<IDBPDatabase> | null} dbPromise - Lazily initialised promise resolving to the IDB database.
  */
-export const database: Database = {
+export const database = {
     /** Lazy-initialized promise for the IndexedDB connection. */
     dbPromise: null as Promise<IDBPDatabase> | null,
 
@@ -213,6 +186,20 @@ export const database: Database = {
         const result = await tx.store.get(fullKey);
         await tx.done;
         return result;
+    },
+
+    loadLocalbranches(store: string): string[] {
+        const branches: string[] = [];
+        
+        this.keys(store).then((keys) => keys.map(a => {
+            const branch = getBranchFromKey(github.getRepo(), a);
+            if(branch === undefined) return;
+            if(!branches.includes(branch)) {
+                branches.push(branch);
+            }
+        }));
+
+        return branches;
     },
 
     /**
