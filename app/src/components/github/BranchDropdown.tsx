@@ -6,14 +6,12 @@ import {
 } from "../../lib/github/GithubUtility";
 import {
   getAllBranchesFromHref,
-  getDefaultBranchFromHref,
 } from "../../lib/github/GithubUtility";
 import { database } from "../../lib/localStorage/database";
-import { setCurrentBranch } from "../../lib/github/BranchSignal";
+import { github } from "../../lib/github/githubInteraction";
 
 export const BranchDropdown: Component = () => {
   const [branches, setBranches] = createSignal<string[]>([]);
-  const [branch, setBranch] = createSignal("main");
   const [showInput, setShowInput] = createSignal(false);
   const [newBranchName, setNewBranchName] = createSignal("");
   const [error, setError] = createSignal<string | null>(null);
@@ -24,7 +22,7 @@ export const BranchDropdown: Component = () => {
       const fetchedBranches = await getAllBranchesFromHref(href);
       // Get local branches from storage
       const localBranches = JSON.parse(
-        localStorage.getItem("localBranches") || "[]",
+        localStorage.getItem("localBranches") || "[]", //TODO Don't save this info in local storage, put it in the database (infer from keys)
       );
       // Combine local branches and fetched branches, prioritizing local branches
       const allBranches = [
@@ -35,8 +33,7 @@ export const BranchDropdown: Component = () => {
       // Set current branch from localStorage or default to first branch
       const storedBranch = localStorage.getItem("currentBranch");
       if (storedBranch && allBranches.includes(storedBranch)) {
-        setBranch(storedBranch);
-        await database.setActiveBranch(storedBranch); // <-- add this
+        github.setBranch(storedBranch);
       } else if (allBranches.length > 0) {
         // Try to find the default/base branch, fallback to the first branch if not found
         let baseBranch = "main";
@@ -45,15 +42,14 @@ export const BranchDropdown: Component = () => {
           // Try to get the default branch from GitHub
           try {
             baseBranch =
-              (await getDefaultBranchFromHref(href)) || allBranches[0];
+              ((await github.fetchRepoInfo()).default_branch) || allBranches[0];
           } catch {
             baseBranch = allBranches[0];
           }
         } else {
           baseBranch = allBranches[0];
         }
-        setBranch(baseBranch);
-        await database.setActiveBranch(baseBranch);
+        github.setBranch(baseBranch);
       }
     }
   });
@@ -69,10 +65,8 @@ export const BranchDropdown: Component = () => {
     if (filePath && content && database.isInitialised()) {
       await database.save<string>("markdown", filePath, content);
     }
-    setBranch(b);
-    setCurrentBranch(b); // <-- update the signal
+    github.setBranch(b);
     localStorage.setItem("currentBranch", b);
-    await database.setActiveBranch(b);
     setShowInput(false);
     setError(null);
   };
@@ -117,7 +111,7 @@ export const BranchDropdown: Component = () => {
           class="bi bi-git"
           style={{ "font-size": "1.2em", "margin-right": "0.5em" }}
         />
-        <span>{branch()}</span>
+        <span>{github.getBranch()}</span>
       </button>
       <ul
         class="dropdown-menu p-2"
@@ -128,7 +122,7 @@ export const BranchDropdown: Component = () => {
           {(b) => (
             <li>
               <button
-                class={`dropdown-item${b === branch() ? " active" : ""}`}
+                class={`dropdown-item${b === github.getBranch() ? " active" : ""}`}
                 type="button"
                 onClick={() => handleSelect(b)}
               >

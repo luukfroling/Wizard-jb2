@@ -1,4 +1,4 @@
-import { Database } from "../localStorage/database";
+import { database, Database } from "../localStorage/database";
 import { createSignal } from "solid-js";
 
 interface RepoInfo {
@@ -12,13 +12,7 @@ interface BranchCommitInfo {
     parents: { sha: string }[];
 }
 
-export type UserInfo = {
-    login: string;
-    id: number;
-    avatar_url?: string;
-};
-
-export class GitHubInteraction {
+class GitHubInteraction {
     private repo = "";
     private owner = "";
     private auth = "";
@@ -69,7 +63,7 @@ export class GitHubInteraction {
             );
         }
         try {
-            const repoInfo = await this.loadRepoInfo(
+            const repoInfo = await this.fetchRepoInfo(
                 this.getOwner(),
                 this.getRepo(),
             );
@@ -157,7 +151,6 @@ export class GitHubInteraction {
         message: string,
         keys: IDBValidKey[],
         store: string,
-        database: Database,
     ): Promise<void> {
         const files = await database.loadMultiple<T>(store, keys);
         const foundKeys = new Set(files.map(([k]) => k.toString()));
@@ -176,7 +169,6 @@ export class GitHubInteraction {
     public async commitAllFromDatabase<T>(
         message: string,
         store: string,
-        database: Database,
     ): Promise<void> {
         const files = await database.loadAll<T>(store);
         if (!files.length) {
@@ -193,8 +185,8 @@ export class GitHubInteraction {
         repo: string,
         branch: string,
     ): Promise<BranchCommitInfo> {
-        const repoInfo = await this.loadRepoInfo(owner, repo);
-        let commit = await this.loadBranchCommitInfo(owner, repo, branch);
+        const repoInfo = await this.fetchRepoInfo(owner, repo);
+        let commit = await this.fetchBranchCommitInfo(owner, repo, branch);
         if (!commit) {
             await this.createBranch(
                 owner,
@@ -202,7 +194,7 @@ export class GitHubInteraction {
                 branch,
                 repoInfo.default_branch,
             );
-            commit = await this.loadBranchCommitInfo(owner, repo, branch);
+            commit = await this.fetchBranchCommitInfo(owner, repo, branch);
             if (!commit) {
                 throw new Error(
                     "Branch creation failed; could not load commit info.",
@@ -233,7 +225,7 @@ export class GitHubInteraction {
         };
     }
 
-    private async loadRepoInfo(owner: string, repo: string): Promise<RepoInfo> {
+    public async fetchRepoInfo(owner: string = this.getOwner(), repo: string = this.getRepo()): Promise<RepoInfo> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}`,
             { headers: this.headers },
@@ -246,7 +238,7 @@ export class GitHubInteraction {
         return resp.json();
     }
 
-    private async loadBranchCommitInfo(
+    private async fetchBranchCommitInfo(
         owner: string,
         repo: string,
         branch: string,
@@ -373,3 +365,12 @@ export class GitHubInteraction {
         }
     }
 }
+
+
+// Create & configure your one instance:
+export const github = new GitHubInteraction(
+  /* initialRepo */  "",
+  /* initialOwner */ "",
+  /* initialAuth */  "",
+  /* initialBranch */ ""
+);

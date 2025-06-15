@@ -1,15 +1,11 @@
 import { createSignal, onMount, createEffect, For } from "solid-js";
 import type { GitHubUser } from "../../lib/github/GithubLogin";
 import {
-  repositoryHref,
-  parseOwnerRepoFromHref,
-  getDefaultBranchFromHref,
   getFilePathFromHref,
   currentFileHref,
 } from "../../lib/github/GithubUtility";
-import { commitMultipleFilesToBranch } from "../../lib/github/GithubCommit";
 import { database } from "../../lib/localStorage/database";
-import { currentBranch } from "../../lib/github/BranchSignal";
+import { github } from "../../lib/github/githubInteraction";
 
 type Props = {
   user: GitHubUser;
@@ -20,7 +16,6 @@ type Props = {
 export const GitHubUserPanel = (props: Props) => {
   const [commitMsg, setCommitMsg] = createSignal("");
   const [status, setStatus] = createSignal<string | null>(null);
-  const [baseBranch, setBaseBranch] = createSignal<string>("main");
   const [filePath, setFilePath] = createSignal<string | null>(null);
   const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
     [],
@@ -29,17 +24,7 @@ export const GitHubUserPanel = (props: Props) => {
     new Set(),
   );
 
-  // Get the current branch from your branch dropdown/context/localStorage
-  // If you have a context/hook, use it. Otherwise, fallback to localStorage:
-  // const { branch } = useBranch();
-  const branch = () => localStorage.getItem("currentBranch") || "main";
-
   onMount(async () => {
-    const href = repositoryHref();
-    if (href) {
-      const branch = await getDefaultBranchFromHref(href, props.token);
-      if (branch) setBaseBranch(branch);
-    }
     const currentPath = getFilePathFromHref(currentFileHref());
     setFilePath(currentPath);
 
@@ -52,7 +37,6 @@ export const GitHubUserPanel = (props: Props) => {
   // Dynamically update availableFiles when the branch changes
   createEffect(async () => {
     // This will re-run whenever branch() changes
-    await database.setActiveBranch(currentBranch());
     const files = await database.loadAll<string>("markdown");
     setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
     setSelectedFiles(new Set<string>());
@@ -103,33 +87,12 @@ export const GitHubUserPanel = (props: Props) => {
       setStatus("Please enter a commit message.");
       return;
     }
-    const repoInfo = parseOwnerRepoFromHref(repositoryHref());
-    if (!repoInfo) {
-      setStatus("Repository link not found or invalid.");
-      return;
-    }
 
-    // Use the current branch from dropdown/localStorage/context
-    const currentBranch = branch();
-
-    // Commit each file
-    const filesToCommit = files.map(([path, content]) => ({
-      path,
-      content,
-    }));
-
+    // Commit all files
     try {
-      await commitMultipleFilesToBranch(
-        repoInfo.owner,
-        repoInfo.repo,
-        currentBranch,
-        filesToCommit,
-        inputCommitMsg,
-        props.token,
-        baseBranch(),
-      );
+      await github.commitMultipleFromDatabase(inputCommitMsg, selectedFiles().values().map(([a, _]) => a).toArray() as IDBValidKey[], "markdown");
       setStatus(
-        `Committed ${filesToCommit.length} file(s) to branch ${currentBranch} with message "${inputCommitMsg}". Please wait at least a minute before attempting to commit changes to the same files on the same branch!`,
+        `Committed ${files.length} file(s) to branch ${github.getBranch()} with message "${inputCommitMsg}". Please wait at least a minute before attempting to commit changes to the same files on the same branch!`,
       );
       setSelectedFiles(new Set<string>());
       setCommitMsg("");

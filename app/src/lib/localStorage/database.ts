@@ -1,4 +1,5 @@
 import { openDB, IDBPDatabase } from "idb";
+import { github } from "../github/githubInteraction";
 
 /**
  * Configuration for {@link database}.
@@ -67,14 +68,6 @@ const _validateStore = (store: string): void => {
 
 export type Database = {
     dbPromise: Promise<IDBPDatabase> | null;
-    activeRepo: string;
-    activeBranch: string;
-
-    getActiveRepo(): string;
-    setActiveRepo(repo: string): void;
-
-    getActiveBranch(): string;
-    setActiveBranch(branch: string): void;
 
     isInitialised(): boolean;
 
@@ -127,64 +120,17 @@ export type Database = {
  * Uses the {@link https://www.npmjs.com/package/idb | idb} library.
  *
  * @property {Promise<IDBPDatabase> | null} dbPromise - Lazily initialised promise resolving to the IDB database.
- * @property {string} activeRepo - The currently active GitHub repo, used to namespace keys.
- * @property {string} activeBranch - The currently active branch in the repo, used to namespace keys.
  */
 export const database: Database = {
     /** Lazy-initialized promise for the IndexedDB connection. */
     dbPromise: null as Promise<IDBPDatabase> | null,
 
     /**
-     * The currently active GitHub repo.
-     * All keys are namespaced using this value to avoid collisions across repos.
-     */
-    activeRepo: "" as string,
-
-    /**
-     * The currently active branch.
-     * All keys are namespaced using this value to avoid collisions across branches.
-     */
-    activeBranch: "" as string,
-
-    /**
-     * Gets the currently active repo namespace.
-     * @returns The active repo string.
-     */
-    getActiveRepo(): string {
-        return this.activeRepo;
-    },
-
-    /**
-     * Sets the active repo.
-     * @param repo - The GitHub repo name.
-     * @throws Will throw if called after initialization.
-     */
-    setActiveRepo(repo: string): void {
-        this.activeRepo = repo;
-    },
-
-    /**
-     * Gets the currently active branch namespace.
-     * @returns The active branch string.
-     */
-    getActiveBranch(): string {
-        return this.activeBranch;
-    },
-
-    /**
-     * Sets the active branch.
-     * @param branch - The branch name.
-     */
-    setActiveBranch(branch: string): void {
-        this.activeBranch = branch;
-    },
-
-    /**
      * Indicates whether the repo has been initialized.
      * @returns True if initialized, false otherwise.
      */
     isInitialised(): boolean {
-        return this.activeRepo != "" && this.activeBranch != "";
+        return github.getBranch() != "" && github.getRepo() != "";
     },
 
     /**
@@ -221,8 +167,8 @@ export const database: Database = {
     async save<T>(store: string, key: IDBValidKey, value: T): Promise<void> {
         await this.saveTo(
             store,
-            this.activeRepo,
-            this.activeBranch,
+            github.getRepo(),
+            github.getBranch(),
             key,
             value,
         );
@@ -260,8 +206,8 @@ export const database: Database = {
         const db = await this.getDB();
         const tx = db.transaction(store, "readonly");
         const fullKey = _makePrefixedKey(
-            this.activeRepo,
-            this.activeBranch,
+            github.getRepo(),
+            github.getBranch(),
             key,
         );
         const result = await tx.store.get(fullKey);
@@ -286,8 +232,8 @@ export const database: Database = {
 
         for (const key of keys) {
             const fullKey = _makePrefixedKey(
-                this.activeRepo,
-                this.activeBranch,
+                github.getRepo(),
+                github.getBranch(),
                 key,
             );
             const value = await tx.store.get(fullKey);
@@ -313,12 +259,12 @@ export const database: Database = {
         const results: [IDBValidKey, T][] = [];
 
         // Only include keys for the current repo AND branch
-        const prefix = `${this.activeRepo}::${this.activeBranch}::`;
+        const prefix = `${github.getRepo()}::${github.getBranch()}::`;
         for (const key of allKeys) {
             if (typeof key === "string" && key.startsWith(prefix)) {
                 const strippedKey = _stripPrefix(
-                    this.activeRepo,
-                    this.activeBranch,
+                    github.getRepo(),
+                    github.getBranch(),
                     key,
                 );
                 const value = await tx.store.get(key);
@@ -342,8 +288,8 @@ export const database: Database = {
         const db = await this.getDB();
         const tx = db.transaction(store, "readwrite");
         const fullKey = _makePrefixedKey(
-            this.activeRepo,
-            this.activeBranch,
+            github.getRepo(),
+            github.getBranch(),
             key,
         );
         await tx.store.delete(fullKey);
@@ -365,9 +311,9 @@ export const database: Database = {
             .filter(
                 (k) =>
                     typeof k === "string" &&
-                    k.startsWith(`${this.activeRepo}::${this.activeBranch}::`),
+                    k.startsWith(`${github.getRepo()}::${github.getBranch()}::`),
             )
-            .map((k) => _stripPrefix(this.activeRepo, this.activeBranch, k));
+            .map((k) => _stripPrefix(github.getRepo(), github.getBranch(), k));
     },
 
     /**
@@ -382,7 +328,7 @@ export const database: Database = {
         for (const key of allKeys) {
             if (
                 typeof key === "string" &&
-                key.startsWith(`${this.activeRepo}::${this.activeBranch}::`)
+                key.startsWith(`${github.getRepo()}::${github.getBranch()}::`)
             ) {
                 await tx.store.delete(key);
             }
@@ -401,8 +347,8 @@ export const database: Database = {
         const db = await this.getDB();
         const tx = db.transaction(store, "readonly");
         const fullKey = _makePrefixedKey(
-            this.activeRepo,
-            this.activeBranch,
+            github.getRepo(),
+            github.getBranch(),
             key,
         );
         const exists = (await tx.store.getKey(fullKey)) !== undefined;
@@ -418,16 +364,12 @@ export const database: Database = {
      * @param options.preserveData - If true, does not delete database data
      */
     async destroy({
-        preserveRepo = false,
-        preserveBranch = false,
         preserveData = false,
     } = {}): Promise<void> {
         if (this.dbPromise) {
             (await this.dbPromise).close();
             this.dbPromise = null;
         }
-        if (!preserveBranch) this.activeBranch = "";
-        if (!preserveRepo) this.activeRepo = "";
         if (!preserveData) await indexedDB.deleteDatabase(config.name);
     },
 
