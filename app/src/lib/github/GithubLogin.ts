@@ -67,8 +67,8 @@ export function useGitHubAuth() {
                     setToken(null);
                 });
         } else {
-        // If token is null, ensure user is also null.
-        setUser(null);
+            // If token is null, ensure user is also null.
+            setUser(null);
         }
     });
 
