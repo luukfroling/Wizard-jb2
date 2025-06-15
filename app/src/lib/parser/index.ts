@@ -342,7 +342,7 @@ const handlers = {
         schema.node("inlineMath", {}, schema.text(node.value)),
 
     image: (node: Image) => {
-        const img =  schema.node(
+        const img = schema.node(
             "image",
             pick(node, "class", "width", "align", "url", "title", "alt"),
         );
