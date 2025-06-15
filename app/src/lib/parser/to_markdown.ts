@@ -203,7 +203,7 @@ const proseMirrorToMystHandlers = {
     }),
     heading: (node: Node): Heading => ({
         type: "heading",
-        depth: node.attrs.depth as number,
+        depth: node.attrs.level as number,
         children: handleChildren<Heading>(node),
     }),
     thematicBreak: (_node: Node): ThematicBreak => ({

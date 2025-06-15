@@ -39,7 +39,7 @@ function checkMarkdown(){
 function initializeExtension() {
     if (checkTheme() && checkMarkdown()) {
         // Add the button to the navbar
-        console.log("extension_name: Version 0.1.0 loaded in :)");
+        console.log("extension_name: Version 0.1.1 loaded in :)");
         addTeachBooksEditButton()
     } else {
         console.warn("extension_name: Could not load the editor... Maybe the theme changed or the file is not supported.")

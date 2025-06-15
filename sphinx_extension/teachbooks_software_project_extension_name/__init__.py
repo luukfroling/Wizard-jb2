@@ -28,7 +28,7 @@ def setup(app: Sphinx):
     # Basic information of the sphinx extension
     # Match with myproject.toml
     return {
-        'version': '0.1.0',
+        'version': '0.1.1',
         'parallel_read_safe': True,
         'parallel_write_safe': True,
     }
