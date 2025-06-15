@@ -351,11 +351,14 @@ const handlers = {
     inlineMath: (node: InlineMath) =>
         schema.node("inlineMath", {}, schema.text(node.value)),
 
-    image: (node: Image) =>
-        schema.node(
+    image: (node: Image) => {
+        const img =  schema.node(
             "image",
             pick(node, "class", "width", "align", "url", "title", "alt"),
-        ),
+        );
+
+        return schema.node("imageWrapper", {}, img);
+    },
 
     caption: (node: Caption, defs: DefinitionMap, safe) =>
         schema.node("caption", {}, children(node, defs, safe)),
