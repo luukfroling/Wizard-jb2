@@ -311,7 +311,9 @@ export const database: Database = {
             .filter(
                 (k) =>
                     typeof k === "string" &&
-                    k.startsWith(`${github.getRepo()}::${github.getBranch()}::`),
+                    k.startsWith(
+                        `${github.getRepo()}::${github.getBranch()}::`,
+                    ),
             )
             .map((k) => _stripPrefix(github.getRepo(), github.getBranch(), k));
     },
@@ -363,9 +365,7 @@ export const database: Database = {
      * @param options.preserveBranch - If true, does not clear the active branch.
      * @param options.preserveData - If true, does not delete database data
      */
-    async destroy({
-        preserveData = false,
-    } = {}): Promise<void> {
+    async destroy({ preserveData = false } = {}): Promise<void> {
         if (this.dbPromise) {
             (await this.dbPromise).close();
             this.dbPromise = null;

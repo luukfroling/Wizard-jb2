@@ -225,7 +225,10 @@ class GitHubInteraction {
         };
     }
 
-    public async fetchRepoInfo(owner: string = this.getOwner(), repo: string = this.getRepo()): Promise<RepoInfo> {
+    public async fetchRepoInfo(
+        owner: string = this.getOwner(),
+        repo: string = this.getRepo(),
+    ): Promise<RepoInfo> {
         const resp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}`,
             { headers: this.headers },
@@ -366,11 +369,10 @@ class GitHubInteraction {
     }
 }
 
-
 // Create & configure your one instance:
 export const github = new GitHubInteraction(
-  /* initialRepo */  "",
-  /* initialOwner */ "",
-  /* initialAuth */  "",
-  /* initialBranch */ ""
+    /* initialRepo */ "",
+    /* initialOwner */ "",
+    /* initialAuth */ "",
+    /* initialBranch */ "",
 );

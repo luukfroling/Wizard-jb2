@@ -90,7 +90,14 @@ export const GitHubUserPanel = (props: Props) => {
 
     // Commit all files
     try {
-      await github.commitMultipleFromDatabase(inputCommitMsg, selectedFiles().values().map(([a, _]) => a).toArray() as IDBValidKey[], "markdown");
+      await github.commitMultipleFromDatabase(
+        inputCommitMsg,
+        selectedFiles()
+          .values()
+          .map(([a, _]) => a)
+          .toArray() as IDBValidKey[],
+        "markdown",
+      );
       setStatus(
         `Committed ${files.length} file(s) to branch ${github.getBranch()} with message "${inputCommitMsg}". Please wait at least a minute before attempting to commit changes to the same files on the same branch!`,
       );

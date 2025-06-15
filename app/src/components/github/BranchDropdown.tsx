@@ -4,9 +4,7 @@ import {
   getFilePathFromHref,
   getCurrentFileHref,
 } from "../../lib/github/GithubUtility";
-import {
-  getAllBranchesFromHref,
-} from "../../lib/github/GithubUtility";
+import { getAllBranchesFromHref } from "../../lib/github/GithubUtility";
 import { database } from "../../lib/localStorage/database";
 import { github } from "../../lib/github/githubInteraction";
 
@@ -42,7 +40,7 @@ export const BranchDropdown: Component = () => {
           // Try to get the default branch from GitHub
           try {
             baseBranch =
-              ((await github.fetchRepoInfo()).default_branch) || allBranches[0];
+              (await github.fetchRepoInfo()).default_branch || allBranches[0];
           } catch {
             baseBranch = allBranches[0];
           }
