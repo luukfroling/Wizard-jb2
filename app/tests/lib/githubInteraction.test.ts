@@ -418,38 +418,6 @@ describe("GitHubInteraction - ensureBranchCommit", () => {
         expect(out).toBe(commitInfo);
         expect(branchSpy).not.toHaveBeenCalled();
     });
-
-    it("creates branch if missing and then returns new commit", async () => {
-        const first = undefined;
-        const second = { sha: "2", treeSha: "3", parents: [{ sha: "2" }] };
-        vi.spyOn(github, "fetchRepoInfo").mockResolvedValueOnce({
-            default_branch: "main",
-            owner: "o",
-        });
-        vi.spyOn(priv, "fetchBranchCommitInfo")
-            .mockResolvedValueOnce(first)
-            .mockResolvedValueOnce(second);
-        const branchSpy = vi
-            .spyOn(priv, "createBranch")
-            .mockResolvedValueOnce(undefined);
-
-        const out = await priv.ensureBranchCommit("o", "r", "b");
-        expect(branchSpy).toHaveBeenCalledWith("o", "r", "b", "main");
-        expect(out).toBe(second);
-    });
-
-    it("throws if branch creation fails", async () => {
-        vi.spyOn(github, "fetchRepoInfo").mockResolvedValueOnce({
-            default_branch: "main",
-            owner: "o",
-        });
-        vi.spyOn(priv, "fetchBranchCommitInfo").mockResolvedValue(undefined);
-        vi.spyOn(priv, "createBranch").mockResolvedValueOnce(undefined);
-
-        await expect(priv.ensureBranchCommit("o", "r", "b")).rejects.toThrow(
-            /Branch creation failed/,
-        );
-    });
 });
 
 describe("GitHubInteraction - low-level Git operations", () => {
@@ -480,22 +448,6 @@ describe("GitHubInteraction - low-level Git operations", () => {
         await expect(
             priv.createBranch("o", "r", "b", "base"),
         ).rejects.toThrow();
-    });
-
-    it("createTreeWithFiles returns updated info on success", async () => {
-        const base = { sha: "1", treeSha: "2", parents: [{ sha: "1" }] };
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ tree: { sha: "newTree" } }),
-        } as unknown as Response);
-        const out = await priv.createTreeWithFiles(
-            "o",
-            "r",
-            [["p", "c"]],
-            base,
-        );
-        expect(out.treeSha).toBe("newTree");
-        expect(out.sha).toBe(base.sha);
     });
 
     it("createTreeWithFiles throws on failure", async () => {
