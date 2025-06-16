@@ -104,7 +104,7 @@ class GitHubInteraction {
      */
     private get headers(): Record<string, string> {
         return {
-            Authorization: `token ${this.auth}`,
+            Authorization: `token ${this.getAuth()}`,
             Accept: "application/vnd.github.v3+json",
             "Content-Type": "application/json",
         };
@@ -158,13 +158,9 @@ class GitHubInteraction {
         filePaths: string[],
         branchName: string,
     ): Promise<string[]> {
-        const files: string[] = [];
-
-        filePaths.forEach(async (filePath) => {
-            files.push(await this.fetchFileFromBranch(filePath, branchName));
-        });
-
-        return files;
+        return Promise.all(
+            filePaths.map((fp) => this.fetchFileFromBranch(fp, branchName)),
+        );
     }
 
     /**
@@ -396,7 +392,7 @@ class GitHubInteraction {
      * @param newTreeSha - SHA of the newly created tree.
      * @returns A BranchCommitInfo struct pointing to the new tree.
      */
-    private updateTreeInfo(
+    public updateTreeInfo(
         base: BranchCommitInfo,
         newTreeSha: string,
     ): BranchCommitInfo {
@@ -412,7 +408,7 @@ class GitHubInteraction {
      * @param response - JSON response from POST /git/commits.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private createCommitInfo(response: any): BranchCommitInfo {
+    public createCommitInfo(response: any): BranchCommitInfo {
         return {
             sha: response.sha,
             treeSha: response.tree.sha,
@@ -498,11 +494,13 @@ class GitHubInteraction {
                 }),
             },
         );
-        if (!resp.ok) {
-            throw new Error(
-                `Create branch failed: ${resp.status} ${await resp.text()}`,
-            );
+
+        if (resp.ok) {
+            return;
         }
+
+        const errorBody = await resp.text();
+        throw new Error(`Create branch failed: ${resp.status} ${errorBody}`);
     }
 
     /**
