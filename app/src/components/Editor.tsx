@@ -48,11 +48,17 @@ const editorContext = createContext<{
 }>();
 
 export function useEditorState() {
-  return useContext(editorContext)?.state;
+  const ctx = useContext(editorContext);
+  if (!ctx) throw new Error("Editor state used outside of editor context");
+  const currentState =
+    typeof ctx.state === "function" ? ctx.state : () => ctx.view().state;
+  return currentState;
 }
 
 export function useEditorView() {
-  return useContext(editorContext)?.view;
+  const ctx = useContext(editorContext);
+  if (!ctx) throw new Error("Editor state used outside of editor context");
+  return ctx.view;
 }
 let globalEditorView: EditorView | null = null;
 
@@ -61,7 +67,9 @@ export function useCommand(cmd: Command) {
     const ctx = useContext(editorContext);
     if (!ctx) throw new Error("Editor state used outside of editor context");
 
-    const res = cmd(ctx.state(), undefined, ctx.view());
+    const currentState =
+      typeof ctx.state === "function" ? ctx.state() : ctx.view().state;
+    const res = cmd(currentState, undefined, ctx.view());
     console.log("a", res);
     return res;
   });
@@ -72,9 +80,10 @@ export function dispatchCommand(cmd: Command) {
   const ctx = useContext(editorContext);
   if (!ctx) throw new Error("Editor context used outside of editor");
 
-  const state = ctx.state();
+  const currentState =
+    typeof ctx.state === "function" ? ctx.state() : ctx.view().state;
   const view = ctx.view();
-  return cmd(state, view.dispatch, view);
+  return cmd(currentState, view.dispatch, view);
 }
 
 // This is a wrapper around dispatchCommand that returns a function
@@ -97,6 +106,16 @@ export let setState: Setter<EditorState>;
 
 export const Editor: ParentComponent<EditorProps> = (props) => {
   const [ref, setRef] = createSignal<HTMLDivElement>();
+
+  const [stateSignal, setStateSignal] = createSignal<EditorState>(
+    untrack(() => EditorState.create({ schema: props.schema, plugins: [] })),
+    {
+      equals: false,
+    },
+  );
+  state = stateSignal;
+  setState = setStateSignal;
+
   const editorState = createMemo(() =>
     EditorState.create({
       schema: props.schema,
@@ -158,18 +177,6 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   onCleanup(() => view().destroy());
 
   onMount(() => {
-    // editorState is just used to initialize the value. Because this is not a reactive scope,
-    // this function never reruns. To make this explicit, solidjs recommends to use `untrack' here.
-    const [getSignal, setSignal] = createSignal<EditorState>(
-      untrack(editorState),
-      {
-        equals: false,
-      },
-    );
-
-    state = getSignal;
-    setState = setSignal;
-
     globalEditorView = view();
 
     const el = ref();
@@ -264,7 +271,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
 
   return (
     <>
-      <editorContext.Provider value={{ state, view }}>
+      <editorContext.Provider value={{ state: stateSignal, view }}>
         {props.children}
       </editorContext.Provider>
       <div ref={setRef} />
