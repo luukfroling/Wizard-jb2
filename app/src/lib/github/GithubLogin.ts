@@ -1,4 +1,5 @@
 import { createSignal, onMount, createEffect } from "solid-js";
+import { github } from "./githubInteraction";
 
 /**
  * Represents a GitHub user retrieved via the API.
@@ -32,16 +33,11 @@ const getUserInfo = async (token: string): Promise<GitHubUser> => {
 /**
  * Custom Solid.js hook for GitHub authentication state management.
  * @returns An object containing:
- *   - token: getter for the current token or null.
- *   - setToken: setter to update the token and persist.
  *   - user: getter for the current GitHubUser or null.
  *   - setUser: setter to update the user manually.
  *   - logout: function to clear stored token and user.
  */
 export function useGitHubAuth() {
-    // Signal to hold the GitHub access token (or null if not logged in).
-    const [token, setToken] = createSignal<string | null>(null); // TODO handle in github class.
-
     // Signal to hold the fetched GitHub user data
     const [user, setUser] = createSignal<GitHubUser | null>(null);
 
@@ -49,12 +45,12 @@ export function useGitHubAuth() {
     onMount(() => {
         // Attempt to retrieve previously saved token from localStorage.
         const saved = localStorage.getItem("gh_token"); // TODO store in database instead.
-        if (saved) setToken(saved);
+        if (saved) github.setAuth(saved);
     });
 
     // createEffect tracks changes to `token()` and runs the effect
     createEffect(() => {
-        const t = token();
+        const t = github.getAuth();
         if (t) {
             // If there's a valid token, fetch user info.
             getUserInfo(t)
@@ -64,7 +60,7 @@ export function useGitHubAuth() {
                     // On error (e.g. invalid token), clear storage and signals.
                     console.error(err);
                     localStorage.removeItem("gh_token");
-                    setToken(null);
+                    github.setAuth("");
                 });
         } else {
             // If token is null, ensure user is also null.
@@ -77,9 +73,9 @@ export function useGitHubAuth() {
      */
     const logout = () => {
         localStorage.removeItem("gh_token");
-        setToken(null);
+        github.setAuth("");
         setUser(null);
     };
 
-    return { token, setToken, user, setUser, logout };
+    return { user, logout };
 }

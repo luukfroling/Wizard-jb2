@@ -8,6 +8,7 @@ import {
   getRepositoryLink,
   getCurrentFileHref,
   getFilePathFromHref,
+  parseOwnerRepoFromHref,
 } from "./lib/github/GithubUtility";
 import { database } from "./lib/localStorage/database";
 import { github } from "./lib/github/githubInteraction";
@@ -25,7 +26,13 @@ const ref = getRepositoryLink();
 getCurrentFileHref();
 
 if (ref != null) {
-  github.setRepo(ref); // TODO set branch
+  const ownerRepo = parseOwnerRepoFromHref(ref);
+  if (ownerRepo != undefined) {
+    github.setRepo(ownerRepo?.repo);
+    github.setOwner(ownerRepo?.owner);
+  } else {
+    console.warn("Database not initialised - failed to parse href.");
+  }
 } else {
   console.warn("Database not initialised - no github repo link found.");
 }

@@ -19,8 +19,6 @@ import { baseKeymap } from "prosemirror-commands";
 import {
   currentFileHref,
   getFilePathFromHref,
-  repositoryHref,
-  parseOwnerRepoFromHref,
 } from "../lib/github/GithubUtility";
 import { database } from "../lib/localStorage/database";
 import { parseMyst } from "../lib/parser";
@@ -209,13 +207,12 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
 
     // If not found or empty, try to fetch from GitHub
     if (!markdown) {
-      const repoHref = repositoryHref();
-      const repoInfo = parseOwnerRepoFromHref(repoHref);
-      const branch = github.getBranch(); // Use the signal here
-
-      if (repoInfo && branch) {
+      if (github.getBranch() != "") {
         // Try to fetch from the current branch first (and fallback to default branch inside getFileContentFromRepo)
-        markdown = await github.fetchFileFromBranch(filePath, branch);
+        markdown = await github.fetchFileFromBranch(
+          filePath,
+          github.getBranch(),
+        );
       }
     }
 
