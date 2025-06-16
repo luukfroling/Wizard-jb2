@@ -103,11 +103,19 @@ class GitHubInteraction {
      * HTTP headers including authentication for GitHub API calls.
      */
     private get headers(): Record<string, string> {
-        return {
-            Authorization: `token ${this.getAuth()}`,
+        // start with the always-present headers
+        const headers: Record<string, string> = {
             Accept: "application/vnd.github.v3+json",
             "Content-Type": "application/json",
         };
+
+        // only add Authorization if we actually have a token
+        const token = this.getAuth();
+        if (token) {
+            headers.Authorization = `token ${token}`;
+        }
+
+        return headers;
     }
 
     /**
@@ -364,11 +372,24 @@ class GitHubInteraction {
 
         // If the branch does not exist on remote, attempt to create it from the default branch.
         if (commit === undefined) {
+            // Fetch default branch commit info so we can grab a sha
+            const defaultInfo = await this.fetchBranchCommitInfo(
+                owner,
+                repo,
+                repoInfo.default_branch,
+            );
+            if (!defaultInfo) {
+                throw new Error(
+                    `Cannot create branch ${branch}: default branch ${repoInfo.default_branch} has no commit`,
+                );
+            }
+
+            //  Create the new branch using the sha from the default branch
             await this.createBranch(
                 owner,
                 repo,
                 branch,
-                repoInfo.default_branch,
+                defaultInfo.sha, // ← now a valid 40-char SHA
             );
             // Check if the new branch now exists.
             commit = await this.fetchBranchCommitInfo(owner, repo, branch);
@@ -547,7 +568,7 @@ class GitHubInteraction {
 
         // Return an updated version of the base branch info with the new tree sha.
         const data = await resp.json();
-        return this.updateTreeInfo(base, data.tree.sha);
+        return this.updateTreeInfo(base, data.sha);
     }
 
     /**

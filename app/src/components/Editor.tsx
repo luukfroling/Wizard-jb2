@@ -4,9 +4,11 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  on,
   onCleanup,
   onMount,
   ParentComponent,
+  Setter,
   untrack,
   useContext,
 } from "solid-js";
@@ -52,6 +54,7 @@ export function useEditorState() {
 export function useEditorView() {
   return useContext(editorContext)?.view;
 }
+let globalEditorView: EditorView | null = null;
 
 export function useCommand(cmd: Command) {
   const output = createMemo(() => {
@@ -88,6 +91,9 @@ export function useDispatchCommand() {
   };
 }
 
+export let state: Accessor<EditorState>;
+export let setState: Setter<EditorState>;
+
 export const Editor: ParentComponent<EditorProps> = (props) => {
   const [ref, setRef] = createSignal<HTMLDivElement>();
   const editorState = createMemo(() =>
@@ -121,12 +127,6 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     }),
   );
 
-  // editorState is just used to initialize the value. Because this is not a reactive scope,
-  // this function never reruns. To make this explicit, solidjs recommends to use `untrack' here.
-  const [state, setState] = createSignal<EditorState>(untrack(editorState), {
-    equals: false,
-  });
-
   const view = createMemo(
     () =>
       new EditorView(ref()!, {
@@ -157,6 +157,20 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   onCleanup(() => view().destroy());
 
   onMount(() => {
+    // editorState is just used to initialize the value. Because this is not a reactive scope,
+    // this function never reruns. To make this explicit, solidjs recommends to use `untrack' here.
+    const [getSignal, setSignal] = createSignal<EditorState>(
+      untrack(editorState),
+      {
+        equals: false,
+      },
+    );
+
+    state = getSignal;
+    setState = setSignal;
+
+    globalEditorView = view();
+
     const el = ref();
     if (!el) return;
     el.addEventListener("click", (event) => {
@@ -170,30 +184,18 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
         }
       }
     });
-
-    // Expose a function to get the editor content as markdown globally
-    window.__getEditorMarkdown = () => {
-      const doc = state().doc;
-      try {
-        return prosemirrorToMarkdown(doc);
-      } catch (e) {
-        return (
-          (e instanceof Error ? e.toString() : String(e)) +
-          " " +
-          doc.textContent
-        );
-      }
-    };
-
-    // Load the current file into the editor on mount
-    loadCurrentFileIntoEditor();
   });
 
   // Add this effect to reload file when branch changes
-  createEffect(() => {
-    github.getBranch();
-    loadCurrentFileIntoEditor();
-  });
+  createEffect(
+    on(
+      () => github.getBranch(),
+      (branch: string) => {
+        if (!branch) return;
+        loadCurrentFileIntoEditor();
+      },
+    ),
+  );
 
   // Add this method to load and parse the current file into the editor
   async function loadCurrentFileIntoEditor() {
@@ -208,11 +210,19 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     // If not found or empty, try to fetch from GitHub
     if (!markdown) {
       if (github.getBranch() != "") {
-        // Try to fetch from the current branch first (and fallback to default branch inside getFileContentFromRepo)
-        markdown = await github.fetchFileFromBranch(
-          filePath,
-          github.getBranch(),
-        );
+        // Try to fetch from the current branch first (and fallback to default branch)
+        try {
+          markdown = await github.fetchFileFromBranch(
+            filePath,
+            github.getBranch(),
+          );
+        } catch (e) {
+          console.trace(e);
+          markdown = await github.fetchFileFromBranch(
+            filePath,
+            (await github.fetchRepoInfo()).default_branch,
+          );
+        }
       }
     }
 
@@ -240,6 +250,10 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     // Set the new state
     editorView.updateState(newState);
     setState(newState);
+
+    // save content
+    console.log("saving after loading...");
+    await saveEditorContentToDatabase();
   }
 
   return (
@@ -253,7 +267,25 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
 };
 
 // Optionally export for use elsewhere
-export async function loadCurrentFileIntoEditor() {
-  // This function can be imported and called from outside if needed
-  // (see above for implementation)
+export function getEditorContentAsMarkdown(): string {
+  if (!globalEditorView) {
+    console.warn(" getEditorContentAsMarkdown: no view");
+    return "";
+  }
+  return prosemirrorToMarkdown(globalEditorView.state.doc);
+}
+
+export async function saveEditorContentToDatabase() {
+  const fileHref = currentFileHref();
+  const filePath = getFilePathFromHref(fileHref);
+  if (!filePath) return;
+  const content = getEditorContentAsMarkdown();
+
+  console.log("saving...");
+  console.log("file path: " + filePath);
+  console.log("content: " + content);
+
+  if (filePath && content && database.isInitialised()) {
+    await database.save<string>("markdown", filePath, content);
+  }
 }

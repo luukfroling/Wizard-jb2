@@ -7,11 +7,10 @@ import App from "./App";
 import {
   getRepositoryLink,
   getCurrentFileHref,
-  getFilePathFromHref,
   parseOwnerRepoFromHref,
 } from "./lib/github/GithubUtility";
-import { database } from "./lib/localStorage/database";
 import { github } from "./lib/github/githubInteraction";
+import { saveEditorContentToDatabase } from "./components/Editor";
 
 const root = document.getElementById("root");
 
@@ -44,20 +43,7 @@ if (ref != null) {
 }
 
 window.addEventListener("beforeunload", async () => {
-  // Get the file path
-  const fileHref = getCurrentFileHref();
-  const filePath = getFilePathFromHref(fileHref);
-
-  // Get the editor content
-  const content = window.__getEditorMarkdown
-    ? window.__getEditorMarkdown()
-    : "";
-
-  // Save to the database if possible
-  if (filePath && content && (await database.isInitialised())) {
-    // Save as markdown
-    database.save("markdown", filePath, content);
-  }
+  await saveEditorContentToDatabase();
 });
 
 render(

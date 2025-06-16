@@ -168,6 +168,8 @@ export const database = {
         const tx = db.transaction(store, "readwrite");
         const fullKey = _makePrefixedKey(repo, branch, key);
         await tx.store.put(value, fullKey);
+        console.log("saved " + fullKey);
+        console.log("data " + value);
         await tx.done;
     },
 
@@ -213,34 +215,28 @@ export const database = {
      * @param store - The object store to load from.
      * @returns Branches for the current repo.
      */
-    loadLocalbranches(store: string): string[] {
+    async loadLocalbranches(store: string): Promise<string[]> {
         const branches: string[] = [];
 
         _validateStore(store);
-        this.getDB(false).then((db) => {
-            const tx = db.transaction(store, "readonly");
-            tx.store.getAllKeys().then((allKeys) => {
-                tx.done.then(() => {
-                    allKeys
-                        .filter(
-                            (k) =>
-                                typeof k === "string" &&
-                                k.startsWith(`${github.getRepo()}::`),
-                        )
-                        .map((a) => {
-                            const branch = getBranchFromKey(
-                                github.getRepo(),
-                                a,
-                            );
-                            if (branch === undefined) return;
-                            if (!branches.includes(branch)) {
-                                branches.push(branch);
-                            }
-                        });
-                });
+        const db = await this.getDB(false);
+        const tx = db.transaction(store, "readonly");
+        const allKeys = await tx.store.getAllKeys();
+        await tx.done;
+        allKeys
+            .filter(
+                (k) =>
+                    typeof k === "string" &&
+                    k.startsWith(`${github.getRepo()}::`),
+            )
+            .map((a) => {
+                const branch = getBranchFromKey(github.getRepo(), a);
+                if (branch === undefined) return;
+                if (!branches.includes(branch)) {
+                    branches.push(branch);
+                    console.log(branch);
+                }
             });
-        });
-
         return branches;
     },
 

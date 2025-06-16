@@ -1,11 +1,8 @@
-import { Component, createSignal, For, createEffect } from "solid-js";
-import {
-  getFilePathFromHref,
-  getCurrentFileHref,
-} from "../../lib/github/GithubUtility";
+import { Component, createSignal, For, createEffect, on } from "solid-js";
 import { database } from "../../lib/localStorage/database";
 import { github } from "../../lib/github/githubInteraction";
-import { user } from "../../lib/github/GithubLogin";
+import { GitHubUser, user } from "../../lib/github/GithubLogin";
+import { saveEditorContentToDatabase } from "../Editor";
 
 export const BranchDropdown: Component = () => {
   const [branches, setBranches] = createSignal<string[]>([]);
@@ -14,61 +11,63 @@ export const BranchDropdown: Component = () => {
   const [error, setError] = createSignal<string | null>(null);
 
   const initialise = async () => {
-    // Combine local branches and fetched branches, prioritizing local branches
-    const allBranches = [
-      ...database.loadLocalbranches("markdown"),
-      ...(await github.fetchRemoteBranches()),
-    ];
+    const localBranches = await database.loadLocalbranches("markdown");
+    const remoteBranches = await github.fetchRemoteBranches();
+
+    console.log("LOCAL  →", localBranches);
+    console.log("REMOTE →", remoteBranches);
+
+    const deduped = remoteBranches.filter((rb) => !localBranches.includes(rb));
+    console.log("FILTERED REMOTE (not in local) →", deduped);
+
+    const allBranches = [...localBranches, ...deduped];
+    console.log("COMBINED ALL →", allBranches);
+
     setBranches(allBranches);
   };
-
-  // run on login (and only when user isn't null)
-  createEffect(() => {
-    if (user() != null) {
-      initialise().then();
-    } else {
-      setBranches(database.loadLocalbranches("markdown"));
-    }
-    if (branches().length != 0) {
-      if (github.getBranch() == "") {
-        database
-          .loadFrom<string>(
-            "metadata",
-            github.getRepo(),
-            "branch",
-            "selected_branch",
-          )
-          .then((value) => {
-            if (value === undefined) {
-              github.setBranch(branches()[0]); // set branch to first branch
-            } else {
-              github.setBranch(value); //set branch to stored value
-              if (!branches().includes(value)) {
-                branches().push(value);
-              }
+  createEffect(
+    on(
+      () => user(),
+      (u: GitHubUser | null) => {
+        if (u == null) {
+          //
+        }
+        initialise().then(() => {
+          if (branches().length != 0) {
+            if (github.getBranch() == "") {
+              database
+                .loadFrom<string>(
+                  "metadata",
+                  github.getRepo(),
+                  "branch",
+                  "selected_branch",
+                )
+                .then((value) => {
+                  if (value === undefined) {
+                    github.setBranch(branches()[0]); // set branch to first branch
+                  } else {
+                    github.setBranch(value); //set branch to stored value
+                    if (!branches().includes(value)) {
+                      setBranches([...branches(), value]);
+                    }
+                  }
+                });
             }
-          });
-      }
-    } else {
-      //resolve no branches edge-case
-      branches().push("default");
-      github.setBranch(branches()[0]);
-    }
-  });
+          } else {
+            //resolve no branches edge-case
+            setBranches(["main"]);
+            github.setBranch(branches()[0]);
+          }
+        });
+      },
+    ),
+  );
 
   // When a branch is selected, update state and localStorage
   const handleSelect = async (b: string) => {
-    const href = getCurrentFileHref();
-    const filePath = getFilePathFromHref(href);
-    const content = window.__getEditorMarkdown
-      ? window.__getEditorMarkdown()
-      : "";
-    // console.log("Saved:", content, "to filePath:", filePath, "from href:", href);
-    if (filePath && content && database.isInitialised()) {
-      await database.save<string>("markdown", filePath, content);
-    }
+    console.log("saving before changing branch...");
+    await saveEditorContentToDatabase();
     github.setBranch(b);
-    localStorage.setItem("currentBranch", b);
     setShowInput(false);
     setError(null);
   };
