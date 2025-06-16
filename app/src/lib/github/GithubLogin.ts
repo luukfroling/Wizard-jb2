@@ -39,8 +39,6 @@ const getUserInfo = async (token: string): Promise<GitHubUser> => {
  *   - logout: function to clear stored token and user.
  */
 export function useGitHubAuth() {
-    // Signal to hold the fetched GitHub user data
-
     // Run once when useGitHubAuth() is first used in a component.
     onMount(() => {
         // Attempt to retrieve previously saved token from localStorage.

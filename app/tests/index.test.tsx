@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import * as SolidWeb from "solid-js/web";
+import "fake-indexeddb/auto"; // requried to use the database in tests
 
 // Use "describe" to create a test suite
 describe("Example tests for index.src expected behaviour", () => {
