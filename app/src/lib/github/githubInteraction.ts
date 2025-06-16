@@ -118,7 +118,6 @@ class GitHubInteraction {
      * @throws If files cannot be retrieved from either branch.
      */
     public async fetchFiles(filePaths: string[]): Promise<string[]> {
-        //TODO why is this not called anywhere? Did I remove something accidentally?
         // Try to load content from current branch.
         try {
             return await this.fetchFilesFromBranch(filePaths, this.getBranch());
@@ -623,4 +622,4 @@ class GitHubInteraction {
 /**
  * Singleton instance of GitHubInteraction.
  */
-export const github = new GitHubInteraction("", "", "", ""); //TODO needs to be initialised at some point, probably after logging in.
+export const github = new GitHubInteraction("", "", "", "");

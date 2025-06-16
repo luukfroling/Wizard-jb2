@@ -111,11 +111,13 @@ export const database = {
      * @returns The opened IDB database instance.
      * @throws Will throw if the active repo hasn't been set.
      */
-    async getDB(): Promise<IDBPDatabase> {
-        if (!this.isInitialised()) {
-            throw new Error(
-                "Attempting to access database before setting the active repo and or branch. Make sure the repo is set before any database interactions take place!",
-            );
+    async getDB(checkInit: boolean = true): Promise<IDBPDatabase> {
+        if (checkInit) {
+            if (!this.isInitialised()) {
+                throw new Error(
+                    "Attempting to access database before setting the active repo and or branch. Make sure the repo is set before any database interactions take place!",
+                );
+            }
         }
         if (!this.dbPromise) {
             this.dbPromise = openDB(config.name, config.version, {
@@ -138,6 +140,7 @@ export const database = {
      * @param value - The value to save.
      */
     async save<T>(store: string, key: IDBValidKey, value: T): Promise<void> {
+        this.getDB(); //make sure the DB is initialised
         await this.saveTo(
             store,
             github.getRepo(),
@@ -161,7 +164,7 @@ export const database = {
         value: T,
     ): Promise<void> {
         _validateStore(store);
-        const db = await this.getDB();
+        const db = await this.getDB(false);
         const tx = db.transaction(store, "readwrite");
         const fullKey = _makePrefixedKey(repo, branch, key);
         await tx.store.put(value, fullKey);
@@ -175,14 +178,31 @@ export const database = {
      * @returns The stored value or undefined if not found.
      */
     async load<T>(store: string, key: IDBValidKey): Promise<T | undefined> {
-        _validateStore(store);
-        const db = await this.getDB();
-        const tx = db.transaction(store, "readonly");
-        const fullKey = _makePrefixedKey(
+        this.getDB(); //make sure the DB is initialised
+        return await this.loadFrom(
+            store,
             github.getRepo(),
             github.getBranch(),
             key,
         );
+    },
+
+    /**
+     * Loads a value by key from the specified store.
+     * @param store - The object store to load from.
+     * @param key - The key to retrieve.
+     * @returns The stored value or undefined if not found.
+     */
+    async loadFrom<T>(
+        store: string,
+        repo: string,
+        branch: string,
+        key: IDBValidKey,
+    ): Promise<T | undefined> {
+        _validateStore(store);
+        const db = await this.getDB(false);
+        const tx = db.transaction(store, "readonly");
+        const fullKey = _makePrefixedKey(repo, branch, key);
         const result = await tx.store.get(fullKey);
         await tx.done;
         return result;
@@ -278,14 +298,25 @@ export const database = {
      * @param key - The key to delete.
      */
     async delete(store: string, key: IDBValidKey): Promise<void> {
+        this.getDB(); //make sure the DB is initialised
+        await this.deleteFrom(store, github.getRepo(), github.getBranch(), key);
+    },
+
+    /**
+     * Deletes a single key from the specified store.
+     * @param store - The store from which to delete.
+     * @param key - The key to delete.
+     */
+    async deleteFrom(
+        store: string,
+        repo: string,
+        branch: string,
+        key: IDBValidKey,
+    ): Promise<void> {
         _validateStore(store);
         const db = await this.getDB();
         const tx = db.transaction(store, "readwrite");
-        const fullKey = _makePrefixedKey(
-            github.getRepo(),
-            github.getBranch(),
-            key,
-        );
+        const fullKey = _makePrefixedKey(repo, branch, key);
         await tx.store.delete(fullKey);
         await tx.done;
     },

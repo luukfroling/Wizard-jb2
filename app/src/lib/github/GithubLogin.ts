@@ -1,5 +1,6 @@
-import { createSignal, onMount, createEffect } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { github } from "./githubInteraction";
+import { database } from "../localStorage/database";
 
 /**
  * Represents a GitHub user retrieved via the API.
@@ -39,43 +40,51 @@ const getUserInfo = async (token: string): Promise<GitHubUser> => {
  */
 export function useGitHubAuth() {
     // Signal to hold the fetched GitHub user data
-    const [user, setUser] = createSignal<GitHubUser | null>(null);
 
     // Run once when useGitHubAuth() is first used in a component.
     onMount(() => {
         // Attempt to retrieve previously saved token from localStorage.
-        const saved = localStorage.getItem("gh_token"); // TODO store in database instead.
-        if (saved) github.setAuth(saved);
-    });
-
-    // createEffect tracks changes to `token()` and runs the effect
-    createEffect(() => {
-        const t = github.getAuth();
-        if (t) {
-            // If there's a valid token, fetch user info.
-            getUserInfo(t)
-                .then(setUser)
-                // Update the user signal on success.
-                .catch((err) => {
-                    // On error (e.g. invalid token), clear storage and signals.
-                    console.error(err);
-                    localStorage.removeItem("gh_token");
-                    github.setAuth("");
-                });
-        } else {
-            // If token is null, ensure user is also null.
-            setUser(null);
-        }
+        database
+            .loadFrom<string>("metadata", "token", "token", "token")
+            .then((saved) => {
+                if (saved !== undefined) {
+                    if (!validateTokenAndLogin(saved)) {
+                        //remove bad token from database
+                        database
+                            .deleteFrom("metadata", "token", "token", "token")
+                            .then();
+                    }
+                }
+            });
     });
 
     /**
      * Logs the user out by clearing token and user signals and localStorage.
      */
     const logout = () => {
-        localStorage.removeItem("gh_token");
+        database.deleteFrom("metadata", "token", "token", "token").then();
         github.setAuth("");
         setUser(null);
     };
 
     return { user, logout };
+}
+
+const [user, setUser] = createSignal<GitHubUser | null>(null);
+
+export async function validateTokenAndLogin(token: string): Promise<boolean> {
+    try {
+        const res = await fetch("https://api.github.com/user", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return false;
+        github.setAuth(token);
+        getUserInfo(token).then(setUser);
+        const repoInfo = github.fetchRepoInfo(); // load default branch
+        github.setBranch((await repoInfo).default_branch); // set as curent branch TODO load from database
+        database.saveTo<string>("metadata", "token", "token", "token", token); // update token in database with valid token
+        return true;
+    } catch {
+        return false;
+    }
 }
