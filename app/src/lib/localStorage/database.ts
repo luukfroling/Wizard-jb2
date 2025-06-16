@@ -216,15 +216,30 @@ export const database = {
     loadLocalbranches(store: string): string[] {
         const branches: string[] = [];
 
-        this.keys(store).then((keys) =>
-            keys.map((a) => {
-                const branch = getBranchFromKey(github.getRepo(), a);
-                if (branch === undefined) return;
-                if (!branches.includes(branch)) {
-                    branches.push(branch);
-                }
-            }),
-        );
+        _validateStore(store);
+        this.getDB(false).then((db) => {
+            const tx = db.transaction(store, "readonly");
+            tx.store.getAllKeys().then((allKeys) => {
+                tx.done.then(() => {
+                    allKeys
+                        .filter(
+                            (k) =>
+                                typeof k === "string" &&
+                                k.startsWith(`${github.getRepo()}::`),
+                        )
+                        .map((a) => {
+                            const branch = getBranchFromKey(
+                                github.getRepo(),
+                                a,
+                            );
+                            if (branch === undefined) return;
+                            if (!branches.includes(branch)) {
+                                branches.push(branch);
+                            }
+                        });
+                });
+            });
+        });
 
         return branches;
     },

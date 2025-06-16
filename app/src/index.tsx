@@ -28,13 +28,19 @@ getCurrentFileHref();
 if (ref != null) {
   const ownerRepo = parseOwnerRepoFromHref(ref);
   if (ownerRepo != undefined) {
-    github.setRepo(ownerRepo?.repo);
-    github.setOwner(ownerRepo?.owner);
+    github.setRepo(ownerRepo.repo);
+    github.setOwner(ownerRepo.owner);
   } else {
     console.warn("Database not initialised - failed to parse href.");
+    github.setRepo("repo");
+    github.setBranch("branch");
+    github.setOwner("owner");
   }
 } else {
   console.warn("Database not initialised - no github repo link found.");
+  github.setRepo("repo");
+  github.setBranch("branch");
+  github.setOwner("owner");
 }
 
 window.addEventListener("beforeunload", async () => {

@@ -29,6 +29,31 @@ export const BranchDropdown: Component = () => {
     } else {
       setBranches(database.loadLocalbranches("markdown"));
     }
+    if (branches().length != 0) {
+      if (github.getBranch() == "") {
+        database
+          .loadFrom<string>(
+            "metadata",
+            github.getRepo(),
+            "branch",
+            "selected_branch",
+          )
+          .then((value) => {
+            if (value === undefined) {
+              github.setBranch(branches()[0]); // set branch to first branch
+            } else {
+              github.setBranch(value); //set branch to stored value
+              if (!branches().includes(value)) {
+                branches().push(value);
+              }
+            }
+          });
+      }
+    } else {
+      //resolve no branches edge-case
+      branches().push("default");
+      github.setBranch(branches()[0]);
+    }
   });
 
   // When a branch is selected, update state and localStorage
