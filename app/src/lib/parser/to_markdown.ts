@@ -216,6 +216,7 @@ const proseMirrorToMystHandlers = {
     list: (node: Node): List => ({
         type: "list",
         start: node.attrs.start as number,
+        ordered: node.attrs.ordered as boolean,
         spread: node.attrs.spread as boolean,
         children: handleChildren<List>(node),
     }),
