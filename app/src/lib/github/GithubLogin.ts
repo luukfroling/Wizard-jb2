@@ -68,7 +68,7 @@ export function useGitHubAuth() {
     return { user, logout };
 }
 
-const [user, setUser] = createSignal<GitHubUser | null>(null);
+export const [user, setUser] = createSignal<GitHubUser | null>(null);
 
 export async function validateTokenAndLogin(token: string): Promise<boolean> {
     try {
@@ -77,10 +77,10 @@ export async function validateTokenAndLogin(token: string): Promise<boolean> {
         });
         if (!res.ok) return false;
         github.setAuth(token);
-        getUserInfo(token).then(setUser);
         const repoInfo = github.fetchRepoInfo(); // load default branch
         github.setBranch((await repoInfo).default_branch); // set as curent branch TODO load from database
         database.saveTo<string>("metadata", "token", "token", "token", token); // update token in database with valid token
+        getUserInfo(token).then(setUser); //set user, signal to other components that we are finally logged in
         return true;
     } catch {
         return false;

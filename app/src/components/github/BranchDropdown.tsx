@@ -1,11 +1,11 @@
-import { Component, createSignal, onMount, For } from "solid-js";
+import { Component, createSignal, For, createEffect } from "solid-js";
 import {
-  repositoryHref,
   getFilePathFromHref,
   getCurrentFileHref,
 } from "../../lib/github/GithubUtility";
 import { database } from "../../lib/localStorage/database";
 import { github } from "../../lib/github/githubInteraction";
+import { user } from "../../lib/github/GithubLogin";
 
 export const BranchDropdown: Component = () => {
   const [branches, setBranches] = createSignal<string[]>([]);
@@ -13,37 +13,21 @@ export const BranchDropdown: Component = () => {
   const [newBranchName, setNewBranchName] = createSignal("");
   const [error, setError] = createSignal<string | null>(null);
 
-  onMount(async () => {
-    const href = repositoryHref(); //todo this should probably only run after githubInteraction is initialised
-    if (href) {
-      //
-      // Combine local branches and fetched branches, prioritizing local branches
-      const allBranches = [
-        ...database.loadLocalbranches("markdown"),
-        ...(await github.fetchRemoteBranches()),
-      ];
-      setBranches(allBranches);
-      // Set current branch from localStorage or default to first branch
-      const storedBranch = localStorage.getItem("currentBranch");
-      if (storedBranch && allBranches.includes(storedBranch)) {
-        github.setBranch(storedBranch);
-      } else if (allBranches.length > 0) {
-        // Try to find the default/base branch, fallback to the first branch if not found
-        let baseBranch = "main";
-        const href = repositoryHref();
-        if (href) {
-          // Try to get the default branch from GitHub
-          try {
-            baseBranch =
-              (await github.fetchRepoInfo()).default_branch || allBranches[0];
-          } catch {
-            baseBranch = allBranches[0];
-          }
-        } else {
-          baseBranch = allBranches[0];
-        }
-        github.setBranch(baseBranch);
-      }
+  const initialise = async () => {
+    // Combine local branches and fetched branches, prioritizing local branches
+    const allBranches = [
+      ...database.loadLocalbranches("markdown"),
+      ...(await github.fetchRemoteBranches()),
+    ];
+    setBranches(allBranches);
+  };
+
+  // run on login (and only when user isn't null)
+  createEffect(() => {
+    if (user() != null) {
+      initialise().then();
+    } else {
+      setBranches(database.loadLocalbranches("markdown"));
     }
   });
 
@@ -80,14 +64,6 @@ export const BranchDropdown: Component = () => {
     }
     setBranches([name, ...branches()]);
     handleSelect(name);
-    // Save local branches
-    const localBranches = JSON.parse(
-      localStorage.getItem("localBranches") || "[]",
-    );
-    localStorage.setItem(
-      "localBranches",
-      JSON.stringify([name, ...localBranches]),
-    );
     setNewBranchName("");
   };
 
