@@ -230,7 +230,7 @@ const handlers = {
     list: (node: List, defs: DefinitionMap, safe) =>
         schema.node(
             "list",
-            { spread: node.spread, ordered: node.ordered },
+            { spread: node.spread, ordered: node.ordered, start: node.start },
             children(node, defs, safe),
         ),
     listItem: (node: ListItem, defs: DefinitionMap, safe) => {
