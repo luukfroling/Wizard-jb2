@@ -1,37 +1,23 @@
-import { Show, type Setter } from "solid-js";
+import { Show } from "solid-js";
 import { GitHubTokenInput } from "./GitHubTokenInput";
 import { GitHubUserPanel } from "./GitHubUserPanel";
-import type { GitHubUser } from "../../lib/github/GithubLogin";
+import {
+  validateTokenAndLogin,
+  type GitHubUser,
+} from "../../lib/github/GithubLogin";
 
 type Props = {
   token: string | null;
   user: GitHubUser | null;
-  onTokenSet: Setter<string | null>;
   onLogout: () => void;
 };
-
-async function validateAndSetToken(
-  token: string,
-  setToken: Setter<string | null>,
-): Promise<boolean> {
-  try {
-    const res = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return false;
-    setToken(token);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export const GitHubAuthPanel = (props: Props) => {
   return (
     <div class="p-6" style={{ "max-width": "235px", width: "100%" }}>
       <Show when={!props.token}>
         <GitHubTokenInput
-          onTokenSet={(token) => validateAndSetToken(token, props.onTokenSet)}
+          onTokenSet={(token) => validateTokenAndLogin(token)}
         />
       </Show>
       <Show when={props.user} keyed>

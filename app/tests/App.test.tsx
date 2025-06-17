@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render } from "solid-js/web";
 import App from "../src/App";
+import "fake-indexeddb/auto"; // requried to use the database in tests
 
 describe("<App />", () => {
   afterEach(() => {

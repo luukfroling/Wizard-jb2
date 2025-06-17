@@ -2,6 +2,7 @@ import "fake-indexeddb/auto"; // requried to use the database in tests
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import { database, config } from "../../src/lib/localStorage/database";
 import { openDB } from "idb";
+import { github } from "../../src/lib/github/githubInteraction";
 
 const repoA = "test/test1";
 const repoB = "test/test2";
@@ -16,10 +17,18 @@ describe("database module", () => {
     // Ensure database is clean before and after each test
     beforeEach(async () => {
         await database.destroy();
+        github.setBranch("");
+        github.setRepo("");
+        github.setOwner("");
+        github.setAuth("");
     });
 
     afterEach(async () => {
         await database.destroy();
+        github.setBranch("");
+        github.setRepo("");
+        github.setOwner("");
+        github.setAuth("");
     });
 
     /**
@@ -33,7 +42,7 @@ describe("database module", () => {
      * Verifies that an error is thrown when accessing the DB without setting a repo.
      */
     it("should throw if used before repo is set", async () => {
-        await database.setActiveBranch(branchA);
+        await github.setBranch(branchA);
         await expect(database.getDB()).rejects.toThrow();
     });
 
@@ -41,7 +50,7 @@ describe("database module", () => {
      * Verifies that an error is thrown when accessing the DB without setting a branch.
      */
     it("should throw if used before branch is set", async () => {
-        await database.setActiveBranch(branchA);
+        await github.setBranch(branchA);
         await expect(database.getDB()).rejects.toThrow();
     });
 
@@ -49,8 +58,8 @@ describe("database module", () => {
      * Tests storing and retrieving data by key.
      */
     it("should save and load data", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, key, value);
         const result = await database.load<string>(store, key);
         expect(result).toBe(value);
@@ -60,15 +69,15 @@ describe("database module", () => {
      * Makes sure data is separated by branch
      */
     it("should isolate data by branch", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, key, branchA);
 
-        await database.setActiveBranch(branchB);
+        await github.setBranch(branchB);
         const missing = await database.load<string>(store, key);
         expect(missing).toBeUndefined();
 
-        await database.setActiveBranch(branchA);
+        await github.setBranch(branchA);
         const present = await database.load<string>(store, key);
         expect(present).toBe(branchA);
     });
@@ -77,21 +86,21 @@ describe("database module", () => {
      * Ensures all keys are listed.
      */
     it("should list all keys on the correct branch", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "a.md", "A");
         await database.save(store, "b.md", "B");
         const keys = await database.keys(store);
         expect(keys.sort()).toEqual(["a.md", "b.md"]);
 
-        await database.setActiveBranch(branchB);
+        await github.setBranch(branchB);
         const otherKeys = await database.keys(store);
         expect(otherKeys).toEqual([]);
     });
 
     it("should migrate namespace between branches and repos", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "one.md", "1");
         await database.save(store, "two.md", "2");
 
@@ -104,8 +113,8 @@ describe("database module", () => {
         expect(oldKeys).toEqual([]);
 
         // data should exist under new namespace
-        await database.setActiveRepo(repoB);
-        await database.setActiveBranch(branchB);
+        await github.setRepo(repoB);
+        await github.setBranch(branchB);
         const migrated = await database.loadAll<string>(store);
         const migratedKeys = migrated.map(([k]) => k).sort();
         expect(migratedKeys).toEqual(["one.md", "two.md"]);
@@ -118,8 +127,8 @@ describe("database module", () => {
      * Verifies that specific keys can be deleted.
      */
     it("should delete specific keys", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "file1.md", "data");
         await database.save(store, "file2.md", "data");
         await database.delete(store, "file1.md");
@@ -131,8 +140,8 @@ describe("database module", () => {
      * Clears all keys for the current repo within a given store.
      */
     it("should clear all keys for current repo in store", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "1.md", "one");
         await database.save(store, "2.md", "two");
         await database.clear(store);
@@ -144,8 +153,8 @@ describe("database module", () => {
      * Verifies `has()` correctly identifies presence or absence of keys.
      */
     it("should return true/false for has()", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "exists.md", "yes");
         const hasIt = await database.has(store, "exists.md");
         const missing = await database.has(store, "missing.md");
@@ -157,8 +166,8 @@ describe("database module", () => {
      * Loads all key-value pairs.
      */
     it("should loadAll() key-value pairs for current repo only", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "one.md", "1");
         await database.save(store, "two.md", "2");
         const all = await database.loadAll(store);
@@ -172,34 +181,17 @@ describe("database module", () => {
      * Throws an error when trying to use an invalid store.
      */
     it("should reject invalid store usage", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await expect(database.save("notastore", "x", "y")).rejects.toThrow();
-    });
-
-    /**
-     * Destroys database state, with and without preserving the active repo.
-     */
-    it("should reset active repo and branch on destroy unless preserved", async () => {
-        expect(database.isInitialised()).toBe(false);
-
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
-        await database.destroy();
-        expect(database.isInitialised()).toBe(false);
-
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
-        await database.destroy({ preserveRepo: true, preserveBranch: true });
-        expect(database.isInitialised()).toBe(true);
     });
 
     /**
      * Verifies transactional rollback.
      */
     it("should not persist partial writes if transaction fails", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         const db = await database.getDB();
 
         const tx = db.transaction(store, "readwrite");
@@ -228,8 +220,8 @@ describe("database module", () => {
      * Confirms another tab (simulated via a separate connection) can read data.
      */
     it("should allow simultaneous access from multiple db connections", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "a.md", "From Main Connection");
 
         // Open a separate IndexedDB connection (simulating another tab)
@@ -246,8 +238,8 @@ describe("database module", () => {
      * Verifies visibility of writes only after the transaction is complete.
      */
     it("should see uncommitted writes only after transaction done", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         const db = await database.getDB();
 
         const tx = db.transaction(store, "readwrite");
@@ -272,8 +264,8 @@ describe("database module", () => {
      * Confirms that data from an aborted transaction is not persisted.
      */
     it("should not see data from a failed transaction", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         const db = await database.getDB();
 
         const tx = db.transaction(store, "readwrite");
@@ -296,38 +288,28 @@ describe("database module", () => {
      * Ensures `loadAll()` filters out keys from other repos.
      */
     it("loadAll() should not return data from other repos", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save(store, "a.md", "A");
         await database.save(store, "b.md", "B");
 
-        await database.setActiveRepo(repoB);
-        await database.setActiveBranch(branchB);
+        await github.setRepo(repoB);
+        await github.setBranch(branchB);
         await database.save(store, "z.md", "Z");
 
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         const result = await database.loadAll(store);
         const keys = result.map(([k]) => k);
         expect(keys).not.toContain("z.md");
     });
 
     /**
-     * Confirms `getActiveRepo()` returns the current repo.
-     */
-    it("getActiveRepo() should return current repo", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
-        expect(database.getActiveRepo()).toBe(repoA);
-        expect(database.getActiveBranch()).toBe(branchA);
-    });
-
-    /**
      * Verifies that different stores can be used independently.
      */
     it("should handle multiple stores independently", async () => {
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
 
         // Save to different stores
         await database.save("markdown", "mdfile.md", "Markdown Content");
@@ -358,8 +340,8 @@ describe("database module", () => {
      */
     it("should allow multiple tabs to work on separate repos simultaneously", async () => {
         // Tab 1
-        await database.setActiveRepo(repoA);
-        await database.setActiveBranch(branchA);
+        await github.setRepo(repoA);
+        await github.setBranch(branchA);
         await database.save("markdown", "shared1.md", "Content A");
 
         // Simulate Tab 2 with its own DB connection and different repo

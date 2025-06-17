@@ -4,9 +4,11 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  on,
   onCleanup,
   onMount,
   ParentComponent,
+  Setter,
   untrack,
   useContext,
 } from "solid-js";
@@ -16,13 +18,9 @@ import { EditorView } from "prosemirror-view";
 import { keymap } from "prosemirror-keymap";
 import { history, redo, undo } from "prosemirror-history";
 import { baseKeymap } from "prosemirror-commands";
-import { currentBranch } from "../lib/github/BranchSignal";
 import {
   currentFileHref,
   getFilePathFromHref,
-  repositoryHref,
-  parseOwnerRepoFromHref,
-  getFileContentFromRepo,
 } from "../lib/github/GithubUtility";
 import { database } from "../lib/localStorage/database";
 import { parseMyst } from "../lib/parser";
@@ -38,6 +36,7 @@ import {
   preserveMarksPlugin,
 } from "./toolbar/logic/editor_plugins";
 import { tableEditing } from "prosemirror-tables";
+import { github } from "../lib/github/githubInteraction";
 
 export interface EditorProps {
   schema: Schema;
@@ -49,19 +48,28 @@ const editorContext = createContext<{
 }>();
 
 export function useEditorState() {
-  return useContext(editorContext)?.state;
+  const ctx = useContext(editorContext);
+  if (!ctx) throw new Error("Editor state used outside of editor context");
+  const currentState =
+    typeof ctx.state === "function" ? ctx.state : () => ctx.view().state;
+  return currentState;
 }
 
 export function useEditorView() {
-  return useContext(editorContext)?.view;
+  const ctx = useContext(editorContext);
+  if (!ctx) throw new Error("Editor state used outside of editor context");
+  return ctx.view;
 }
+let globalEditorView: EditorView | null = null;
 
 export function useCommand(cmd: Command) {
   const output = createMemo(() => {
     const ctx = useContext(editorContext);
     if (!ctx) throw new Error("Editor state used outside of editor context");
 
-    const res = cmd(ctx.state(), undefined, ctx.view());
+    const currentState =
+      typeof ctx.state === "function" ? ctx.state() : ctx.view().state;
+    const res = cmd(currentState, undefined, ctx.view());
     console.log("a", res);
     return res;
   });
@@ -72,9 +80,10 @@ export function dispatchCommand(cmd: Command) {
   const ctx = useContext(editorContext);
   if (!ctx) throw new Error("Editor context used outside of editor");
 
-  const state = ctx.state();
+  const currentState =
+    typeof ctx.state === "function" ? ctx.state() : ctx.view().state;
   const view = ctx.view();
-  return cmd(state, view.dispatch, view);
+  return cmd(currentState, view.dispatch, view);
 }
 
 // This is a wrapper around dispatchCommand that returns a function
@@ -82,17 +91,31 @@ export function useDispatchCommand() {
   const ctx = useContext(editorContext);
   if (!ctx) throw new Error("Editor context used outside of editor");
   return (cmd: Command) => {
-    const state = ctx.state();
+    const currentState =
+      typeof ctx.state === "function" ? ctx.state() : ctx.view().state;
     const view = ctx.view();
-    const result = cmd(state, view.dispatch, view);
+    const result = cmd(currentState, view.dispatch, view);
 
     view.focus();
     return result;
   };
 }
 
+export let state: Accessor<EditorState>;
+export let setState: Setter<EditorState>;
+
 export const Editor: ParentComponent<EditorProps> = (props) => {
   const [ref, setRef] = createSignal<HTMLDivElement>();
+
+  const [stateSignal, setStateSignal] = createSignal<EditorState>(
+    untrack(() => EditorState.create({ schema: props.schema, plugins: [] })),
+    {
+      equals: false,
+    },
+  );
+  state = stateSignal;
+  setState = setStateSignal;
+
   const editorState = createMemo(() =>
     EditorState.create({
       schema: props.schema,
@@ -124,12 +147,6 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     }),
   );
 
-  // editorState is just used to initialize the value. Because this is not a reactive scope,
-  // this function never reruns. To make this explicit, solidjs recommends to use `untrack' here.
-  const [state, setState] = createSignal<EditorState>(untrack(editorState), {
-    equals: false,
-  });
-
   const view = createMemo(
     () =>
       new EditorView(ref()!, {
@@ -160,6 +177,8 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   onCleanup(() => view().destroy());
 
   onMount(() => {
+    globalEditorView = view();
+
     const el = ref();
     if (!el) return;
     el.addEventListener("click", (event) => {
@@ -173,30 +192,18 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
         }
       }
     });
-
-    // Expose a function to get the editor content as markdown globally
-    window.__getEditorMarkdown = () => {
-      const doc = state().doc;
-      try {
-        return prosemirrorToMarkdown(doc);
-      } catch (e) {
-        return (
-          (e instanceof Error ? e.toString() : String(e)) +
-          " " +
-          doc.textContent
-        );
-      }
-    };
-
-    // Load the current file into the editor on mount
-    loadCurrentFileIntoEditor();
   });
 
   // Add this effect to reload file when branch changes
-  createEffect(() => {
-    currentBranch(); // Track the signal
-    loadCurrentFileIntoEditor();
-  });
+  createEffect(
+    on(
+      () => github.getBranch(),
+      (branch: string) => {
+        if (!branch) return;
+        loadCurrentFileIntoEditor();
+      },
+    ),
+  );
 
   // Add this method to load and parse the current file into the editor
   async function loadCurrentFileIntoEditor() {
@@ -212,20 +219,20 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
 
     // If not found or empty, try to fetch from GitHub
     if (!markdown) {
-      const repoHref = repositoryHref();
-      const repoInfo = parseOwnerRepoFromHref(repoHref);
-      const branch = currentBranch(); // Use the signal here
-
-      if (repoInfo && branch) {
-        // Try to fetch from the current branch first (and fallback to default branch inside getFileContentFromRepo)
-        let markdownTemp = await getFileContentFromRepo(
-          repoInfo.owner,
-          repoInfo.repo,
-          branch,
-          filePath,
-        );
-        if (markdownTemp == null) markdownTemp = undefined;
-        markdown = markdownTemp;
+      if (github.getBranch() != "") {
+        // Try to fetch from the current branch first (and fallback to default branch)
+        try {
+          markdown = await github.fetchFileFromBranch(
+            filePath,
+            github.getBranch(),
+          );
+        } catch (e) {
+          console.trace(e);
+          markdown = await github.fetchFileFromBranch(
+            filePath,
+            (await github.fetchRepoInfo()).default_branch,
+          );
+        }
       }
 
       // Debugging stuff
@@ -256,11 +263,15 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     // Set the new state
     editorView.updateState(newState);
     setState(newState);
+
+    // save content
+    console.log("saving after loading...");
+    await saveEditorContentToDatabase();
   }
 
   return (
     <>
-      <editorContext.Provider value={{ state, view }}>
+      <editorContext.Provider value={{ state: stateSignal, view }}>
         {props.children}
       </editorContext.Provider>
       <div ref={setRef} />
@@ -269,7 +280,25 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
 };
 
 // Optionally export for use elsewhere
-export async function loadCurrentFileIntoEditor() {
-  // This function can be imported and called from outside if needed
-  // (see above for implementation)
+export function getEditorContentAsMarkdown(): string {
+  if (!globalEditorView) {
+    console.warn(" getEditorContentAsMarkdown: no view");
+    return "";
+  }
+  return prosemirrorToMarkdown(globalEditorView.state.doc);
+}
+
+export async function saveEditorContentToDatabase() {
+  const fileHref = currentFileHref();
+  const filePath = getFilePathFromHref(fileHref);
+  if (!filePath) return;
+  const content = getEditorContentAsMarkdown();
+
+  console.log("saving...");
+  console.log("file path: " + filePath);
+  console.log("content: " + content);
+
+  if (filePath && content && database.isInitialised()) {
+    await database.save<string>("markdown", filePath, content);
+  }
 }

@@ -7,10 +7,10 @@ import App from "./App";
 import {
   getRepositoryLink,
   getCurrentFileHref,
-  getFilePathFromHref,
+  parseOwnerRepoFromHref,
 } from "./lib/github/GithubUtility";
-import { database } from "./lib/localStorage/database";
-import { currentBranch } from "./lib/github/BranchSignal";
+import { github } from "./lib/github/githubInteraction";
+import { saveEditorContentToDatabase } from "./components/Editor";
 
 const root = document.getElementById("root");
 
@@ -24,30 +24,26 @@ if (!(root instanceof HTMLElement)) {
 const ref = getRepositoryLink();
 getCurrentFileHref();
 
-//initialise database
 if (ref != null) {
-  database.setActiveRepo(ref);
-  database.setActiveBranch(currentBranch()); // Use the signal here
-  console.info("Database initialised.");
+  const ownerRepo = parseOwnerRepoFromHref(ref);
+  if (ownerRepo != undefined) {
+    github.setRepo(ownerRepo.repo);
+    github.setOwner(ownerRepo.owner);
+  } else {
+    console.warn("Database not initialised - failed to parse href.");
+    github.setRepo("repo");
+    github.setBranch("branch");
+    github.setOwner("owner");
+  }
 } else {
   console.warn("Database not initialised - no github repo link found.");
+  github.setRepo("repo");
+  github.setBranch("branch");
+  github.setOwner("owner");
 }
 
 window.addEventListener("beforeunload", async () => {
-  // Get the file path
-  const fileHref = getCurrentFileHref();
-  const filePath = getFilePathFromHref(fileHref);
-
-  // Get the editor content
-  const content = window.__getEditorMarkdown
-    ? window.__getEditorMarkdown()
-    : "";
-
-  // Save to the database if possible
-  if (filePath && content && (await database.isInitialised())) {
-    // Save as markdown
-    database.save("markdown", filePath, content);
-  }
+  await saveEditorContentToDatabase();
 });
 
 render(
