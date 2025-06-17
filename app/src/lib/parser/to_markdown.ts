@@ -37,11 +37,12 @@ import type {
     Subscript,
     Superscript,
     Underline,
+    TableRow,
 } from "myst-spec";
 import { Mark, Node, Schema } from "prosemirror-model";
 import { unified } from "unified";
 import mystToMd from "myst-to-md";
-import { Aside, CaptionNumber, Delete } from "myst-spec-ext";
+import { Aside, CaptionNumber, Delete, TableCell } from "myst-spec-ext";
 
 type ChildrenOf<T extends MystNode> = T extends { children: infer C }
     ? C
@@ -340,6 +341,19 @@ const proseMirrorToMystHandlers = {
         enumerator: node.attrs.enumerator,
         identifier: node.attrs.identifier,
         children: handleChildren<CaptionNumber>(node),
+    }),
+    tableRow: (node: Node): TableRow => ({
+        type: "tableRow",
+        children: handleChildren<TableRow>(node),
+    }),
+    tableCell: (node: Node): TableCell => ({
+        type: "tableCell",
+        align: node.attrs.align,
+        width: node.attrs.width,
+        colspan: node.attrs.colspan,
+        rowspan: node.attrs.rowspan,
+        header: node.attrs.header,
+        children: handleChildren<TableCell>(node),
     }),
 } satisfies Record<NodeName, (node: Node) => MystNode>;
 
