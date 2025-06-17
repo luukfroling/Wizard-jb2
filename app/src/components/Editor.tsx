@@ -23,8 +23,7 @@ import {
   getFilePathFromHref,
 } from "../lib/github/GithubUtility";
 import { database } from "../lib/localStorage/database";
-import { parseMyst } from "../lib/parser";
-import { prosemirrorToMarkdown } from "../lib/parser/to_markdown";
+import { parseMyst, proseMirrorToMarkdown } from "../lib/parser";
 import { ImageNodeView } from "./ImageNodeView";
 import { MathNodeView } from "./MathNodeView";
 import {
@@ -242,7 +241,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     if (!markdown) return;
 
     // Parse markdown into a ProseMirror Node
-    const doc = await parseMyst(markdown);
+    const doc = parseMyst(markdown);
 
     // Debugging
     // console.log("Parsed: \n" + doc);
@@ -285,7 +284,7 @@ export function getEditorContentAsMarkdown(): string {
     console.warn(" getEditorContentAsMarkdown: no view");
     return "";
   }
-  return prosemirrorToMarkdown(globalEditorView.state.doc);
+  return proseMirrorToMarkdown(globalEditorView.state.doc);
 }
 
 export async function saveEditorContentToDatabase() {

@@ -203,8 +203,7 @@ export function setParagraph() {
 // Insert a table with the given number of rows and columns
 export function insertTable(rows: number, cols: number) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { schema } = state;
-        const { table, table_row, table_cell, paragraph } = schema.nodes;
+        const { table, tableRow, tableCell, paragraph } = schema.nodes;
 
         const rowNodes = [];
 
@@ -212,9 +211,9 @@ export function insertTable(rows: number, cols: number) {
             const cellNodes = [];
             for (let c = 0; c < cols; c++) {
                 const cellContent = paragraph.create();
-                cellNodes.push(table_cell.create(null, cellContent));
+                cellNodes.push(tableCell.create(null, cellContent));
             }
-            rowNodes.push(table_row.create(null, cellNodes));
+            rowNodes.push(tableRow.create(null, cellNodes));
         }
 
         const tableNode = table.create(null, rowNodes);
