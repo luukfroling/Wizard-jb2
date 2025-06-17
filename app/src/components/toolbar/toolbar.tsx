@@ -2,11 +2,11 @@ import { Component } from "solid-js";
 import "prosemirror-view/style/prosemirror.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import { ToolbarSeparator } from "./toolbar_components";
-import { toolbarButtons } from "./toolbar_buttons";
-import { toolbarDropdowns } from "./toolbar_dropdowns";
+import { ToolbarSeparator } from "./components/ToolbarSeparator";
+import { toolbarButtons } from "./logic/toolbar_buttons";
+import { toolbarDropdowns } from "./logic/toolbar_dropdowns";
 import { GitHubDropdown } from "../github/GitHubDropdown";
-import { ToolbarHintButton } from "./toolbar_components";
+import { ToolbarHintButton } from "./components/ToolbarHintButton";
 import { BranchDropdown } from "../github/BranchDropdown";
 
 // --- Main Toolbar Component ---
@@ -48,7 +48,16 @@ export const Toolbar: Component = () => {
       <ToolbarSeparator />
       {toolbarDropdowns.insertDropdown}
       <ToolbarSeparator />
-      <ToolbarHintButton />
+      <ToolbarHintButton
+        label="Editor usage hints"
+        hint={
+          `Ctrl + Enter: Exit table in new line
+          Ctrl + Enter: Exit quote/codeblock
+          Double click math: Edit inline
+          Ctrl + Backspace: Delete math equation
+          Ctrl + Backspace: Delete codeblock`
+        }
+      />
       <div class="ms-auto d-flex align-items-right">
         <BranchDropdown />
         <GitHubDropdown />

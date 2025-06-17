@@ -27,8 +27,8 @@ import {
 import { database } from "../lib/localStorage/database";
 import { parseMyst } from "../lib/parser";
 import { prosemirrorToMarkdown } from "../lib/parser/to_markdown";
-import { ImageNodeView } from "./ImageNodeView";
-import { MathNodeView } from "./MathNodeView";
+import { ImageNodeView } from "./toolbar/nodeviews/ImageNodeView";
+import { MathNodeView } from "./toolbar/nodeviews/MathNodeView";
 import {
   customListKeymap,
   tableAndCodeExitKeymap,
@@ -36,7 +36,7 @@ import {
   mathDeleteKeymap,
   tableAfterDeleteKeymap,
   preserveMarksPlugin,
-} from "./toolbar/editor_plugins";
+} from "./toolbar/logic/editor_plugins";
 import { tableEditing } from "prosemirror-tables";
 
 export interface EditorProps {

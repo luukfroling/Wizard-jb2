@@ -1,3 +1,4 @@
+/* === Base Styles === */
 body {
   margin: 0;
   font-family:
@@ -11,6 +12,7 @@ code {
     source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
+/* === ProseMirror Editor === */
 .ProseMirror {
   min-height: 800px;
   background: #fff;
@@ -28,6 +30,7 @@ code {
   max-width: 800px;
 }
 
+/* === Tables === */
 .ProseMirror table {
   border-collapse: collapse;
   border: 1px solid #d7e1ff;
@@ -35,10 +38,6 @@ code {
   width: max-content;
   max-width: 100%;
   table-layout: auto;
-}
-
-.ProseMirror > table,
-.ProseMirror table {
   margin: 1em 0;
 }
 
@@ -59,6 +58,7 @@ code {
   font-size: 14px;
 }
 
+/* === Blockquotes === */
 blockquote {
   border-left: 3px solid #d7e1ff;
   margin-left: 0;
@@ -67,6 +67,7 @@ blockquote {
   background: #f9f9fa;
 }
 
+/* === Code Blocks === */
 pre {
   background: #272822;
   color: #f8f8f2;
@@ -78,12 +79,14 @@ pre {
   overflow-x: auto;
 }
 
+/* === Links === */
 a {
   color: #1976d2;
   text-decoration: underline;
   cursor: pointer;
 }
 
+/* === Dropdowns & Buttons === */
 .dropdown-item:focus,
 .dropdown-item:hover {
   background-color: #d7e1ff !important;
@@ -96,6 +99,7 @@ a {
   color: #1a237e !important;
 }
 
+/* === Math Input & Rendering === */
 .math-input {
   max-width: 100%;
   width: 100%;
@@ -113,7 +117,6 @@ a {
 .math-node {
   display: block;
   max-width: 100%;
-  max-width: 100%;
   overflow-x: visible;
 }
 
@@ -125,11 +128,13 @@ a {
   word-break: break-word;
 }
 
+/* === Image Node & Resize Handle === */
 .image-node {
   position: relative;
   display: inline-block;
   vertical-align: middle;
 }
+
 .resize-handle {
   position: absolute;
   right: 0;
@@ -142,6 +147,7 @@ a {
   z-index: 10;
   display: none;
 }
+
 .image-node img:active + .resize-handle,
 .image-node img:focus + .resize-handle {
   display: block;

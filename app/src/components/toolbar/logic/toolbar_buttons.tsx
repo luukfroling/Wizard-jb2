@@ -12,8 +12,8 @@ import {
   toggleSuperscript,
 } from "./toolbar_commands";
 import { markActive } from "./toolbar_utils";
-import { useDispatchCommand, useEditorState } from "../Editor";
-import { ToolbarButton } from "./toolbar_components";
+import { useDispatchCommand, useEditorState } from "../../Editor";
+import { ToolbarButton } from "./../components/ToolbarButton";
 import { createSignal, JSX } from "solid-js";
 import { Mark } from "prosemirror-model";
 import { EditorState, Transaction } from "prosemirror-state";

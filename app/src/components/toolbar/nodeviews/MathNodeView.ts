@@ -1,7 +1,7 @@
 import katex from "katex";
 import { NodeView, EditorView } from "prosemirror-view";
 import { Node as ProseMirrorNode } from "prosemirror-model";
-import { showHintTooltip, hideHintTooltip } from "./toolbar/HintTooltip";
+import { showHintTooltip, hideHintTooltip } from "../ui/HintTooltip";
 
 export class MathNodeView implements NodeView {
     dom: HTMLElement;

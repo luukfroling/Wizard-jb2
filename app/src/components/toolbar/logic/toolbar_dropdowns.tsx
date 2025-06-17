@@ -1,6 +1,6 @@
 /* eslint-disable solid/prefer-for */
 import { createSignal, JSX, Show } from "solid-js";
-import { useEditorState, useDispatchCommand } from "../Editor";
+import { useEditorState, useDispatchCommand } from "../../Editor";
 import {
   setParagraph,
   setHeading,
@@ -11,10 +11,8 @@ import {
   insertMath,
   insertTable,
 } from "./toolbar_commands";
-import {
-  ToolbarDropdownWithLabels,
-  ToolbarDropdown,
-} from "./toolbar_components";
+import { ToolbarDropdownWithLabels } from "../components/ToolbarDropdownWithLabels";
+import { ToolbarDropdown } from "../components/ToolbarDropdown";
 import { HEADER_OPTIONS } from "./toolbar_options";
 import { getCurrentListType } from "./toolbar_utils";
 

@@ -5,7 +5,7 @@ import {
     setBlockType,
     autoJoin,
 } from "prosemirror-commands";
-import { schema } from "../../lib/schema";
+import { schema } from "../../../lib/schema";
 import { EditorState, Transaction } from "prosemirror-state";
 import { MarkType, Schema, NodeType } from "prosemirror-model";
 import {
