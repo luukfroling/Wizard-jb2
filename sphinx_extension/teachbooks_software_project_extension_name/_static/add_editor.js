@@ -1,18 +1,35 @@
+/**
+ * Fetch the Vite app (editor) from the GitHub repo
+ *
+ * @param baseURL               The url of the current file
+ * @param depth                 How far do we go bag for the editor
+ * @return {Promise<string>}    If found return the response in text form
+ */
 async function fetchViteApp(baseURL, depth) {
+    // Error for later use
     let error;
+    // Loop until the editor is found or depth is reached
     for (let i = 0; i <= depth; i++) {
+        // First prefix is nothing
         let prefix = '';
+        // Add '../' (go one folder up) until we reach the current depth
         if (i > 0) {
             prefix = Array(i).fill('../').join('');
         }
+        // Create the full URL
         const currentPath = prefix + baseURL;
-        const fullUrl = new URL(currentPath, document.baseURI).href; // For logging the attempt
+        const fullUrl = new URL(currentPath, document.baseURI).href;
 
+        // Log what is happening
         console.log(`extension_name: Attempting (depth ${i}): ${fullUrl}`);
 
+        // Actual fetching: try to get file, if not found warn the user and try new depth
         try {
+            // Try to get editor
             const response = await fetch(currentPath);
 
+            // If found return the response in text form
+            // Else try again
             if (response.ok) {
                 console.log(`extension_name: Successfully fetched from: ${response.url}`);
                 return await response.text(); // Success!
@@ -31,7 +48,7 @@ async function fetchViteApp(baseURL, depth) {
         }
     }
 
-    // If the loop completes without returning, all attempts failed.
+    // If the loop completes without returning, all attempts failed.so throw error
     const errorMessage = `Failed to fetch Vite app from "${baseURL}" within ${depth} parent director(y/ies).`;
     console.error(errorMessage, error || "No specific response error, check network logs.");
     if (error) {
