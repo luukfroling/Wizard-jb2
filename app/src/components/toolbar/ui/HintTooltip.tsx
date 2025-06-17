@@ -72,7 +72,7 @@ export function HintTooltip() {
             "max-width": "260px",
           }}
         >
-          {hintTooltip().text}
+          <div class="hint-tooltip">{hintTooltip().text}</div>
         </div>
       </div>
     </Show>

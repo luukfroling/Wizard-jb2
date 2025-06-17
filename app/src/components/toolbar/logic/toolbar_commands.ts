@@ -13,52 +13,135 @@ import {
     liftListItem,
     sinkListItem,
 } from "prosemirror-schema-list";
-// --- MARK COMMANDS ---
 
-// Toggle strong/bold mark
+// === MARK COMMANDS ===
 export const toggleBold = toggleMark(schema.marks.strong);
-// Toggle emphasis/italic mark
 export const toggleItalic = toggleMark(schema.marks.emphasis);
-// Toggle underline mark
 export const toggleSuperscript = toggleMark(schema.marks.superscript);
-// Toggle subscript mark
 export const toggleSubscript = toggleMark(schema.marks.subscript);
-// Toggle strikethrough mark
 export const toggleStrikethrough = toggleMark(schema.marks.strikethrough);
-// Toggle inline code
 export const toggleInlineCode = toggleMark(schema.marks.code);
 
-// --- BLOCK COMMANDS ---
-
-// Wrap selection in blockquote
+// === BLOCK COMMANDS ===
 export const setBlockquote = wrapIn(schema.nodes.blockquote);
-// Set selection as code block
 export const setCodeBlock = setBlockType(schema.nodes.code);
+export function setHeading(level: number) {
+    return setBlockType(schema.nodes.heading, { level });
+}
+export function setParagraph() {
+    return setBlockType(schema.nodes.paragraph);
+}
 
-// --- LIST COMMANDS ---
-
-// Wrap selection in bullet (unordered) list
+// === LIST COMMANDS ===
 export const wrapBulletList = (
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
 ) => wrapInList(schema.nodes.list, { ordered: false })(state, dispatch);
 
-// Wrap selection in ordered (numbered) list
 export const wrapOrderedList = (
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
 ) => wrapInList(schema.nodes.list, { ordered: true })(state, dispatch);
 
-// --- INDENT/OUTDENT COMMANDS ---
-
-// Increase indent (sink list item)
 export const increaseIndent = () => sinkListItem(schema.nodes.listItem);
-// Decrease indent (lift list item)
 export const decreaseIndent = () => liftListItem(schema.nodes.listItem);
 
-// --- LINK COMMAND ---
+export function toggleBulletList(schema: Schema) {
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { listItem, list } = schema.nodes;
+        if (selectionHasList(state, listItem)) {
+            // Remove all lists in selection
+            return liftListItems(state, dispatch) || false;
+        } else {
+            // Wrap all blocks in a bullet list and auto-join adjacent lists
+            return autoJoin(
+                wrapInList(list, { ordered: false }),
+                (before, after) =>
+                    before.type === after.type &&
+                    before.type === list &&
+                    before.attrs.ordered === after.attrs.ordered,
+            )(state, dispatch);
+        }
+    };
+}
 
-// Toggle link mark for selection or cursor
+export function toggleOrderedList(schema: Schema) {
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const listType = getListType(state);
+        if (listType === true) {
+            // Already in ordered list: remove
+            return liftListItem(schema.nodes.listItem)(state, dispatch);
+        } else if (listType === false) {
+            // In bullet list: lift out, then wrap as ordered
+            if (dispatch) {
+                liftListItem(schema.nodes.listItem)(state, dispatch);
+                autoJoin(
+                    wrapInList(schema.nodes.list, { ordered: true }),
+                    (before, after) =>
+                        before.type === after.type &&
+                        before.type === schema.nodes.list &&
+                        before.attrs.ordered === after.attrs.ordered,
+                )(state, dispatch);
+            }
+            return true;
+        } else {
+            // Not in a list: wrap as ordered
+            return autoJoin(
+                wrapInList(schema.nodes.list, { ordered: true }),
+                (before, after) =>
+                    before.type === after.type &&
+                    before.type === schema.nodes.list &&
+                    before.attrs.ordered === after.attrs.ordered,
+            )(state, dispatch);
+        }
+    };
+}
+
+// === BLOCKQUOTE & CODE BLOCK TOGGLE COMMANDS ===
+export function toggleBlockquote(
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+) {
+    const { schema } = state;
+    const { from, to } = state.selection;
+    let inBlockquote = false;
+
+    state.doc.nodesBetween(from, to, (node) => {
+        if (node.type === schema.nodes.blockquote) inBlockquote = true;
+    });
+
+    if (inBlockquote) {
+        // If already in blockquote, lift out
+        return lift(state, dispatch);
+    } else {
+        // Otherwise, wrap in blockquote
+        return wrapIn(schema.nodes.blockquote)(state, dispatch);
+    }
+}
+
+export function toggleCodeBlock(
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+) {
+    const { schema } = state;
+    const { from, to } = state.selection;
+    let allCode = true;
+
+    state.doc.nodesBetween(from, to, (node) => {
+        if (node.isTextblock && node.type !== schema.nodes.code)
+            allCode = false;
+    });
+
+    if (allCode) {
+        // If all are code blocks, set them back to paragraph
+        return setBlockType(schema.nodes.paragraph)(state, dispatch);
+    } else {
+        // Otherwise, set all to code block
+        return setBlockType(schema.nodes.code)(state, dispatch);
+    }
+}
+
+// === LINK/IMAGE/MATH/TABLE COMMANDS ===
 export function insertLink(url = "", title = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { from, to, empty } = state.selection;
@@ -82,80 +165,6 @@ export function insertLink(url = "", title = "") {
     };
 }
 
-// --- BLOCKQUOTE TOGGLE COMMAND ---
-
-// Toggle blockquote for selection (multi-paragraph)
-export function toggleBlockquote(
-    state: EditorState,
-    dispatch?: (tr: Transaction) => void,
-) {
-    const { schema } = state;
-    const { from, to } = state.selection;
-    let inBlockquote = false;
-
-    state.doc.nodesBetween(from, to, (node) => {
-        if (node.type === schema.nodes.blockquote) inBlockquote = true;
-    });
-
-    if (inBlockquote) {
-        // If already in blockquote, lift out
-        return lift(state, dispatch);
-    } else {
-        // Otherwise, wrap in blockquote
-        return wrapIn(schema.nodes.blockquote)(state, dispatch);
-    }
-}
-
-// --- CODE BLOCK TOGGLE COMMAND ---
-
-// Toggle code block for selection (multi-paragraph)
-export function toggleCodeBlock(
-    state: EditorState,
-    dispatch?: (tr: Transaction) => void,
-) {
-    const { schema } = state;
-    const { from, to } = state.selection;
-    let allCode = true;
-
-    state.doc.nodesBetween(from, to, (node) => {
-        if (node.isTextblock && node.type !== schema.nodes.code)
-            allCode = false;
-    });
-
-    if (allCode) {
-        // If all are code blocks, set them back to paragraph
-        return setBlockType(schema.nodes.paragraph)(state, dispatch);
-    } else {
-        // Otherwise, set all to code block
-        return setBlockType(schema.nodes.code)(state, dispatch);
-    }
-}
-
-// --- ACTIVE STATE HELPERS ---
-
-// Returns true if selection is inside a blockquote
-export function blockquoteActive(state: EditorState) {
-    const { from, to } = state.selection;
-    let active = false;
-    state.doc.nodesBetween(from, to, (node) => {
-        if (node.type === state.schema.nodes.blockquote) active = true;
-    });
-    return active;
-}
-
-// Returns true if selection is inside a code block
-export function codeBlockActive(state: EditorState) {
-    const { from, to } = state.selection;
-    let active = false;
-    state.doc.nodesBetween(from, to, (node) => {
-        if (node.type === state.schema.nodes.code) active = true;
-    });
-    return active;
-}
-
-// --- IMAGE COMMAND ---
-
-// Insert image node at selection
 export function insertImage(url: string, alt = "", title = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { schema, selection } = state;
@@ -187,20 +196,20 @@ export function insertImage(url: string, alt = "", title = "") {
     };
 }
 
-// --- HEADING/PARAGRAPH COMMANDS ---
-
-// Set block type to heading with given level
-export function setHeading(level: number) {
-    return setBlockType(schema.nodes.heading, { level });
+export function insertMath(equation: string = "") {
+    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+        const { schema } = state;
+        const mathNode = schema.nodes.math.create(
+            { enumerated: false },
+            schema.text(equation),
+        );
+        if (dispatch) {
+            dispatch(state.tr.replaceSelectionWith(mathNode).scrollIntoView());
+        }
+        return true;
+    };
 }
 
-// Set block type to paragraph
-export function setParagraph() {
-    return setBlockType(schema.nodes.paragraph);
-}
-
-// --- TABLE COMMAND ---
-// Insert a table with the given number of rows and columns
 export function insertTable(rows: number, cols: number) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { schema } = state;
@@ -234,24 +243,26 @@ export function insertTable(rows: number, cols: number) {
     };
 }
 
-// --- MATH COMMAND ---
-
-// Insert math (equation) node at selection
-export function insertMath(equation: string = "") {
-    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { schema } = state; // removed 'selection'
-        const mathNode = schema.nodes.math.create(
-            { enumerated: false },
-            schema.text(equation),
-        );
-        if (dispatch) {
-            dispatch(state.tr.replaceSelectionWith(mathNode).scrollIntoView());
-        }
-        return true;
-    };
+// === ACTIVE STATE HELPERS ===
+export function blockquoteActive(state: EditorState) {
+    const { from, to } = state.selection;
+    let active = false;
+    state.doc.nodesBetween(from, to, (node) => {
+        if (node.type === state.schema.nodes.blockquote) active = true;
+    });
+    return active;
 }
 
-// Helper: check if selection is in a list and what type
+export function codeBlockActive(state: EditorState) {
+    const { from, to } = state.selection;
+    let active = false;
+    state.doc.nodesBetween(from, to, (node) => {
+        if (node.type === state.schema.nodes.code) active = true;
+    });
+    return active;
+}
+
+// === PRIVATE/HELPER FUNCTIONS ===
 function getListType(state: EditorState): boolean | null {
     const { $from } = state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -263,60 +274,6 @@ function getListType(state: EditorState): boolean | null {
     return null;
 }
 
-// Toggle bullet list
-export function toggleBulletList(schema: Schema) {
-    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const { listItem, list } = schema.nodes;
-        if (selectionHasList(state, listItem)) {
-            // Remove all lists in selection
-            return liftListItems(state, dispatch) || false;
-        } else {
-            // Wrap all blocks in a bullet list and auto-join adjacent lists
-            return autoJoin(
-                wrapInList(list, { ordered: false }),
-                (before, after) =>
-                    before.type === after.type &&
-                    before.type === list &&
-                    before.attrs.ordered === after.attrs.ordered,
-            )(state, dispatch);
-        }
-    };
-}
-
-// Toggle ordered list
-export function toggleOrderedList(schema: Schema) {
-    return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const listType = getListType(state);
-        if (listType === true) {
-            // Already in ordered list: remove
-            return liftListItem(schema.nodes.listItem)(state, dispatch);
-        } else if (listType === false) {
-            // In bullet list: lift out, then wrap as ordered
-            if (dispatch) {
-                liftListItem(schema.nodes.listItem)(state, dispatch);
-                autoJoin(
-                    wrapInList(schema.nodes.list, { ordered: true }),
-                    (before, after) =>
-                        before.type === after.type &&
-                        before.type === schema.nodes.list &&
-                        before.attrs.ordered === after.attrs.ordered,
-                )(state, dispatch);
-            }
-            return true;
-        } else {
-            // Not in a list: wrap as ordered
-            return autoJoin(
-                wrapInList(schema.nodes.list, { ordered: true }),
-                (before, after) =>
-                    before.type === after.type &&
-                    before.type === schema.nodes.list &&
-                    before.attrs.ordered === after.attrs.ordered,
-            )(state, dispatch);
-        }
-    };
-}
-
-// Helper: check if any listItem is in the selection
 function selectionHasList(state: EditorState, listItemType: NodeType) {
     let found = false;
     state.doc.nodesBetween(state.selection.from, state.selection.to, (node) => {
@@ -325,7 +282,6 @@ function selectionHasList(state: EditorState, listItemType: NodeType) {
     return found;
 }
 
-// Helper: lift all listItems in selection
 function liftListItems(
     state: EditorState,
     dispatch?: (tr: Transaction) => void,

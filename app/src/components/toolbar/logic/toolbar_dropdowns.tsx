@@ -13,8 +13,28 @@ import {
 } from "./toolbar_commands";
 import { ToolbarDropdownWithLabels } from "../components/ToolbarDropdownWithLabels";
 import { ToolbarDropdown } from "../components/ToolbarDropdown";
-import { HEADER_OPTIONS } from "./toolbar_options";
+import { TableGridSelector } from "../components/TableGridSelector";
 import { getCurrentListType } from "./toolbar_utils";
+
+// Header (heading) options for the header dropdown, with live preview labels
+export const HEADER_OPTIONS: { label: JSX.Element; value: number | string }[] = [
+  {
+    label: <span style={{ "font-size": "32px", "font-weight": 700, margin: 0 }}>Heading 1</span>,
+    value: 1,
+  },
+  {
+    label: <span style={{ "font-size": "24px", "font-weight": 700, margin: 0 }}>Heading 2</span>,
+    value: 2,
+  },
+  {
+    label: <span style={{ "font-size": "18.72px", "font-weight": 700, margin: 0 }}>Heading 3</span>,
+    value: 3,
+  },
+  {
+    label: <span style={{ "font-size": "16px", "font-weight": 400, margin: 0 }}>Normal</span>,
+    value: "paragraph",
+  },
+];
 
 // --- Signals for Table Grid Selector popup state and position ---
 const [showTableSelector, setShowTableSelector] = createSignal(false);
@@ -162,75 +182,19 @@ export const toolbarDropdowns: {
         }}
       >
         <Show when={showTableSelector()}>
-          <div
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: "0",
-              background: "#fff",
-              padding: "8px",
-              border: "1px solid #d7e1ff",
-              "border-radius": "10px",
-              "box-shadow": "0 2px 8px 0 #d7e1ff55",
-              "z-index": 10000,
-              display: "inline-block",
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onMouseLeave={() => {
+          <TableGridSelector
+            show={showTableSelector()}
+            position={_selectorPos()}
+            hoverX={hoverX()}
+            hoverY={hoverY()}
+            setHoverX={setHoverX}
+            setHoverY={setHoverY}
+            onSelect={(rows, cols) => {
               setShowTableSelector(false);
+              dispatchCommand(insertTable(rows, cols));
             }}
-          >
-            <div style={{ display: "flex", "flex-direction": "column" }}>
-              {[...Array(8)].map((_, r) => (
-                <div style={{ display: "flex" }}>
-                  {[...Array(8)].map((_, c) => {
-                    const selected = r <= hoverY() && c <= hoverX();
-                    return (
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          border: "1px solid #d7e1ff",
-                          background: selected ? "#D7E1FF" : "#fff",
-                          cursor: "pointer",
-                          "border-radius": "4px",
-                          margin: "1px",
-                          transition: "background 0.1s",
-                          display: "flex",
-                          "align-items": "center",
-                          "justify-content": "center",
-                        }}
-                        onMouseEnter={() => {
-                          setHoverY(r);
-                          setHoverX(c);
-                        }}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log("Selected", r + 1, c + 1);
-                          setShowTableSelector(false);
-                          dispatchCommand(insertTable(r + 1, c + 1));
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                "text-align": "center",
-                "margin-top": "6px",
-                "font-size": "13px",
-                color: "#333",
-              }}
-            >
-              {hoverY() + 1} × {hoverX() + 1}
-            </div>
-          </div>
+            onClose={() => setShowTableSelector(false)}
+          />
         </Show>
       </ToolbarDropdown>
     );

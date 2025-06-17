@@ -7,22 +7,7 @@ export const ToolbarHintButton: Component<{
 }> = (props) => (
   <button
     type="button"
-    class="btn btn-sm px-1"
-    style={{
-      background: "transparent",
-      color: "#212529",
-      transition: "background 0.1s, color 0.1s",
-      "box-shadow": "none",
-      "margin-right": "1px",
-      "margin-bottom": "1px",
-      border: "none",
-      "border-radius": "4px",
-      height: "28px",
-      padding: "2px 4px",
-      display: "flex",
-      "align-items": "center",
-      "justify-content": "center",
-    }}
+    class="toolbar-btn btn btn-sm px-1"
     title={props.label}
     aria-label={props.label}
     tabIndex={-1}

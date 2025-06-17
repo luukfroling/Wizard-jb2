@@ -1,4 +1,3 @@
-import { ACCENT } from "../logic/toolbar_options";
 import { Component, createSignal, onMount, onCleanup, JSX } from "solid-js";
 
 export const ToolbarDropdown: Component<{
@@ -50,28 +49,19 @@ export const ToolbarDropdown: Component<{
           props.setButtonRef?.(el);
         }}
         type="button"
-        class="btn btn-sm dropdown-toggle d-flex align-items-center justify-content-center px-2"
-        style={{
-          height: "30px",
-          "box-shadow": "none",
-          "border-radius": "4px",
-          border: "1.5px solid #dee2e6",
-          background: open() ? ACCENT : "#fff",
-          color: "#212529",
-          transition: "background 0.1s, color 0.1s, border 0.1s",
-        }}
+        class="toolbar-btn btn btn-sm dropdown-toggle d-flex align-items-center justify-content-center px-2"
         title={props.title}
         aria-expanded={open()}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(!open());
         }}
-        onMouseOver={(e) => (e.currentTarget.style.background = ACCENT)}
+        onMouseOver={(e) => (e.currentTarget.style.background = "var(--accent)")}
         onMouseOut={(e) =>
           !open() && (e.currentTarget.style.background = "#fff")
         }
       >
-        <i class={`bi ${props.icon} fs-5`} style={{ color: "#212529" }} />
+        <i class={`bi ${props.icon} fs-5`} />
       </button>
       <ul
         ref={menuRef}
@@ -94,26 +84,10 @@ export const ToolbarDropdown: Component<{
                 setOpen(false);
                 if (buttonRef) buttonRef.style.background = "#fff";
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = ACCENT;
-                e.currentTarget.style.color = "#1a237e";
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.background = ACCENT;
-                e.currentTarget.style.color = "#1a237e";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "#fff";
-                e.currentTarget.style.color = "#212529";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.background = "#fff";
-                e.currentTarget.style.color = "#212529";
-              }}
             >
               <i class={`bi ${opt.icon}`} style={{ color: "#212529" }} />
               {opt.label && (
-                <span style={{ "margin-left": "6px" }}>{opt.label}</span>
+                <span class="toolbar-dropdown-label">{opt.label}</span>
               )}
             </button>
           </li>

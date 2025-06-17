@@ -1,4 +1,3 @@
-import { ACCENT } from "../logic/toolbar_options";
 import { Component } from "solid-js";
 
 export const ToolbarButton: Component<{
@@ -12,22 +11,7 @@ export const ToolbarButton: Component<{
 }> = (props) => (
   <button
     type="button"
-    class="btn btn-sm px-1"
-    style={{
-      background: props.active ? ACCENT : "transparent",
-      color: props.active ? "#1a237e" : "#212529",
-      transition: "background 0.1s, color 0.1s",
-      "box-shadow": "none",
-      "margin-right": "1px",
-      "margin-bottom": "1px",
-      border: "none",
-      "border-radius": "4px",
-      height: "28px",
-      padding: "2px 4px",
-      display: "flex",
-      "align-items": "center",
-      "justify-content": "center",
-    }}
+    class="toolbar-btn btn btn-sm px-1"
     title={props.label}
     aria-pressed={props.active ? "true" : "false"}
     disabled={props.disabled}
