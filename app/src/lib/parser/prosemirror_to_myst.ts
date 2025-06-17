@@ -25,8 +25,6 @@ import type {
     Break,
     BlockBreak,
     Table,
-    TableRow,
-    TableCell,
     FootnoteDefinition,
     Image,
     Caption,
@@ -366,7 +364,7 @@ export function proseMirrorToMyst(node: Node): MystNode {
  * @param node - ProseMirror AST node
  * @returns Markdown string in MyST syntax
  */
-export function prosemirrorToMarkdown(node: Node): string {
+export function proseMirrorToMarkdown(node: Node): string {
     const mystAst = proseMirrorToMyst(node);
     const processor = unified().use(mystToMd);
     const mdast = processor.runSync(mystAst as Root);

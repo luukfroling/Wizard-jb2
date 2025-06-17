@@ -1,5 +1,6 @@
 import { mystToProseMirror } from "./myst_to_prosemirror";
 import { parseToMystAST } from "./parse_myst";
+import type { Node } from "prosemirror-model";
 
 export {
     proseMirrorToMyst,
