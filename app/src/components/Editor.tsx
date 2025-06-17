@@ -23,8 +23,7 @@ import {
   getFilePathFromHref,
 } from "../lib/github/GithubUtility";
 import { database } from "../lib/localStorage/database";
-import { parseMyst } from "../lib/parser";
-import { prosemirrorToMarkdown } from "../lib/parser/to_markdown";
+import { parseMyst, proseMirrorToMarkdown } from "../lib/parser";
 import { ImageNodeView } from "./ImageNodeView";
 import { MathNodeView } from "./MathNodeView";
 import {
@@ -192,6 +191,23 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
         }
       }
     });
+
+    // Expose a function to get the editor content as markdown globally
+    window.__getEditorMarkdown = () => {
+      const doc = state().doc;
+      try {
+        return proseMirrorToMarkdown(doc);
+      } catch (e) {
+        return (
+          (e instanceof Error ? e.toString() : String(e)) +
+          " " +
+          doc.textContent
+        );
+      }
+    };
+
+    // Load the current file into the editor on mount
+    loadCurrentFileIntoEditor();
   });
 
   // Add this effect to reload file when branch changes

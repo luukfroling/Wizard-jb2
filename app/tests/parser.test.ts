@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { parseMyst } from "../src/lib/parser";
 import { Node } from "prosemirror-model";
 import { schema } from "../src/lib/schema";
-import { EXAMPLE_1 } from "./parser_constants";
-import { prosemirrorToMarkdown } from "../src/lib/parser/to_markdown";
+import { EXAMPLE_1, EXAMPLE_2 } from "./parser_constants";
+import { proseMirrorToMarkdown } from "../src/lib/parser";
 
 describe("Markdown parser", () => {
     function parse(myst: string) {
@@ -205,10 +205,10 @@ describe("Markdown parser", () => {
             myst: EXAMPLE_1,
             desc: "example_1",
         },
-        // {
-        //     myst: EXAMPLE_2,
-        //     desc: "example_2",
-        // },
+        {
+            myst: EXAMPLE_2,
+            desc: "example_2",
+        },
     ];
 
     it.for(MYST_DOCUMENTS)("parses document $desc", async ({ myst, desc }) => {
@@ -223,9 +223,9 @@ describe("Markdown parser", () => {
         // However, this does not catch details lost in the conversion...
         // The problem is, if we miss something in the AST
         const parsed = parse(myst);
-        const convertedBack = prosemirrorToMarkdown(parsed);
+        const convertedBack = proseMirrorToMarkdown(parsed);
         const parsed2 = parse(convertedBack);
-        const roundtrip = prosemirrorToMarkdown(parsed2);
+        const roundtrip = proseMirrorToMarkdown(parsed2);
         expect(roundtrip).toEqual(convertedBack);
     });
 });
@@ -285,7 +285,7 @@ describe("Markdown → ProseMirror → Markdown", () => {
         const pmPara = parseParagraph(myst);
 
         // 2. Convert that PM AST back to Markdown
-        const md = prosemirrorToMarkdown(pmPara);
+        const md = proseMirrorToMarkdown(pmPara);
 
         // 3. It should match the original myst
         expect(md.trim()).toBe("+++\n" + myst);

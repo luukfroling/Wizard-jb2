@@ -141,12 +141,7 @@ function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
 
 function handleChildren<T extends MystNode>(node: Node): ChildrenOf<T> {
     // if this is an inline container (paragraph, heading, etc.)
-    if (
-        node.isInline ||
-        /^(paragraph|heading|blockquote|link|emphasis|strong|delete|subscript|superscript|underline)$/.test(
-            node.type.name,
-        )
-    ) {
+    if (node.inlineContent) {
         return handleInline(node) as ChildrenOf<T>;
     } else {
         // block‐level
@@ -383,9 +378,9 @@ export function prosemirrorToMarkdown(node: Node): string {
 }
 
 /**
- * Convert a ProseMirror “inline” node (paragraph, heading, etc.) into a
+ * Convert the inline content of a ProseMirror node (paragraph, heading, etc.) into a
  * flat array of MyST PhrasingContent, preserving the exact nesting of marks.
- * TODO There is still a bug, not every test case succeeds:
+ * TODO: There is still a bug, not every test case succeeds:
  * Expected: *one **two *three*** four*
  * Received: *one *two **three*** four*
  */
