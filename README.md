@@ -119,7 +119,7 @@ To make sure the editor actually works we have made a comprehensive test suite, 
     ```shell
    pnpm test
    ```
-   - If you do not quit out it will automatically re-run any tests that are changed.
+   - If you do not quit, any tests that are changed will automatically re-run.
 4. For a general overview of Vitest, please view the [Vitest guide](https://vitest.dev/guide/).
 
 ###  Unauthorized Access error
