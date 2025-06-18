@@ -2,8 +2,8 @@ import { Component, createSignal, onMount, onCleanup, JSX } from "solid-js";
 
 export const ToolbarDropdown: Component<{
   icon: string;
-  options: { label: string; icon: string; onClick: () => void }[];
-  title?: string;
+  options: { label?: JSX.Element | string; icon: string; onClick: () => void }[];
+  title?: string | JSX.Element;
   children?: JSX.Element;
   showTableSelector?: () => boolean;
   setOpenRef?: (fn: (open: boolean) => void) => void;
@@ -49,7 +49,7 @@ export const ToolbarDropdown: Component<{
         }}
         type="button"
         class="toolbar-btn btn btn-sm dropdown-toggle d-flex align-items-center justify-content-center px-2"
-        title={props.title}
+        title={typeof props.title === "string" ? props.title : undefined}
         aria-expanded={open()}
         onClick={(e) => {
           e.stopPropagation();
@@ -57,10 +57,16 @@ export const ToolbarDropdown: Component<{
         }}
       >
         <i class={`bi ${props.icon} fs-5`} />
+        {/* Show title if present (for header dropdown) */}
+        {props.title && (
+          <span class="toolbar-dropdown-label">{props.title}</span>
+        )}
       </button>
       <ul
         ref={menuRef}
-        class="dropdown-menu p-0"
+        class={`dropdown-menu p-0${
+          props.options.every((opt) => !opt.label) ? " icon-only-dropdown" : ""
+        }`}
         classList={{ show: open() }}
       >
         {props.options.map((opt) => (
@@ -68,13 +74,14 @@ export const ToolbarDropdown: Component<{
             <button
               type="button"
               class="dropdown-item d-flex align-items-center justify-content-center"
-              title={opt.label}
+              title={typeof opt.label === "string" ? opt.label : undefined}
               onClick={() => {
                 opt.onClick();
                 setOpen(false);
               }}
             >
               <i class={`bi ${opt.icon}`} />
+              {/* Only show label if present and not empty */}
               {opt.label && (
                 <span class="toolbar-dropdown-label">{opt.label}</span>
               )}

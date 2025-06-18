@@ -142,6 +142,20 @@ a {
   left: 0;
 }
 
+.dropdown-menu.icon-only-dropdown {
+  min-width: 40px !important;
+  width: auto !important;
+  max-width: 60px !important;
+  padding: 0;
+}
+
+/* Make icons in icon-only dropdowns larger */
+.dropdown-menu.icon-only-dropdown .dropdown-item .bi {
+  font-size: 1.3em;
+  margin: 0;
+  padding: 0;
+}
+
 /* === Toolbar Dropdown Label === */
 .toolbar-dropdown-label {
   margin-left: 6px;
@@ -152,7 +166,7 @@ a {
   justify-content: flex-start;
   height: 100%;
   min-width: 0;
-  max-width: 120px;
+  max-width: 150px;
   overflow: hidden;
   width: auto;
   white-space: nowrap;

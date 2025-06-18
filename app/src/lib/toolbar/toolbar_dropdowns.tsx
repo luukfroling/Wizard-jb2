@@ -11,7 +11,6 @@ import {
   insertMath,
   insertTable,
 } from "./toolbar_commands";
-import { ToolbarDropdownWithLabels } from "../../components/toolbar/ToolbarDropdownWithLabels";
 import { ToolbarDropdown } from "../../components/toolbar/ToolbarDropdown";
 import { TableGridSelector } from "../../components/toolbar/TableGridSelector";
 import { getCurrentListType } from "./toolbar_utils";
@@ -54,13 +53,12 @@ export const toolbarDropdowns: {
   createDropdowns: () => void;
 } = {
   createDropdowns() {
-    // --- Accessors for editor state and command dispatcher ---
     const editorStateAccessor = useEditorState();
     const dispatchCommand = useDispatchCommand();
 
-    // --- Header (Paragraph/Heading) Dropdown ---
+    // --- Header Dropdown (with labels) ---
     this.headerDropdown = (
-      <ToolbarDropdownWithLabels
+      <ToolbarDropdown
         icon=""
         title={(() => {
           if (editorStateAccessor && editorStateAccessor()) {
@@ -74,7 +72,7 @@ export const toolbarDropdowns: {
           return "Normal";
         })()}
         options={HEADER_OPTIONS.map((opt) => ({
-          label: opt.label,
+          label: opt.label, // JSX label for preview
           icon: "",
           onClick: () => {
             if (opt.value === "paragraph") {
@@ -87,7 +85,7 @@ export const toolbarDropdowns: {
       />
     );
 
-    // --- List Dropdown (Bullet/Numbered) ---
+    // --- List Dropdown (icons only) ---
     this.listDropdown = (
       <ToolbarDropdown
         icon={(() => {
@@ -99,44 +97,29 @@ export const toolbarDropdowns: {
         })()}
         options={[
           {
-            label: "Bullet List",
             icon: "bi-list-ul",
             onClick: () => {
               const state = editorStateAccessor && editorStateAccessor();
-              if (state) {
-                dispatchCommand(toggleBulletList(state.schema));
-              }
+              if (state) dispatchCommand(toggleBulletList(state.schema));
             },
           },
           {
-            label: "Numbered List",
             icon: "bi-list-ol",
             onClick: () => {
               const state = editorStateAccessor && editorStateAccessor();
-              if (state) {
-                dispatchCommand(toggleOrderedList(state.schema));
-              }
+              if (state) dispatchCommand(toggleOrderedList(state.schema));
             },
           },
         ]}
-        title={(() => {
-          if (editorStateAccessor && editorStateAccessor()) {
-            const type = getCurrentListType(editorStateAccessor());
-            return type === "ordered" ? "Numbered List" : "Bullet List";
-          }
-          return "Bullet List";
-        })()}
       />
     );
 
-    // --- Insert Dropdown (Link, Image, Table, Equation) ---
-
+    // --- Insert Dropdown (icons only) ---
     this.insertDropdown = (
       <ToolbarDropdown
         icon="bi-plus-lg"
         options={[
           {
-            label: "Insert Link",
             icon: "bi-link-45deg",
             onClick: () => {
               const url = prompt("Enter link URL:");
@@ -146,7 +129,6 @@ export const toolbarDropdowns: {
             },
           },
           {
-            label: "Insert Image",
             icon: "bi-image",
             onClick: () => {
               const url = prompt("Enter image URL:");
@@ -154,15 +136,13 @@ export const toolbarDropdowns: {
             },
           },
           {
-            label: "Insert Equation",
-            icon: "bi-calculator", // Use a valid Bootstrap icon
+            icon: "bi-calculator",
             onClick: () => {
               const equation = prompt("Enter LaTeX equation:", "E=mc^2");
               if (equation !== null) dispatchCommand(insertMath(equation));
             },
           },
           {
-            label: "Insert Table",
             icon: "bi-table",
             onClick: () => {
               if (insertButtonRef) {
@@ -176,10 +156,6 @@ export const toolbarDropdowns: {
             },
           },
         ]}
-        title="Insert"
-        setButtonRef={(el) => {
-          insertButtonRef = el;
-        }}
       >
         <Show when={showTableSelector()}>
           <TableGridSelector
