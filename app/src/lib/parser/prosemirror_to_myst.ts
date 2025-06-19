@@ -25,8 +25,6 @@ import type {
     Break,
     BlockBreak,
     Table,
-    TableRow,
-    TableCell,
     FootnoteDefinition,
     Image,
     Caption,
@@ -37,11 +35,12 @@ import type {
     Subscript,
     Superscript,
     Underline,
+    TableRow,
 } from "myst-spec";
 import { Mark, Node, Schema } from "prosemirror-model";
 import { unified } from "unified";
 import mystToMd from "myst-to-md";
-import { Aside, CaptionNumber, Delete } from "myst-spec-ext";
+import { Aside, CaptionNumber, Delete, TableCell } from "myst-spec-ext";
 
 type ChildrenOf<T extends MystNode> = T extends { children: infer C }
     ? C
@@ -140,12 +139,7 @@ function wrapMark(mark: Mark, children: PhrasingContent[]): PhrasingContent {
 
 function handleChildren<T extends MystNode>(node: Node): ChildrenOf<T> {
     // if this is an inline container (paragraph, heading, etc.)
-    if (
-        node.isInline ||
-        /^(paragraph|heading|blockquote|link|emphasis|strong|delete|subscript|superscript|underline)$/.test(
-            node.type.name,
-        )
-    ) {
+    if (node.inlineContent) {
         return handleInline(node) as ChildrenOf<T>;
     } else {
         // block‐level
@@ -341,6 +335,19 @@ const proseMirrorToMystHandlers = {
         identifier: node.attrs.identifier,
         children: handleChildren<CaptionNumber>(node),
     }),
+    tableRow: (node: Node): TableRow => ({
+        type: "tableRow",
+        children: handleChildren<TableRow>(node),
+    }),
+    tableCell: (node: Node): TableCell => ({
+        type: "tableCell",
+        align: node.attrs.align,
+        width: node.attrs.width,
+        colspan: node.attrs.colspan,
+        rowspan: node.attrs.rowspan,
+        header: node.attrs.header,
+        children: handleChildren<TableCell>(node),
+    }),
 } satisfies Record<NodeName, (node: Node) => MystNode>;
 
 /**
@@ -357,7 +364,7 @@ export function proseMirrorToMyst(node: Node): MystNode {
  * @param node - ProseMirror AST node
  * @returns Markdown string in MyST syntax
  */
-export function prosemirrorToMarkdown(node: Node): string {
+export function proseMirrorToMarkdown(node: Node): string {
     const mystAst = proseMirrorToMyst(node);
     const processor = unified().use(mystToMd);
     const mdast = processor.runSync(mystAst as Root);
@@ -369,9 +376,9 @@ export function prosemirrorToMarkdown(node: Node): string {
 }
 
 /**
- * Convert a ProseMirror “inline” node (paragraph, heading, etc.) into a
+ * Convert the inline content of a ProseMirror node (paragraph, heading, etc.) into a
  * flat array of MyST PhrasingContent, preserving the exact nesting of marks.
- * TODO There is still a bug, not every test case succeeds:
+ * TODO: There is still a bug, not every test case succeeds:
  * Expected: *one **two *three*** four*
  * Received: *one *two **three*** four*
  */
