@@ -1,6 +1,6 @@
 /* eslint-disable solid/prefer-for */
 import { createSignal, JSX, Show } from "solid-js";
-import { useEditorState, useDispatchCommand } from "../../components/Editor";
+import { useEditorState, useDispatchCommand, EditorContextType } from "../../components/Editor";
 import {
   setParagraph,
   setHeading,
@@ -50,9 +50,10 @@ export const toolbarDropdowns: {
   headerDropdown?: JSX.Element;
   listDropdown?: JSX.Element;
   insertDropdown?: JSX.Element;
-  createDropdowns: () => void;
+  createDropdowns: (ctx: EditorContextType) => void;
 } = {
-  createDropdowns() {
+  createDropdowns(ctx: EditorContextType) {
+    const { state, openDropdown, setOpenDropdown } = ctx;
     const editorStateAccessor = useEditorState();
     const dispatchCommand = useDispatchCommand();
 
@@ -82,6 +83,10 @@ export const toolbarDropdowns: {
             }
           },
         }))}
+        showTableSelector={() => openDropdown() === "header"}
+        setOpenRef={(fn) => {
+          fn(openDropdown() === "header");
+        }}
       />
     );
 

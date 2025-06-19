@@ -1,7 +1,8 @@
-import { Component } from "solid-js";
+import { Component, useContext } from "solid-js";
 import "prosemirror-view/style/prosemirror.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import { editorContext } from "../Editor";
 import { toolbarButtons } from "../../lib/toolbar/toolbar_buttons";
 import { toolbarDropdowns } from "../../lib/toolbar/toolbar_dropdowns";
 import { GitHubDropdown } from "../github/GitHubDropdown";
@@ -11,9 +12,13 @@ import { BranchDropdown } from "../github/BranchDropdown";
 // --- Main Toolbar Component ---
 // The main toolbar with all formatting and insert controls
 export const Toolbar: Component = () => {
-  // Initialise all toolbar elements
-  toolbarButtons.createButtons();
-  toolbarDropdowns.createDropdowns();
+  const ctx = useContext(editorContext);
+
+  // Pass context state/handlers to buttons/dropdowns
+  if (ctx) {
+    toolbarButtons.createButtons(ctx);
+    toolbarDropdowns.createDropdowns(ctx);
+  }
 
   // --- Render Toolbar ---
   return (

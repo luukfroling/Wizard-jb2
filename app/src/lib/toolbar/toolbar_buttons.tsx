@@ -12,7 +12,7 @@ import {
   toggleCodeBlock,
 } from "./toolbar_commands";
 import { copyFormatPainter, applyFormatPainter, FormatPainterState } from "./toolbar_utils";
-import { useDispatchCommand, useEditorState } from "../../components/Editor";
+import { EditorContextType, useDispatchCommand, useEditorState } from "../../components/Editor";
 import { ToolbarButton } from "../../components/toolbar/ToolbarButton";
 import { createSignal, JSX } from "solid-js";
 import { Mark } from "prosemirror-model";
@@ -47,25 +47,21 @@ export const toolbarButtons: {
   outdentButton?: JSX.Element;
   quoteButton?: JSX.Element;
   codeButton?: JSX.Element;
-  createButtons: () => void;
+  createButtons: (ctx: EditorContextType) => void;
 } = {
-  createButtons() {
-    const editorStateAccessor = useEditorState();
+  createButtons(ctx: EditorContextType) {
+    const { state, formatPainter, setFormatPainter } = ctx;
     const dispatchCommand = useDispatchCommand();
-    const [_formatMarks, _setFormatMarks] = createSignal<Mark[] | null>(null);
-    const [formatPainter, setFormatPainter] = createSignal<FormatPainterState>(
-      null,
-    );
 
     // Handles Format Painter button: copy or apply formatting
     function handleFormatPainter() {
-      const state = editorStateAccessor && editorStateAccessor();
-      if (!state) return;
+      const s = state();
+      if (!s) return;
 
       if (formatPainter() === null) {
-        setFormatPainter(copyFormatPainter(state));
+        setFormatPainter(copyFormatPainter(s));
       } else {
-        dispatchCommand((state, dispatch) =>
+        dispatchCommand((state: any, dispatch: any) =>
           applyFormatPainter(formatPainter(), state, dispatch)
         );
         setFormatPainter(null);
@@ -94,61 +90,31 @@ export const toolbarButtons: {
       icon: "bi-type-bold",
       label: "Bold",
       onClick: () => dispatchCommand(toggleBold),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.strong,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.strong),
     });
     this.italicsButton = buttonValuesToJSXElement({
       icon: "bi-type-italic",
       label: "Italic",
       onClick: () => dispatchCommand(toggleItalic),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.emphasis,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.emphasis),
     });
     this.strikeThroughButton = buttonValuesToJSXElement({
       icon: "bi-type-strikethrough",
       label: "Strikethrough",
       onClick: () => dispatchCommand(toggleStrikethrough),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.strikethrough,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.strikethrough),
     });
     this.superscriptButton = buttonValuesToJSXElement({
       icon: "bi-superscript",
       label: "Superscript",
       onClick: () => dispatchCommand(toggleSuperscript),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.superscript,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.superscript),
     });
     this.subscriptButton = buttonValuesToJSXElement({
       icon: "bi-subscript",
       label: "Subscript",
       onClick: () => dispatchCommand(toggleSubscript),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.subscript,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.subscript),
     });
     this.indentButton = buttonValuesToJSXElement({
       icon: "bi-caret-right",
@@ -167,15 +133,15 @@ export const toolbarButtons: {
       label: "Blockquote",
       onClick: () => dispatchCommand(toggleBlockquote),
       active: () =>
-        editorStateAccessor ? blockquoteActive(editorStateAccessor()) : false,
+        state ? blockquoteActive(state()) : false,
     });
     this.codeButton = buttonValuesToJSXElement({
       icon: "bi-code",
       label: "Code Block",
       onClick: () => dispatchCommand(toggleCodeBlock),
       active: () =>
-        editorStateAccessor
-          ? editorStateAccessor().selection.$from.parent.type.name === "code_block"
+        state
+          ? state().selection.$from.parent.type.name === "code_block"
           : false,
     });
   },

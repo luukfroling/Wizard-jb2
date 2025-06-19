@@ -39,15 +39,24 @@ import {
 } from "../lib/toolbar/editor_plugins";
 import { tableEditing } from "prosemirror-tables";
 import { github } from "../lib/github/githubInteraction";
+import type { FormatPainterState } from "../lib/toolbar/toolbar_utils";
 
 export interface EditorProps {
   schema: Schema;
 }
 
-const editorContext = createContext<{
+export interface EditorContextType {
   state: Accessor<EditorState>;
+  setState: Setter<EditorState>;
   view: Accessor<EditorView>;
-}>();
+  setView: Setter<EditorView>;
+  formatPainter: Accessor<FormatPainterState>;
+  setFormatPainter: Setter<FormatPainterState>;
+  openDropdown: Accessor<string | null>;
+  setOpenDropdown: Setter<string | null>;
+}
+
+export const editorContext = createContext<EditorContextType>();
 
 export function useEditorState() {
   const ctx = useContext(editorContext);
@@ -118,6 +127,10 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   state = stateSignal;
   setState = setStateSignal;
 
+  const [viewSignal, setView] = createSignal<EditorView>(null as unknown as EditorView);
+  const [formatPainter, setFormatPainter] = createSignal<FormatPainterState>(null);
+  const [openDropdown, setOpenDropdown] = createSignal<string | null>(null);
+
   const editorState = createMemo(() =>
     EditorState.create({
       schema: props.schema,
@@ -152,8 +165,8 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   );
 
   const view = createMemo(
-    () =>
-      new EditorView(ref()!, {
+    () => {
+      const v = new EditorView(ref()!, {
         state: editorState(),
         nodeViews: {
           math(node, view, getPos) {
@@ -176,7 +189,10 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
             return new ImageNodeView(node, view, safeGetPos);
           },
         },
-      }),
+      });
+      setView(v); // <-- This ensures viewSignal is always the real view
+      return v;
+    },
   );
   onCleanup(() => view().destroy());
 
@@ -274,12 +290,23 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   }
 
   return (
-    <>
-      <editorContext.Provider value={{ state: stateSignal, view }}>
+    <editorContext.Provider
+      value={{
+        state: stateSignal,
+        setState: setStateSignal,
+        view: viewSignal,
+        setView,
+        formatPainter,
+        setFormatPainter,
+        openDropdown,
+        setOpenDropdown,
+      }}
+    >
+      <>
         {props.children}
-      </editorContext.Provider>
-      <div ref={setRef} />
-    </>
+        <div ref={setRef} />
+      </>
+    </editorContext.Provider>
   );
 };
 
