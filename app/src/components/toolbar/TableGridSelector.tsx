@@ -12,7 +12,12 @@ export interface TableGridSelectorProps {
 }
 
 /**
- * TableGridSelector popup for choosing table size in the toolbar.
+ * TableGridSelector renders a popup grid for selecting table size in the toolbar.
+ *
+ * - Highlights cells up to the current hovered row and column.
+ * - Calls setHoverX/setHoverY on cell hover to update the highlight.
+ * - Calls onSelect with the selected size when a cell is clicked.
+ * - Calls onClose when the mouse leaves the popup.
  *
  * @param props.show - Whether the selector is visible.
  * @param props.position - Popup position ({ top, left } in pixels).
@@ -44,23 +49,17 @@ export function TableGridSelector(props: TableGridSelectorProps): JSX.Element {
           {(_, r) => (
             <div class="table-grid-selector-row">
               <For each={[...Array(8)]}>
-                {(_, c) => {
-                  const selected = r() <= props.hoverY && c() <= props.hoverX;
-                  return (
-                    <div
-                      class={`table-grid-selector-cell${selected ? " selected" : ""}`}
-                      onMouseEnter={() => {
-                        props.setHoverY(r());
-                        props.setHoverX(c());
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        props.onSelect(r() + 1, c() + 1);
-                      }}
-                    />
-                  );
-                }}
+                {(_, c) => (
+                  <TableGridCell
+                    row={r()}
+                    col={c()}
+                    hoverX={props.hoverX}
+                    hoverY={props.hoverY}
+                    setHoverX={props.setHoverX}
+                    setHoverY={props.setHoverY}
+                    onSelect={props.onSelect}
+                  />
+                )}
               </For>
             </div>
           )}
@@ -70,5 +69,47 @@ export function TableGridSelector(props: TableGridSelectorProps): JSX.Element {
         {props.hoverY + 1} × {props.hoverX + 1}
       </div>
     </div>
+  );
+}
+
+/**
+ * TableGridCell renders a single cell in the table grid selector.
+ *
+ * - Highlights itself if within the hovered area.
+ * - Updates hoverX and hoverY on mouse enter.
+ * - Calls onSelect with the selected size on mouse down.
+ *
+ * @param props.row - Row index of the cell.
+ * @param props.col - Column index of the cell.
+ * @param props.hoverX - Current hovered column index.
+ * @param props.hoverY - Current hovered row index.
+ * @param props.setHoverX - Callback to update hovered column.
+ * @param props.setHoverY - Callback to update hovered row.
+ * @param props.onSelect - Called with (rows, cols) when the cell is clicked.
+ * @returns JSX.Element for a single grid cell.
+ */
+function TableGridCell(props: {
+  row: number;
+  col: number;
+  hoverX: number;
+  hoverY: number;
+  setHoverX: (x: number) => void;
+  setHoverY: (y: number) => void;
+  onSelect: (rows: number, cols: number) => void;
+}) {
+  const selected = () => props.row <= props.hoverY && props.col <= props.hoverX;
+  return (
+    <div
+      class={`table-grid-selector-cell${selected() ? " selected" : ""}`}
+      onMouseEnter={() => {
+        props.setHoverY(props.row);
+        props.setHoverX(props.col);
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        props.onSelect(props.row + 1, props.col + 1);
+      }}
+    />
   );
 }

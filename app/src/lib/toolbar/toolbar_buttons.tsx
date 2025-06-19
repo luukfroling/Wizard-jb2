@@ -15,6 +15,7 @@ import { EditorContextType, useDispatchCommand } from "../../components/Editor";
 import { ToolbarButton } from "../../components/toolbar/ToolbarButton";
 import { JSX } from "solid-js";
 import { markActive, blockquoteActive } from "./toolbar_utils";
+import { EditorState, Transaction } from "prosemirror-state";
 
 function buttonValuesToJSXElement(buttonValues: {
   icon: string;
@@ -82,7 +83,7 @@ export const toolbarButtons: {
         setFormatPainter(copyFormatPainter(s));
       } else {
         dispatchCommand(
-          (state: EditorState, dispatch: (tr: Transaction) => void) =>
+          (state: EditorState, dispatch?: (tr: Transaction) => void) =>
             applyFormatPainter(formatPainter(), state, dispatch),
         );
         setFormatPainter(null);
