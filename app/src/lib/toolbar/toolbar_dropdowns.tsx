@@ -45,7 +45,19 @@ const [_selectorPos, setSelectorPos] = createSignal<{
   left: number;
 }>({ top: 0, left: 0 });
 
-// --- Toolbar Dropdowns Object ---
+/**
+ * Collection of toolbar dropdown JSX elements and a factory for creating them.
+ *
+ * - Each dropdown (header, list, insert) is a JSX element configured with options, icons, and handlers.
+ * - The `createDropdowns` function initializes all dropdowns using the current editor context.
+ *
+ * @property {JSX.Element} headerDropdown - Dropdown for selecting heading levels and normal text.
+ * @property {JSX.Element} listDropdown - Dropdown for toggling bullet and ordered lists.
+ * @property {JSX.Element} insertDropdown - Dropdown for inserting links, images, equations, and tables.
+ * @method createDropdowns
+ *   @param {EditorContextType} ctx - The editor context providing state and actions.
+ *   @description Initializes all toolbar dropdowns with the current editor state and handlers.
+ */
 export const toolbarDropdowns: {
   headerDropdown?: JSX.Element;
   listDropdown?: JSX.Element;
@@ -73,7 +85,7 @@ export const toolbarDropdowns: {
           return "Normal";
         })()}
         options={HEADER_OPTIONS.map((opt) => ({
-          label: opt.label, // JSX label for preview
+          label: opt.label,
           icon: "",
           onClick: () => {
             if (opt.value === "paragraph") {

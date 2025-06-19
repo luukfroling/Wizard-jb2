@@ -1,6 +1,14 @@
 import { NodeView, EditorView } from "prosemirror-view";
 import { Node as ProseMirrorNode } from "prosemirror-model";
 
+/**
+ * NodeView for rendering and resizing images in the editor.
+ *
+ * - **Toolbar Integration:** Used automatically when an image is inserted via the toolbar.
+ * - **Functionality:** Renders an <img> with a resize handle. Users can drag to resize; the new width is saved in the document.
+ * - **Usage:** Register in your editor's nodeViews: `{ image: (node, view, getPos) => new ImageNodeView(node, view, getPos) }`
+ * - **Customization:** Change resize logic, add controls, or handle more attributes by editing this class.
+ */
 export class ImageNodeView implements NodeView {
     dom: HTMLElement;
     img: HTMLImageElement;
@@ -73,6 +81,10 @@ export class ImageNodeView implements NodeView {
         });
     }
 
+    /**
+     * Updates the DOM to reflect the latest node attributes.
+     * Called automatically by ProseMirror when the node is updated.
+     */
     update(node: ProseMirrorNode) {
         this.img.src = node.attrs.url;
         this.img.alt = node.attrs.alt || "";

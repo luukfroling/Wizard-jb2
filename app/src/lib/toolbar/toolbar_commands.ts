@@ -13,6 +13,8 @@ import {
     liftListItem,
     sinkListItem,
 } from "prosemirror-schema-list";
+import { getCurrentListType } from "./toolbar_utils";
+
 
 // === MARK COMMANDS ===
 export const toggleBold = toggleMark(schema.marks.strong);
@@ -33,11 +35,17 @@ export function setParagraph() {
 }
 
 // === LIST COMMANDS ===
+/**
+ * Wraps the current selection in a bullet list.
+ */
 export const wrapBulletList = (
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
 ) => wrapInList(schema.nodes.list, { ordered: false })(state, dispatch);
 
+/**
+ * Wraps the current selection in an ordered list.
+ */
 export const wrapOrderedList = (
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
@@ -46,6 +54,12 @@ export const wrapOrderedList = (
 export const increaseIndent = () => sinkListItem(schema.nodes.listItem);
 export const decreaseIndent = () => liftListItem(schema.nodes.listItem);
 
+/**
+ * Toggles a bullet list for the current selection.
+ * If already in a bullet list, removes it; otherwise, wraps in a bullet list.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Command}
+ */
 export function toggleBulletList(schema: Schema) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { listItem, list } = schema.nodes;
@@ -65,13 +79,19 @@ export function toggleBulletList(schema: Schema) {
     };
 }
 
+/**
+ * Toggles an ordered list for the current selection.
+ * If already in an ordered list, removes it; otherwise, wraps in an ordered list.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Command}
+ */
 export function toggleOrderedList(schema: Schema) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-        const listType = getListType(state);
-        if (listType === true) {
+        const listType = getCurrentListType(state);
+        if (listType === "ordered") {
             // Already in ordered list: remove
             return liftListItem(schema.nodes.listItem)(state, dispatch);
-        } else if (listType === false) {
+        } else if (listType === "bullet") {
             // In bullet list: lift out, then wrap as ordered
             if (dispatch) {
                 liftListItem(schema.nodes.listItem)(state, dispatch);
@@ -98,6 +118,13 @@ export function toggleOrderedList(schema: Schema) {
 }
 
 // === BLOCKQUOTE & CODE BLOCK TOGGLE COMMANDS ===
+/**
+ * Toggles a blockquote for the current selection.
+ * If already in a blockquote, lifts out; otherwise, wraps in a blockquote.
+ * @param {EditorState} state
+ * @param {function} [dispatch]
+ * @returns {boolean}
+ */
 export function toggleBlockquote(
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
@@ -119,6 +146,14 @@ export function toggleBlockquote(
     }
 }
 
+
+/**
+ * Toggles a code block for the current selection.
+ * If already in a code block, sets to paragraph; otherwise, sets to code block.
+ * @param {EditorState} state
+ * @param {function} [dispatch]
+ * @returns {boolean}
+ */
 export function toggleCodeBlock(
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
@@ -142,6 +177,12 @@ export function toggleCodeBlock(
 }
 
 // === LINK/IMAGE/MATH/TABLE COMMANDS ===
+/**
+ * Inserts a link at the current selection.
+ * @param {string} [url=""] - The link URL.
+ * @param {string} [title=""] - The link title.
+ * @returns {Command}
+ */
 export function insertLink(url = "", title = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { from, to, empty } = state.selection;
@@ -165,6 +206,13 @@ export function insertLink(url = "", title = "") {
     };
 }
 
+/**
+ * Inserts an image at the current selection.
+ * @param {string} url - The image URL.
+ * @param {string} [alt=""] - The alt text.
+ * @param {string} [title=""] - The image title.
+ * @returns {Command}
+ */
 export function insertImage(url: string, alt = "", title = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { schema, selection } = state;
@@ -196,6 +244,11 @@ export function insertImage(url: string, alt = "", title = "") {
     };
 }
 
+/**
+ * Inserts a math node at the current selection.
+ * @param {string} [equation=""] - The LaTeX equation.
+ * @returns {Command}
+ */
 export function insertMath(equation: string = "") {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { schema } = state;
@@ -210,6 +263,12 @@ export function insertMath(equation: string = "") {
     };
 }
 
+/**
+ * Inserts a table with the given number of rows and columns at the current selection.
+ * @param {number} rows - Number of rows.
+ * @param {number} cols - Number of columns.
+ * @returns {Command}
+ */
 export function insertTable(rows: number, cols: number) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { schema } = state;
@@ -243,37 +302,14 @@ export function insertTable(rows: number, cols: number) {
     };
 }
 
-// === ACTIVE STATE HELPERS ===
-export function blockquoteActive(state: EditorState) {
-    const { from, to } = state.selection;
-    let active = false;
-    state.doc.nodesBetween(from, to, (node) => {
-        if (node.type === state.schema.nodes.blockquote) active = true;
-    });
-    return active;
-}
-
-export function codeBlockActive(state: EditorState) {
-    const { from, to } = state.selection;
-    let active = false;
-    state.doc.nodesBetween(from, to, (node) => {
-        if (node.type === state.schema.nodes.code_block) active = true;
-    });
-    return active;
-}
-
 // === PRIVATE/HELPER FUNCTIONS ===
-function getListType(state: EditorState): boolean | null {
-    const { $from } = state.selection;
-    for (let d = $from.depth; d > 0; d--) {
-        const node = $from.node(d);
-        if (node.type.name === "list") {
-            return node.attrs.ordered; // true for ordered, false for bullet
-        }
-    }
-    return null;
-}
 
+/**
+ * Checks if the current selection contains any list items of the given type.
+ * @param {EditorState} state - The editor state.
+ * @param {NodeType} listItemType - The list item node type to check for.
+ * @returns {boolean} True if any list items of the given type are found in the selection.
+ */
 function selectionHasList(state: EditorState, listItemType: NodeType) {
     let found = false;
     state.doc.nodesBetween(state.selection.from, state.selection.to, (node) => {
@@ -282,6 +318,12 @@ function selectionHasList(state: EditorState, listItemType: NodeType) {
     return found;
 }
 
+/**
+ * Lifts all list items in the current selection out of their lists.
+ * @param {EditorState} state - The editor state.
+ * @param {function} [dispatch] - Optional dispatch function for transactions.
+ * @returns {boolean} True if any list items were lifted.
+ */
 function liftListItems(
     state: EditorState,
     dispatch?: (tr: Transaction) => void,

@@ -11,6 +11,19 @@ export interface TableGridSelectorProps {
   onClose: () => void;
 }
 
+/**
+ * TableGridSelector popup for choosing table size in the toolbar.
+ *
+ * @param props.show - Whether the selector is visible.
+ * @param props.position - Popup position ({ top, left } in pixels).
+ * @param props.hoverX - Current hovered column index.
+ * @param props.hoverY - Current hovered row index.
+ * @param props.setHoverX - Callback to update hovered column.
+ * @param props.setHoverY - Callback to update hovered row.
+ * @param props.onSelect - Called with (rows, cols) when a grid cell is clicked.
+ * @param props.onClose - Called when the popup should close (e.g., mouse leaves).
+ * @returns JSX.Element for the table grid selector popup.
+ */
 export function TableGridSelector(props: TableGridSelectorProps): JSX.Element {
   if (!props.show) return null;
   return (

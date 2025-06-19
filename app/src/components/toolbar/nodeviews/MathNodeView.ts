@@ -3,6 +3,13 @@ import { NodeView, EditorView } from "prosemirror-view";
 import { Node as ProseMirrorNode } from "prosemirror-model";
 import { showHintTooltip, hideHintTooltip } from "../HintTooltip";
 
+/**
+ * NodeView for rendering and editing math equations in the editor.
+ *
+ * - **Toolbar Integration:** Used automatically when a math node is inserted via the toolbar.
+ * - **Functionality:** Renders math using KaTeX; supports inline editing on double-click; shows a tooltip on hover.
+ * - **State:** Equation content is stored in the ProseMirror document; editing state is local to the NodeView.
+ */
 export class MathNodeView implements NodeView {
     dom: HTMLElement;
     renderSpan: HTMLElement;
@@ -41,6 +48,7 @@ export class MathNodeView implements NodeView {
     startEdit(node: ProseMirrorNode) {
         if (this.editing) return;
         this.editing = true;
+        hideHintTooltip();
         const textarea = document.createElement("textarea");
         textarea.value = node.textContent;
         textarea.className = "math-input";

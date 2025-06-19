@@ -10,6 +10,11 @@ export type FormatPainterState = {
   blockAttrs: Record<string, any>;
 } | null;
 
+/**
+ * Copies the current formatting (marks and block type) from the editor state for use with the format painter.
+ * @param {EditorState} state - The editor state.
+ * @returns {FormatPainterState} The copied formatting state.
+ */
 export function copyFormatPainter(state: EditorState): FormatPainterState {
   const marks = state.storedMarks || state.selection.$from.marks();
   const $from = state.selection.$from;
@@ -22,6 +27,13 @@ export function copyFormatPainter(state: EditorState): FormatPainterState {
   };
 }
 
+/**
+ * Applies formatting from the format painter to the current selection.
+ * @param {FormatPainterState} painter - The formatting state to apply.
+ * @param {EditorState} state - The editor state.
+ * @param {function} [dispatch] - Optional dispatch function for transactions.
+ * @returns {boolean} True if formatting was applied.
+ */
 export function applyFormatPainter(
   painter: FormatPainterState,
   state: EditorState,
@@ -65,7 +77,12 @@ export function applyFormatPainter(
   }
 }
 
-export function inLastTableCell(state: EditorState) {
+/**
+ * Checks if the selection is in the last cell of a table.
+ * @param {EditorState} state - The editor state.
+ * @returns {boolean} True if in the last table cell.
+ */
+export function inLastTableCell(state: EditorState): boolean {
     const { $from } = state.selection;
     for (let d = $from.depth; d > 0; d--) {
         const node = $from.node(d);
@@ -98,6 +115,10 @@ function canInsertParagraph(stateOrTr: EditorState | Transaction, pos: number) {
     return false;
 }
 
+/**
+ * Inserts a new paragraph after the current table.
+ * @returns {Command} ProseMirror command for insertion.
+ */
 export function insertParagraphAfterTable() {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { $from } = state.selection;
@@ -119,6 +140,10 @@ export function insertParagraphAfterTable() {
     };
 }
 
+/**
+ * Inserts a new paragraph after the current code block.
+ * @returns {Command} ProseMirror command for insertion.
+ */
 export function insertParagraphAfterCodeBlock() {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { $from } = state.selection;
@@ -140,6 +165,10 @@ export function insertParagraphAfterCodeBlock() {
     };
 }
 
+/**
+ * Inserts a new paragraph after the current blockquote.
+ * @returns {Command} ProseMirror command for insertion.
+ */
 export function insertParagraphAfterBlockquote() {
   return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
     const { $from } = state.selection;
@@ -161,6 +190,10 @@ export function insertParagraphAfterBlockquote() {
   };
 }
 
+/**
+ * Deletes the current table and places the selection in a new paragraph.
+ * @returns {Command} ProseMirror command for table deletion.
+ */
 export function deleteTable(): import("prosemirror-state").Command {
     return (state, dispatch) => {
         const { $from } = state.selection;
@@ -219,7 +252,8 @@ export function deleteTable(): import("prosemirror-state").Command {
 
 /**
  * Determine if the current selection is inside a bullet or ordered list.
- * Returns "bullet", "ordered", or null if not in a list.
+ * @param {EditorState} state - The editor state.
+ * @returns {"bullet" | "ordered" | null} The type of list or null if not in a list.
  */
 export function getCurrentListType(
     state: EditorState,
@@ -235,11 +269,41 @@ export function getCurrentListType(
 }
 
 /**
- * Check if a given mark type is active in the current selection.
- * Returns true if the mark is active, false otherwise.
+ * Checks if a given mark type is active in the current selection.
+ * @param {EditorState} state - The editor state.
+ * @param {MarkType} type - The mark type to check.
+ * @returns {boolean} True if the mark is active.
  */
 export function markActive(state: EditorState, type: MarkType) {
     const { from, $from, to, empty } = state.selection;
     if (empty) return !!type.isInSet(state.storedMarks || $from.marks());
     return state.doc.rangeHasMark(from, to, type);
+}
+
+/**
+ * Checks if the current selection is inside a blockquote.
+ * @param {EditorState} state - The editor state.
+ * @returns {boolean} True if blockquote is active.
+ */
+export function blockquoteActive(state: EditorState) {
+    const { from, to } = state.selection;
+    let active = false;
+    state.doc.nodesBetween(from, to, (node) => {
+        if (node.type === state.schema.nodes.blockquote) active = true;
+    });
+    return active;
+}
+
+/**
+ * Checks if the current selection is inside a code block.
+ * @param {EditorState} state - The editor state.
+ * @returns {boolean} True if code block is active.
+ */
+export function codeBlockActive(state: EditorState) {
+    const { from, to } = state.selection;
+    let active = false;
+    state.doc.nodesBetween(from, to, (node) => {
+        if (node.type === state.schema.nodes.code_block) active = true;
+    });
+    return active;
 }

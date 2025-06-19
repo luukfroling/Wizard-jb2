@@ -1,6 +1,5 @@
 import { redo, undo } from "prosemirror-history";
 import {
-  blockquoteActive,
   decreaseIndent,
   increaseIndent,
   toggleBlockquote,
@@ -16,7 +15,7 @@ import { EditorContextType, useDispatchCommand, useEditorState } from "../../com
 import { ToolbarButton } from "../../components/toolbar/ToolbarButton";
 import { createSignal, JSX } from "solid-js";
 import { Mark } from "prosemirror-model";
-import { markActive } from "./toolbar_utils";
+import { markActive, blockquoteActive } from "./toolbar_utils";
 
 function buttonValuesToJSXElement(buttonValues: {
   icon: string;
@@ -34,6 +33,28 @@ function buttonValuesToJSXElement(buttonValues: {
   );
 }
 
+/**
+ * Collection of toolbar button JSX elements and a factory for creating them.
+ *
+ * - Each button (undo, redo, bold, etc.) is a JSX element configured with icon, label, click handler, and active state.
+ * - The `createButtons` function initializes all buttons using the current editor context.
+ *
+ * @property {JSX.Element} undoButton - Undo the last editor action.
+ * @property {JSX.Element} redoButton - Redo the last undone action.
+ * @property {JSX.Element} formatButton - Format Painter: copy or apply formatting.
+ * @property {JSX.Element} boldButton - Toggle bold formatting.
+ * @property {JSX.Element} italicsButton - Toggle italic formatting.
+ * @property {JSX.Element} strikeThroughButton - Toggle strikethrough formatting.
+ * @property {JSX.Element} superscriptButton - Toggle superscript formatting.
+ * @property {JSX.Element} subscriptButton - Toggle subscript formatting.
+ * @property {JSX.Element} indentButton - Increase indentation.
+ * @property {JSX.Element} outdentButton - Decrease indentation.
+ * @property {JSX.Element} quoteButton - Toggle blockquote.
+ * @property {JSX.Element} codeButton - Toggle code block.
+ * @method createButtons
+ *   @param {EditorContextType} ctx - The editor context providing state and actions.
+ *   @description Initializes all toolbar buttons with the current editor state and handlers.
+ */
 export const toolbarButtons: {
   undoButton?: JSX.Element;
   redoButton?: JSX.Element;

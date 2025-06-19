@@ -4,6 +4,7 @@ import {
     EditorState,
     NodeSelection,
     TextSelection,
+    Command,
 } from "prosemirror-state";
 import { keymap } from "prosemirror-keymap";
 import {
@@ -28,9 +29,12 @@ import {
     deleteTable,
 } from "./toolbar_utils";
 
-// --- Plugins ---
-
-export function preserveMarksPlugin() {
+/**
+ * Plugin that preserves active formatting marks (like bold/italic) when starting a new paragraph.
+ * Ensures formatting is not lost when pressing Enter at the start of a line.
+ * @returns {Plugin} ProseMirror plugin instance.
+ */
+export function preserveMarksPlugin(): Plugin {
     return new Plugin({
         appendTransaction(transactions, oldState, newState) {
             const lastTr = transactions[transactions.length - 1];
@@ -51,7 +55,13 @@ export function preserveMarksPlugin() {
 
 // --- Keymaps ---
 
-export function formattingKeymap(_schema: Schema) {
+/**
+ * Keymap for formatting shortcuts (bold, italic, strikethrough, superscript, subscript).
+ * Enables standard hotkeys for text formatting in the editor.
+ * @param {Schema} _schema - The ProseMirror schema.
+ * @returns {Plugin} Keymap plugin for formatting.
+ */
+export function formattingKeymap(_schema: Schema): Plugin {
   return keymap({
     "Mod-b": toggleBold,
     "Mod-i": toggleItalic,
@@ -61,7 +71,12 @@ export function formattingKeymap(_schema: Schema) {
   });
 }
 
-export function customListKeymap(schema: Schema) {
+/**
+ * Keymap for list editing: handles Enter (split/lift), Tab (indent), and Shift-Tab (outdent) in lists.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} Keymap plugin for list item editing.
+ */
+export function customListKeymap(schema: Schema): Plugin {
     return keymap({
         Enter: (state, dispatch) => {
             if (splitListItem(schema.nodes.listItem)(state, dispatch))
@@ -73,7 +88,13 @@ export function customListKeymap(schema: Schema) {
     });
 }
 
-export function tableAndCodeExitKeymap(schema: Schema) {
+/**
+ * Keymap for exiting tables, code blocks, and blockquotes with Mod-Enter.
+ * Inserts a new paragraph after the current block when at the end of a special block.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} Keymap plugin for exiting blocks.
+ */
+export function tableAndCodeExitKeymap(schema: Schema): Plugin {
   return keymap({
     "Mod-Enter": chainCommands(
       (state, dispatch) => {
@@ -92,14 +113,23 @@ export function tableAndCodeExitKeymap(schema: Schema) {
   });
 }
 
-export function tableDeleteKeymap() {
+/**
+ * Keymap for deleting the entire table with Mod-Backspace or Mod-Delete when the table is selected.
+ * @returns {Plugin} Keymap plugin for table deletion.
+ */
+export function tableDeleteKeymap(): Plugin {
     return keymap({
         "Mod-Backspace": deleteTable(),
         "Mod-Delete": deleteTable(),
     });
 }
 
-export function mathDeleteKeymap(schema: Schema) {
+/**
+ * Keymap for deleting a math node with Mod-Backspace or Mod-Delete when the math node is selected.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} Keymap plugin for math node deletion.
+ */
+export function mathDeleteKeymap(schema: Schema): Plugin {
     return keymap({
         "Mod-Backspace": (state, dispatch) => {
             const { $from } = state.selection;
@@ -140,7 +170,15 @@ export function mathDeleteKeymap(schema: Schema) {
     });
 }
 
-export function codeBlockKeymap(schema: Schema) {
+/**
+ * Keymap for code block editing:
+ * - Shift-Enter: Insert line break.
+ * - Tab/Shift-Tab: Indent/unindent.
+ * - Auto-closing pairs for brackets, quotes, and backticks.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} Keymap plugin for code block editing.
+ */
+export function codeBlockKeymap(schema: Schema): Plugin {
     return keymap({
         "Shift-Enter": (state, dispatch) => {
             const { $from } = state.selection;
@@ -234,7 +272,15 @@ export function codeBlockKeymap(schema: Schema) {
     });
 }
 
-function autoClosePair(open: string, close: string, schema: Schema) {
+/**
+ * Utility for auto-closing pairs like (), [], {}, "", '', and `` in code blocks.
+ * Inserts both open and close character and places the cursor between them.
+ * @param {string} open - The opening character.
+ * @param {string} close - The closing character.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Command} ProseMirror command for auto-closing pairs.
+ */
+function autoClosePair(open: string, close: string, schema: Schema): Command {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { $from } = state.selection;
         for (let d = $from.depth; d > 0; d--) {

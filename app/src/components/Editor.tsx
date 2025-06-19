@@ -41,6 +41,23 @@ import { tableEditing } from "prosemirror-tables";
 import { github } from "../lib/github/githubInteraction";
 import type { FormatPainterState } from "../lib/toolbar/toolbar_utils";
 
+/**
+ * Editor is the main ProseMirror-based editor component.
+ *
+ * - Provides all editor and toolbar state via context (`editorContext`), including editor state, view, format painter, and dropdown state.
+ * - Handles initialization, loading, and saving of document content.
+ * - Registers custom node views (math, image) and ProseMirror plugins for rich editing features.
+ * - Exports utility hooks and functions for toolbar and command integration:
+ *   - `useEditorState()`: Access the current editor state from context.
+ *   - `useEditorView()`: Access the current EditorView from context.
+ *   - `dispatchCommand(cmd)`: Dispatch a ProseMirror command using the current view.
+ *   - `useDispatchCommand()`: Returns a function to dispatch commands with focus management.
+ *   - `getEditorContentAsMarkdown()`: Get the current document as markdown.
+ *   - `saveEditorContentToDatabase()`: Save the current document to local storage.
+ *
+ * Usage: Wrap your app or editor UI in the `<Editor>` component and use the context or exported hooks to interact with the editor state and commands.
+ */
+
 export interface EditorProps {
   schema: Schema;
 }

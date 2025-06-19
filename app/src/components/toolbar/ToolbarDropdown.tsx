@@ -1,5 +1,17 @@
 import { Component, createSignal, onMount, onCleanup, JSX } from "solid-js";
 
+/**
+ * ToolbarDropdown renders a dropdown menu for toolbar actions.
+ *
+ * @param props.icon - Icon for the dropdown button.
+ * @param props.options - List of dropdown options ({ label, icon, onClick }).
+ * @param props.title - Optional label/title for the dropdown.
+ * @param props.children - Optional extra content (e.g., table grid selector).
+ * @param props.showTableSelector - Optional function to control table selector visibility.
+ * @param props.setOpenRef - Optional callback to expose setOpen to parent.
+ * @param props.setButtonRef - Optional callback to expose button ref to parent.
+ * @returns JSX.Element for the dropdown menu.
+ */
 export const ToolbarDropdown: Component<{
   icon: string;
   options: { label?: JSX.Element | string; icon: string; onClick: () => void }[];
@@ -77,7 +89,6 @@ export const ToolbarDropdown: Component<{
               title={typeof opt.label === "string" ? opt.label : undefined}
               onClick={() => {
                 opt.onClick();
-                // Only close the dropdown if this is NOT the Insert Table option
                 if (opt.icon !== "bi-table") {
                   setOpen(false);
                 }
