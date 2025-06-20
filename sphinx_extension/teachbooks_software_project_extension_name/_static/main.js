@@ -48,7 +48,7 @@ function initializeExtension() {
     if (checkTheme() && checkMarkdown()) {
         // Add the button to the navbar
         // Make sure to match this with myproject.toml and __init__.py
-        console.log("extension_name: Version 0.1.3 loaded in :)");
+        console.log("extension_name: Version 0.1.4 loaded in :)");
         addTeachBooksEditButton()
     } else {
         // If one fails give a warning and do not load the editor

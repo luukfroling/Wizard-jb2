@@ -38,7 +38,7 @@ def setup(app: Sphinx):
     # Basic information of the sphinx extension
     # Match version with myproject.toml and main.js
     return {
-        'version': '0.1.3',
+        'version': '0.1.4',
         'parallel_read_safe': True,
         'parallel_write_safe': True,
     }

@@ -6,8 +6,14 @@ build-backend = "setuptools.build_meta"
 # TODO: Pick a name
 name = "teachbooks_software_project_extension_name"
 # Make sure to match this version with main.js and __init__.py
-version = "0.1.3"
+version = "0.1.4"
 description = "A extension for editing TeachBooks"
-authors = [{ name = "Leander Bindt", email = "l.bindt@student.tudelft.nl" }]
+authors = [
+    { name = "Leander Bindt", email = "leander@bindt.eu" },
+    { name = "Adrian Todorov", email = "adriantdrov@gmail.com" },
+    { name = "Nathan Huisman", email = "T.N.Huisman@student.tudelft.nl"},
+    { name = "Amadou Merkx", email = "R.A.S.Merkx@student.tudelft.nl"},
+    { name = "Lachezar Topalov", email = "L.Topalov@student.tudelft.nl" }
+]
 dependencies = ["sphinx ~= 7.0", "docutils"]
 
