@@ -4,7 +4,6 @@ import { Node } from "prosemirror-model";
 import { schema } from "../src/lib/schema";
 import { EXAMPLE_1, EXAMPLE_2 } from "./parser_constants";
 import { proseMirrorToMarkdown } from "../src/lib/parser";
-import { visit } from "unist-util-visit";
 
 describe("Markdown parser", () => {
     function parse(myst: string) {
