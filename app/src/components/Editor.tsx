@@ -23,29 +23,56 @@ import {
   getFilePathFromHref,
 } from "../lib/github/GithubUtility";
 import { database } from "../lib/localStorage/database";
-import { parseMyst } from "../lib/parser";
-import { prosemirrorToMarkdown } from "../lib/parser/to_markdown";
-import { ImageNodeView } from "./ImageNodeView";
-import { MathNodeView } from "./MathNodeView";
+import { parseMyst, proseMirrorToMarkdown } from "../lib/parser";
+import { ImageNodeView } from "./toolbar/nodeviews/ImageNodeView";
+import { MathNodeView } from "./toolbar/nodeviews/MathNodeView";
 import {
   customListKeymap,
   tableAndCodeExitKeymap,
   codeBlockKeymap,
   mathDeleteKeymap,
-  tableAfterDeleteKeymap,
+  //tableAfterDeleteKeymap,
   preserveMarksPlugin,
-} from "./toolbar/editor_plugins";
+  formattingKeymap,
+  tableDeleteKeymap,
+} from "../lib/toolbar/editor_plugins";
 import { tableEditing } from "prosemirror-tables";
 import { github } from "../lib/github/githubInteraction";
+import type { FormatPainterState } from "../lib/toolbar/toolbar_utils";
+
+/**
+ * Editor is the main ProseMirror-based editor component.
+ *
+ * - Provides all editor and toolbar state via context (`editorContext`), including editor state, view, format painter, and dropdown state.
+ * - Handles initialization, loading, and saving of document content.
+ * - Registers custom node views (math, image) and ProseMirror plugins for rich editing features.
+ * - Exports utility hooks and functions for toolbar and command integration:
+ *   - `useEditorState()`: Access the current editor state from context.
+ *   - `useEditorView()`: Access the current EditorView from context.
+ *   - `dispatchCommand(cmd)`: Dispatch a ProseMirror command using the current view.
+ *   - `useDispatchCommand()`: Returns a function to dispatch commands with focus management.
+ *   - `getEditorContentAsMarkdown()`: Get the current document as markdown.
+ *   - `saveEditorContentToDatabase()`: Save the current document to local storage.
+ *
+ * Usage: Wrap your app or editor UI in the `<Editor>` component and use the context or exported hooks to interact with the editor state and commands.
+ */
 
 export interface EditorProps {
   schema: Schema;
 }
 
-const editorContext = createContext<{
+export interface EditorContextType {
   state: Accessor<EditorState>;
+  setState: Setter<EditorState>;
   view: Accessor<EditorView>;
-}>();
+  setView: Setter<EditorView>;
+  formatPainter: Accessor<FormatPainterState>;
+  setFormatPainter: Setter<FormatPainterState>;
+  openDropdown: Accessor<string | null>;
+  setOpenDropdown: Setter<string | null>;
+}
+
+export const editorContext = createContext<EditorContextType>();
 
 export function useEditorState() {
   const ctx = useContext(editorContext);
@@ -116,6 +143,13 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   state = stateSignal;
   setState = setStateSignal;
 
+  const [viewSignal, setView] = createSignal<EditorView>(
+    null as unknown as EditorView,
+  );
+  const [formatPainter, setFormatPainter] =
+    createSignal<FormatPainterState>(null);
+  const [openDropdown, setOpenDropdown] = createSignal<string | null>(null);
+
   const editorState = createMemo(() =>
     EditorState.create({
       schema: props.schema,
@@ -123,10 +157,11 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
         history(),
         customListKeymap(props.schema),
         preserveMarksPlugin(),
-        tableAndCodeExitKeymap(props.schema),
         codeBlockKeymap(props.schema),
+        tableAndCodeExitKeymap(props.schema),
         mathDeleteKeymap(props.schema),
-        tableAfterDeleteKeymap(props.schema),
+        tableDeleteKeymap(),
+        //tableAfterDeleteKeymap(props.schema),
         tableEditing(),
         keymap({
           "Mod-z": undo,
@@ -134,6 +169,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
           "Mod-Shift-z": redo,
         }),
         keymap(baseKeymap),
+        formattingKeymap(props.schema),
         new Plugin({
           view() {
             return {
@@ -147,33 +183,34 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     }),
   );
 
-  const view = createMemo(
-    () =>
-      new EditorView(ref()!, {
-        state: editorState(),
-        nodeViews: {
-          math(node, view, getPos) {
-            const safeGetPos = () => {
-              const pos = getPos?.();
-              if (typeof pos !== "number") {
-                throw new Error("getPos is undefined or not a number");
-              }
-              return pos;
-            };
-            return new MathNodeView(node, view, safeGetPos);
-          },
-          image(node, view, getPos) {
-            const safeGetPos = () => {
-              const pos = getPos?.();
-              if (typeof pos !== "number")
-                throw new Error("getPos is undefined or not a number");
-              return pos;
-            };
-            return new ImageNodeView(node, view, safeGetPos);
-          },
+  const view = createMemo(() => {
+    const v = new EditorView(ref()!, {
+      state: editorState(),
+      nodeViews: {
+        math(node, view, getPos) {
+          const safeGetPos = () => {
+            const pos = getPos?.();
+            if (typeof pos !== "number") {
+              throw new Error("getPos is undefined or not a number");
+            }
+            return pos;
+          };
+          return new MathNodeView(node, view, safeGetPos);
         },
-      }),
-  );
+        image(node, view, getPos) {
+          const safeGetPos = () => {
+            const pos = getPos?.();
+            if (typeof pos !== "number")
+              throw new Error("getPos is undefined or not a number");
+            return pos;
+          };
+          return new ImageNodeView(node, view, safeGetPos);
+        },
+      },
+    });
+    setView(v); // <-- This ensures viewSignal is always the real view
+    return v;
+  });
   onCleanup(() => view().destroy());
 
   onMount(() => {
@@ -242,7 +279,7 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
     if (!markdown) return;
 
     // Parse markdown into a ProseMirror Node
-    const doc = await parseMyst(markdown);
+    const doc = parseMyst(markdown);
 
     // Debugging
     // console.log("Parsed: \n" + doc);
@@ -270,12 +307,23 @@ export const Editor: ParentComponent<EditorProps> = (props) => {
   }
 
   return (
-    <>
-      <editorContext.Provider value={{ state: stateSignal, view }}>
+    <editorContext.Provider
+      value={{
+        state: stateSignal,
+        setState: setStateSignal,
+        view: viewSignal,
+        setView,
+        formatPainter,
+        setFormatPainter,
+        openDropdown,
+        setOpenDropdown,
+      }}
+    >
+      <>
         {props.children}
-      </editorContext.Provider>
-      <div ref={setRef} />
-    </>
+        <div ref={setRef} />
+      </>
+    </editorContext.Provider>
   );
 };
 
@@ -285,7 +333,7 @@ export function getEditorContentAsMarkdown(): string {
     console.warn(" getEditorContentAsMarkdown: no view");
     return "";
   }
-  return prosemirrorToMarkdown(globalEditorView.state.doc);
+  return proseMirrorToMarkdown(globalEditorView.state.doc);
 }
 
 export async function saveEditorContentToDatabase() {

@@ -277,8 +277,8 @@ export const schema = new Schema({
             content: "text*",
         },
         table: {
-            group: "block flowContent",
-            content: "table_row+",
+            group: "flowContent",
+            content: "tableRow+",
             tableRole: "table",
             isolating: true,
             toDOM() {
@@ -286,15 +286,15 @@ export const schema = new Schema({
             },
             parseDOM: [{ tag: "table" }],
         },
-        table_row: {
-            content: "table_cell+",
+        tableRow: {
+            content: "tableCell+",
             tableRole: "row",
             toDOM() {
                 return ["tr", 0];
             },
             parseDOM: [{ tag: "tr" }],
         },
-        table_cell: {
+        tableCell: {
             content: "flowContent+",
             attrs: { style: { default: null } },
             tableRole: "cell",

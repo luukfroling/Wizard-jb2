@@ -1,21 +1,20 @@
 import { redo, undo } from "prosemirror-history";
 import {
-  blockquoteActive,
   decreaseIndent,
   increaseIndent,
   toggleBlockquote,
   toggleBold,
-  toggleInlineCode,
   toggleItalic,
   toggleStrikethrough,
   toggleSubscript,
   toggleSuperscript,
+  toggleCodeBlock,
 } from "./toolbar_commands";
-import { markActive } from "./toolbar_utils";
-import { useDispatchCommand, useEditorState } from "../Editor";
-import { ToolbarButton } from "./toolbar_components";
-import { createSignal, JSX } from "solid-js";
-import { Mark } from "prosemirror-model";
+import { copyFormatPainter, applyFormatPainter } from "./toolbar_utils";
+import { EditorContextType, useDispatchCommand } from "../../components/Editor";
+import { ToolbarButton } from "../../components/toolbar/ToolbarButton";
+import { JSX } from "solid-js";
+import { markActive, blockquoteActive } from "./toolbar_utils";
 import { EditorState, Transaction } from "prosemirror-state";
 
 function buttonValuesToJSXElement(buttonValues: {
@@ -34,6 +33,28 @@ function buttonValuesToJSXElement(buttonValues: {
   );
 }
 
+/**
+ * Collection of toolbar button JSX elements and a factory for creating them.
+ *
+ * - Each button (undo, redo, bold, etc.) is a JSX element configured with icon, label, click handler, and active state.
+ * - The `createButtons` function initializes all buttons using the current editor context.
+ *
+ * @property {JSX.Element} undoButton - Undo the last editor action.
+ * @property {JSX.Element} redoButton - Redo the last undone action.
+ * @property {JSX.Element} formatButton - Format Painter: copy or apply formatting.
+ * @property {JSX.Element} boldButton - Toggle bold formatting.
+ * @property {JSX.Element} italicsButton - Toggle italic formatting.
+ * @property {JSX.Element} strikeThroughButton - Toggle strikethrough formatting.
+ * @property {JSX.Element} superscriptButton - Toggle superscript formatting.
+ * @property {JSX.Element} subscriptButton - Toggle subscript formatting.
+ * @property {JSX.Element} indentButton - Increase indentation.
+ * @property {JSX.Element} outdentButton - Decrease indentation.
+ * @property {JSX.Element} quoteButton - Toggle blockquote.
+ * @property {JSX.Element} codeButton - Toggle code block.
+ * @method createButtons
+ *   @param {EditorContextType} ctx - The editor context providing state and actions.
+ *   @description Initializes all toolbar buttons with the current editor state and handlers.
+ */
 export const toolbarButtons: {
   undoButton?: JSX.Element;
   redoButton?: JSX.Element;
@@ -47,49 +68,25 @@ export const toolbarButtons: {
   outdentButton?: JSX.Element;
   quoteButton?: JSX.Element;
   codeButton?: JSX.Element;
-  createButtons: () => void;
+  createButtons: (ctx: EditorContextType) => void;
 } = {
-  createButtons() {
-    const editorStateAccessor = useEditorState();
+  createButtons(ctx: EditorContextType) {
+    const { state, formatPainter, setFormatPainter } = ctx;
     const dispatchCommand = useDispatchCommand();
-    const [formatMarks, setFormatMarks] = createSignal<Mark[] | null>(null);
 
     // Handles Format Painter button: copy or apply formatting
     function handleFormatPainter() {
-      const state = editorStateAccessor && editorStateAccessor();
-      if (!state) return;
+      const s = state();
+      if (!s) return;
 
-      if (!formatMarks()) {
-        // Copy: Save current marks at cursor or selection start
-        const marks = state.storedMarks || state.selection.$from.marks();
-        setFormatMarks(marks.length ? Array.from(marks) : null);
+      if (formatPainter() === null) {
+        setFormatPainter(copyFormatPainter(s));
       } else {
-        // Paste: Apply saved marks to selection or cursor
-        const marks = formatMarks();
-        if (!marks) return;
-        const { from, to, empty } = state.selection;
-        if (empty) {
-          // Set stored marks for next input
-          dispatchCommand(
-            (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-              if (dispatch) dispatch(state.tr.setStoredMarks(marks));
-              return true;
-            },
-          );
-        } else {
-          // Add marks to selection
-          dispatchCommand(
-            (state: EditorState, dispatch?: (tr: Transaction) => void) => {
-              let tr = state.tr;
-              marks.forEach((mark) => {
-                tr = tr.addMark(from, to, mark);
-              });
-              if (dispatch) dispatch(tr);
-              return true;
-            },
-          );
-        }
-        setFormatMarks(null);
+        dispatchCommand(
+          (state: EditorState, dispatch?: (tr: Transaction) => void) =>
+            applyFormatPainter(formatPainter(), state, dispatch),
+        );
+        setFormatPainter(null);
       }
     }
 
@@ -109,67 +106,37 @@ export const toolbarButtons: {
       icon: "bi-brush",
       label: "Format Painter",
       onClick: () => handleFormatPainter(),
-      active: () => !!formatMarks(),
+      active: () => formatPainter() !== null,
     });
     this.boldButton = buttonValuesToJSXElement({
       icon: "bi-type-bold",
       label: "Bold",
       onClick: () => dispatchCommand(toggleBold),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.strong,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.strong),
     });
     this.italicsButton = buttonValuesToJSXElement({
       icon: "bi-type-italic",
       label: "Italic",
       onClick: () => dispatchCommand(toggleItalic),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.emphasis,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.emphasis),
     });
     this.strikeThroughButton = buttonValuesToJSXElement({
       icon: "bi-type-strikethrough",
       label: "Strikethrough",
       onClick: () => dispatchCommand(toggleStrikethrough),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.strikethrough,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.strikethrough),
     });
     this.superscriptButton = buttonValuesToJSXElement({
       icon: "bi-superscript",
       label: "Superscript",
       onClick: () => dispatchCommand(toggleSuperscript),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.superscript,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.superscript),
     });
     this.subscriptButton = buttonValuesToJSXElement({
       icon: "bi-subscript",
       label: "Subscript",
       onClick: () => dispatchCommand(toggleSubscript),
-      active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.subscript,
-            )
-          : false,
+      active: () => markActive(state(), state().schema.marks.subscript),
     });
     this.indentButton = buttonValuesToJSXElement({
       icon: "bi-caret-right",
@@ -187,22 +154,15 @@ export const toolbarButtons: {
       icon: "bi-blockquote-left",
       label: "Blockquote",
       onClick: () => dispatchCommand(toggleBlockquote),
-      active: () =>
-        editorStateAccessor ? blockquoteActive(editorStateAccessor()) : false,
+      active: () => (state ? blockquoteActive(state()) : false),
     });
     this.codeButton = buttonValuesToJSXElement({
-      // Set the icon and label
       icon: "bi-code",
-      label: "Inline Code",
-      // When clicked toggle the inline code
-      onClick: () => dispatchCommand(toggleInlineCode),
-      // Use markActive to check if the mark is already active, from bold/italic
+      label: "Code Block",
+      onClick: () => dispatchCommand(toggleCodeBlock),
       active: () =>
-        editorStateAccessor
-          ? markActive(
-              editorStateAccessor(),
-              editorStateAccessor().schema.marks.code,
-            )
+        state
+          ? state().selection.$from.parent.type.name === "code_block"
           : false,
     });
   },

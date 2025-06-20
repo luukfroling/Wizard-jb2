@@ -5,30 +5,33 @@ export const [hintTooltip, setHintTooltip] = createSignal<{
   top: number;
   left: number;
   visible: boolean;
-  showLabel?: boolean;
-}>({ text: "", top: 0, left: 0, visible: false, showLabel: true });
+}>({ text: "", top: 0, left: 0, visible: false });
 
-export function showHintTooltip(
-  text: string,
-  top: number,
-  left: number,
-  showLabel = true,
-) {
-  setHintTooltip({ text, top, left, visible: true, showLabel });
+/**
+ * Shows the hint tooltip at the specified position with the given text.
+ * @param text - The tooltip text to display.
+ * @param top - The top position (in pixels) for the tooltip.
+ * @param left - The left position (in pixels) for the tooltip.
+ */
+export function showHintTooltip(text: string, top: number, left: number) {
+  setHintTooltip({ text, top, left, visible: true });
 }
 
 export function hideHintTooltip() {
   setHintTooltip((t) => ({ ...t, visible: false }));
 }
 
+/**
+ * Solid component that renders the floating hint tooltip.
+ */
 export function HintTooltip() {
-  // Hide on scroll
   window.addEventListener("scroll", hideHintTooltip);
   onCleanup(() => window.removeEventListener("scroll", hideHintTooltip));
 
   return (
     <Show when={hintTooltip().visible}>
       <div
+        class="hint-tooltip-popup"
         style={{
           position: "absolute",
           top: `${hintTooltip().top}px`,
@@ -37,43 +40,7 @@ export function HintTooltip() {
           "pointer-events": "none",
         }}
       >
-        {/* Black label (cover) */}
-        <Show when={hintTooltip().showLabel}>
-          <div
-            style={{
-              background: "#111",
-              color: "#fff",
-              "border-radius": "4px 4px 0 0",
-              padding: "2px 10px",
-              "font-size": "12px",
-              "font-weight": 600,
-              "margin-bottom": "0px",
-              "text-align": "center",
-              "box-shadow": "0 2px 8px 0 #0002",
-              "pointer-events": "none",
-              width: "100%",
-              "max-width": "260px",
-            }}
-          >
-            Editor usage hints
-          </div>
-        </Show>
-        <div
-          style={{
-            background: "#fff",
-            color: "#1a237e",
-            border: "1px solid #d7e1ff",
-            "border-radius": hintTooltip().showLabel ? "0 0 6px 6px" : "6px",
-            "box-shadow": "0 2px 8px 0 #d7e1ff55",
-            padding: "8px 14px",
-            "font-size": "13px",
-            "white-space": "pre-line",
-            "pointer-events": "none",
-            "max-width": "260px",
-          }}
-        >
-          {hintTooltip().text}
-        </div>
+        <div class="hint-tooltip">{hintTooltip().text}</div>
       </div>
     </Show>
   );

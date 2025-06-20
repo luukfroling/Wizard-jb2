@@ -1,6 +1,14 @@
 import { NodeView, EditorView } from "prosemirror-view";
 import { Node as ProseMirrorNode } from "prosemirror-model";
 
+/**
+ * NodeView for rendering and resizing images in the editor.
+ *
+ * - **Toolbar Integration:** Used automatically when an image is inserted via the toolbar.
+ * - **Functionality:** Renders an <img> with a resize handle. Users can drag to resize; the new width is saved in the document.
+ * - **Usage:** Register in your editor's nodeViews: `{ image: (node, view, getPos) => new ImageNodeView(node, view, getPos) }`
+ * - **Customization:** Change resize logic, add controls, or handle more attributes by editing this class.
+ */
 export class ImageNodeView implements NodeView {
     dom: HTMLElement;
     img: HTMLImageElement;
@@ -13,33 +21,16 @@ export class ImageNodeView implements NodeView {
 
         this.dom = document.createElement("span");
         this.dom.className = "image-node";
-        this.dom.style.display = "inline-block";
-        this.dom.style.position = "relative";
 
         this.img = document.createElement("img");
         this.img.src = node.attrs.url;
         this.img.alt = node.attrs.alt || "";
         this.img.title = node.attrs.title || "";
         this.img.style.width = node.attrs.width || "50%";
-        this.img.style.maxWidth = "100%";
-        this.img.style.height = "auto";
-        this.img.style.display = "block";
-        this.img.style.cursor = "pointer";
         this.dom.appendChild(this.img);
 
-        // Create resize handle
         const handle = document.createElement("div");
         handle.className = "resize-handle";
-        handle.style.position = "absolute";
-        handle.style.right = "0";
-        handle.style.bottom = "0";
-        handle.style.width = "12px";
-        handle.style.height = "12px";
-        handle.style.background = "#1976d2";
-        handle.style.cursor = "nwse-resize";
-        handle.style.borderRadius = "50%";
-        handle.style.zIndex = "10";
-        handle.style.display = "none";
         this.dom.appendChild(handle);
 
         this.img.addEventListener("click", (e) => {
@@ -69,7 +60,6 @@ export class ImageNodeView implements NodeView {
             const onMouseUp = (_upEvent: MouseEvent) => {
                 document.removeEventListener("mousemove", onMouseMove);
                 document.removeEventListener("mouseup", onMouseUp);
-                // Save new width to node attribute
                 const pos = this.getPos();
                 const node = this.view.state.doc.nodeAt(pos);
                 if (node) {
@@ -91,6 +81,10 @@ export class ImageNodeView implements NodeView {
         });
     }
 
+    /**
+     * Updates the DOM to reflect the latest node attributes.
+     * Called automatically by ProseMirror when the node is updated.
+     */
     update(node: ProseMirrorNode) {
         this.img.src = node.attrs.url;
         this.img.alt = node.attrs.alt || "";

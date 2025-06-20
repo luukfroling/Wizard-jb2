@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { showModal } from "../popups/popup_modal"; // <-- import showModal
 
 type Props = {
   onTokenSet: (token: string) => Promise<boolean> | boolean;
@@ -21,6 +22,57 @@ export const GitHubTokenInput = (props: Props) => {
         setError("The token was invalid. Please try again.");
       }
     }
+  };
+
+  // Instructions for creating a fine-grained PAT
+  const handleShowInstructions = () => {
+    showModal(
+      <div style={{ color: "#000" }}>
+        <h2 style={{ color: "#000" }}>
+          How to Create a GitHub Fine-Grained Personal Access Token
+        </h2>
+        <ol
+          style={{ color: "#000", "text-align": "left", "margin-left": "1em" }}
+        >
+          <li>
+            Click{" "}
+            <a
+              href="https://github.com/settings/personal-access-tokens/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-blue-600 underline text-sm"
+            >
+              here
+            </a>{" "}
+            to open the token creation menu.
+          </li>
+          <li>
+            <b>Name</b> your token and set an <b>expiration</b> if desired.
+          </li>
+          <li>
+            Under <b>Resource owner</b>, select <b>Your account</b>, if it was
+            not already preselected.
+          </li>
+          <li>
+            Under <b>Repository access</b>, choose <b>All repositories</b>.
+          </li>
+          <li>
+            Under <b>Repository permissions</b>, set <b>Contents</b> to{" "}
+            <b>Read and write</b>.
+          </li>
+          <li>
+            Scroll down and click <b>Generate token</b>.
+          </li>
+          <li>
+            <b>Copy</b> the token and paste it here.
+          </li>
+        </ol>
+        <div style={{ "font-size": "0.95em", color: "#b91c1c" }}>
+          <b>Note:</b> This token will not be visible again. If you want to use
+          it more, save it somewhere.
+        </div>
+      </div>,
+    );
   };
 
   return (
@@ -60,14 +112,15 @@ export const GitHubTokenInput = (props: Props) => {
         </a>
       </div>
       <div class="mt-2 text-left w-full max-w-md">
-        <a
-          href="localhost:3000"
-          target="_blank"
-          rel="noopener noreferrer"
+        <span
+          onClick={handleShowInstructions}
           class="text-blue-600 underline text-sm"
+          style={{ "text-align": "left" }}
+          role="button"
+          tabindex={0}
         >
           How to create an access token?
-        </a>
+        </span>
       </div>
     </div>
   );

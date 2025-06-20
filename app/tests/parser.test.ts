@@ -2,19 +2,19 @@ import { describe, expect, it } from "vitest";
 import { parseMyst } from "../src/lib/parser";
 import { Node } from "prosemirror-model";
 import { schema } from "../src/lib/schema";
-import { EXAMPLE_1 } from "./parser_constants";
-import { prosemirrorToMarkdown } from "../src/lib/parser/to_markdown";
+import { EXAMPLE_1, EXAMPLE_2 } from "./parser_constants";
+import { proseMirrorToMarkdown } from "../src/lib/parser";
 
 describe("Markdown parser", () => {
-    async function parse(myst: string) {
-        const parsed = await parseMyst(myst);
+    function parse(myst: string) {
+        const parsed = parseMyst(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.type.name).toBe("root");
         expect(parsed.children).toHaveLength(1);
         return parsed.children[0];
     }
     it("parses a basic paragraph", async () => {
-        const parsed = await parse("Hello, world!");
+        const parsed = parse("Hello, world!");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         expect(parsed.children[0]).toBeInstanceOf(Node);
@@ -30,7 +30,7 @@ describe("Markdown parser", () => {
     ])(
         "parses a heading level $level and paragraph",
         async ({ heading, level }) => {
-            const parsed = await parse(
+            const parsed = parse(
                 heading + " Hello, world!\n\nNice to see you!",
             );
             expect(parsed).toBeInstanceOf(Node);
@@ -41,14 +41,14 @@ describe("Markdown parser", () => {
         },
     );
     it("parses thematic break", async () => {
-        const parsed = await parse("Paragraph 1\n\n---\n\nParagraph 2");
+        const parsed = parse("Paragraph 1\n\n---\n\nParagraph 2");
 
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(3);
         expect(parsed.children[1].type.name).toBe("thematicBreak");
     });
     it.for([1, 2, 3])("parses blockquote nested %i times", async (nesting) => {
-        const parsed = await parse("> ".repeat(nesting) + "Hello world");
+        const parsed = parse("> ".repeat(nesting) + "Hello world");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         let node = parsed.children[0];
@@ -61,7 +61,7 @@ describe("Markdown parser", () => {
         expect(node.textContent).toBe("Hello world");
     });
     it("parses a list", async () => {
-        const parsed = await parse("- item 1\n- item 2\n- item 3");
+        const parsed = parse("- item 1\n- item 2\n- item 3");
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         expect(parsed.children[0].type.name).toBe("list");
@@ -72,7 +72,7 @@ describe("Markdown parser", () => {
         }
     });
     it("parses a code block", async () => {
-        const parsed = await parse(
+        const parsed = parse(
             "```javascript\nconsole.log('Hello, world!');\n```",
         );
         expect(parsed).toBeInstanceOf(Node);
@@ -111,7 +111,7 @@ describe("Markdown parser", () => {
             value: ":key: value\n\nHello world!",
         },
     ])("parses directive $name", async ({ myst, args, value, name }) => {
-        const parsed = await parse(myst);
+        const parsed = parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         const node = parsed.children[0];
@@ -132,7 +132,7 @@ describe("Markdown parser", () => {
             title: "Hello",
         },
     ])("parses admonition kind $kind", async ({ myst, kind, title }) => {
-        const parsed = await parse(myst);
+        const parsed = parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         const admonition = parsed.children[0];
@@ -147,7 +147,7 @@ describe("Markdown parser", () => {
     it("parses reference-style link", async () => {
         const myst =
             "[TeachBooks][teachbooks]\n\n[teachbooks]: https://teachbooks.io";
-        const parsed = await parse(myst);
+        const parsed = parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
 
@@ -190,7 +190,7 @@ describe("Markdown parser", () => {
             marks: [["strong", "link"], ["link"]],
         },
     ])("parses marks $marks", async ({ myst, marks }) => {
-        const parsed = await parse(myst);
+        const parsed = parse(myst);
         expect(parsed).toBeInstanceOf(Node);
         expect(parsed.children).toHaveLength(1);
         const paragraph = parsed.children[0];
@@ -205,35 +205,40 @@ describe("Markdown parser", () => {
             myst: EXAMPLE_1,
             desc: "example_1",
         },
-        // {
-        //     myst: EXAMPLE_2,
-        //     desc: "example_2",
-        // },
+        {
+            myst: EXAMPLE_2,
+            desc: "example_2",
+        },
     ];
 
-    it.for(MYST_DOCUMENTS)("parses document $desc", async ({ myst, desc }) => {
-        const parsed = await parse(myst);
-        const json = parsed.toJSON();
+    it.for(MYST_DOCUMENTS)(
+        "parses document $desc",
+        async ({ myst, desc }, { skip }) => {
+            const parsed = parse(myst);
+            const json = parsed.toJSON();
 
-        expect(json).toMatchFileSnapshot(`./snapshot/parse_${desc}.json`);
-    });
+            // FIXME: MyST stuff changes every time this runs, so snapshot test doesn't work
+            if (desc === "example_2") skip();
+            expect(json).toMatchFileSnapshot(`./snapshot/parse_${desc}.json`);
+        },
+    );
 
     it.for(MYST_DOCUMENTS)("round-trips $desc", async ({ myst }) => {
         // We round-trip twice, because
         // However, this does not catch details lost in the conversion...
         // The problem is, if we miss something in the AST
-        const parsed = await parse(myst);
-        const convertedBack = prosemirrorToMarkdown(parsed);
-        const parsed2 = await parse(convertedBack);
-        const roundtrip = prosemirrorToMarkdown(parsed2);
+        const parsed = parse(myst);
+        const convertedBack = proseMirrorToMarkdown(parsed);
+        const parsed2 = parse(convertedBack);
+        const roundtrip = proseMirrorToMarkdown(parsed2);
         expect(roundtrip).toEqual(convertedBack);
     });
 });
 
 describe("Markdown → ProseMirror → Markdown", () => {
     // first, re-use your existing helper
-    async function parseParagraph(myst: string): Promise<Node> {
-        const root = await parseMyst(myst);
+    function parseParagraph(myst: string): Node {
+        const root = parseMyst(myst);
         expect(root.type.name).toBe("root");
         expect(root.childCount).toBe(1);
         return root.firstChild!;
@@ -282,10 +287,10 @@ describe("Markdown → ProseMirror → Markdown", () => {
 
     it.for(cases)("round-trips $name", async ({ myst }) => {
         // 1. Parse the MYST into a ProseMirror paragraph Node
-        const pmPara = await parseParagraph(myst);
+        const pmPara = parseParagraph(myst);
 
         // 2. Convert that PM AST back to Markdown
-        const md = prosemirrorToMarkdown(pmPara);
+        const md = proseMirrorToMarkdown(pmPara);
 
         // 3. It should match the original myst
         expect(md.trim()).toBe("+++\n" + myst);

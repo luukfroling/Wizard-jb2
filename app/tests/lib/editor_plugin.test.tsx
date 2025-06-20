@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { EditorState, Plugin, TextSelection } from "prosemirror-state";
 import { schema } from "../../src/lib/schema";
-import { preserveMarksPlugin } from "../../src/components/toolbar/editor_plugins";
+import { preserveMarksPlugin } from "../../src/lib/toolbar/editor_plugins";
 
 // --- Helper to create editor state with bold mark ---
 function createStateWithBoldMark(

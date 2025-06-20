@@ -1,54 +1,65 @@
-import { Component } from "solid-js";
+import { Component, useContext } from "solid-js";
 import "prosemirror-view/style/prosemirror.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import { ToolbarSeparator } from "./toolbar_components";
-import { toolbarButtons } from "./toolbar_buttons";
-import { toolbarDropdowns } from "./toolbar_dropdowns";
+import { editorContext } from "../Editor";
+import { toolbarButtons } from "../../lib/toolbar/toolbar_buttons";
+import { toolbarDropdowns } from "../../lib/toolbar/toolbar_dropdowns";
 import { GitHubDropdown } from "../github/GitHubDropdown";
-import { ToolbarHintButton } from "./toolbar_components";
+import { ToolbarHintButton } from "./ToolbarHintButton";
 import { BranchDropdown } from "../github/BranchDropdown";
 
 // --- Main Toolbar Component ---
 // The main toolbar with all formatting and insert controls
 export const Toolbar: Component = () => {
-  // Initialise all toolbar elements
-  toolbarButtons.createButtons();
-  toolbarDropdowns.createDropdowns();
+  const ctx = useContext(editorContext);
+
+  // Pass context state/handlers to buttons/dropdowns
+  if (ctx) {
+    toolbarButtons.createButtons(ctx);
+    toolbarDropdowns.createDropdowns(ctx);
+  }
 
   // --- Render Toolbar ---
   return (
     <div
-      class="d-flex align-items-center p-2 bg-light border-bottom flex-wrap"
+      class="d-flex align-items-center p-2 border-bottom flex-wrap"
       style={{
         position: "sticky",
         top: "48px",
         "z-index": 100,
-        background: "#fff",
+        background: "var(--toolbar-bg)",
       }}
     >
       {toolbarButtons.undoButton}
       {toolbarButtons.redoButton}
-      <ToolbarSeparator />
+      <div class="toolbar-separator" />
       {toolbarButtons.formatButton}
-      <ToolbarSeparator />
+      <div class="toolbar-separator" />
       {toolbarButtons.boldButton}
       {toolbarButtons.italicsButton}
       {toolbarButtons.strikeThroughButton}
       {toolbarButtons.superscriptButton}
       {toolbarButtons.subscriptButton}
-      <ToolbarSeparator />
+      <div class="toolbar-separator" />
       {toolbarDropdowns.headerDropdown}
-      <ToolbarSeparator />
+      <div class="toolbar-separator" />
       {toolbarDropdowns.listDropdown}
       {toolbarButtons.indentButton}
       {toolbarButtons.outdentButton}
       {toolbarButtons.quoteButton}
       {toolbarButtons.codeButton}
-      <ToolbarSeparator />
+      <div class="toolbar-separator" />
       {toolbarDropdowns.insertDropdown}
-      <ToolbarSeparator />
-      <ToolbarHintButton />
+      <div class="toolbar-separator" />
+      <ToolbarHintButton
+        label="Editor usage hints"
+        hint={`Ctrl + Enter: Exit table in new line
+          Ctrl + Enter: Exit quote/codeblock
+          Double click math: Edit inline
+          Ctrl + Backspace: Delete math equation
+          Ctrl + Backspace: Delete codeblock`}
+      />
       <div class="ms-auto d-flex align-items-right">
         <BranchDropdown />
         <GitHubDropdown />
