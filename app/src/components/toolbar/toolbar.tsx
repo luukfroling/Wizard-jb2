@@ -23,12 +23,12 @@ export const Toolbar: Component = () => {
   // --- Render Toolbar ---
   return (
     <div
-      class="d-flex align-items-center p-2 bg-light border-bottom flex-wrap"
+      class="d-flex align-items-center p-2 border-bottom flex-wrap"
       style={{
         position: "sticky",
         top: "48px",
         "z-index": 100,
-        background: "#fff",
+        background: "var(--toolbar-bg)",
       }}
     >
       {toolbarButtons.undoButton}
