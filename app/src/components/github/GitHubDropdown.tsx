@@ -16,7 +16,8 @@ export const GitHubDropdown = () => {
         aria-expanded={open()}
       >
         <i class="bi bi-github fs-5" />
-        <span class="ms-2">GitHub</span>
+        {/* Remove or comment out the span below */}
+        {/* <span class="ms-2">GitHub</span> */}
       </button>
       <div
         class={`dropdown-menu dropdown-menu-end p-3${open() ? " show" : ""}`}

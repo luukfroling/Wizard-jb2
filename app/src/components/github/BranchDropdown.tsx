@@ -94,17 +94,23 @@ export const BranchDropdown: Component = () => {
   return (
     <div class="dropdown me-2">
       <button
-        class="btn btn-outline-secondary border-0 dropdown-toggle d-flex align-items-center"
+        class="btn btn-sm dropdown-toggle d-flex align-items-center px-1"
         type="button"
         id="branchDropdown"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        style={{
+          "min-width": "unset",
+          padding: "2px 6px",
+          "font-size": "0.95em",
+          height: "28px",
+          "line-height": "1",
+        }}
       >
-        <i
-          class="bi bi-git"
-          style={{ "font-size": "1.2em", "margin-right": "0.5em" }}
-        />
-        <span>{github.getBranch()}</span>
+        <i class="bi bi-git" style={{ "font-size": "1.1em", "margin-right": "0.3em" }} />
+        <span style={{ "max-width": "80px", overflow: "hidden", "text-overflow": "ellipsis", "white-space": "nowrap" }}>
+          {github.getBranch()}
+        </span>
       </button>
       <ul
         class="dropdown-menu p-2"

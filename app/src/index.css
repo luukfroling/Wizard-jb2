@@ -1,6 +1,7 @@
 /* === CSS Variables === */
 :root {
   --accent: #d7e1ff;
+  --toolbar-bg: #fff;
   --accent-dark: #1a237e;
   --button-bg: #fff;
   --button-fg: #212529;
@@ -179,7 +180,7 @@ a {
   width: 1px;
   height: 18px;
   background: var(--accent);
-  margin: 0 4px;
+  margin: 0 2px;
 }
 
 /* === Toolbar Icon === */
