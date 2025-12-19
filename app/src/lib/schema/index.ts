@@ -201,13 +201,13 @@ export const schema = new Schema({
         unsupported_block: {
             attrs: {
                 myst: { default: null },
-                editable: { default: false },
+                editable: { default: true }, // Changed to true
             },
             toDOM(_node) {
-                return ["pre", { class: `unsupported_block` }, ["code", 0]];
+                return ["pre", { class: `unsupported_block`, style: "border: 1px solid orange; padding: 5px;" }, ["code", 0]];
             },
             group: "flowContent",
-            content: "text*",
+            content: "flowContent*", // Changed from text* to flowContent*
         },
         target: {
             attrs: { label: string() },
@@ -221,9 +221,9 @@ export const schema = new Schema({
             attrs: { name: string(), args: string(), value: string() },
             group: "flowContent",
             toDOM(node) {
-                return ["div", { "data-directive": node.attrs.name }, 0];
+                return ["div", { "data-directive": node.attrs.name, class: "directive-node" }, 0];
             },
-            content: "flowContent*",
+            content: "(block | flowContent | text)*", // Loosened content rules
         },
         admonition: {
             attrs: {
