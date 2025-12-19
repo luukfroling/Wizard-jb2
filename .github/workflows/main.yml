@@ -1,44 +1,55 @@
-name: Deploy Wizard to Pages
+name: Deploy Vite App to Pages
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    # This tells EVERY step to start inside the app folder
     defaults:
       run:
-        working-directory: ./app 
-
+        working-directory: ./app
     steps:
-      - name: Checkout 🛎️
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install pnpm 📦
+      - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
 
-      - name: Setup Node 🏗️
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # We check for the lockfile specifically in the app folder
+          cache: 'pnpm'
           cache-dependency-path: ./app/pnpm-lock.yaml
 
-      - name: Install dependencies 🛠️
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Build App 🚀
+      - name: Build
         run: pnpm build
 
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: app/dist # JamesIves action ignores 'working-directory', so keep the prefix
-          branch: gh-pages
+          path: ./app/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
