@@ -219,17 +219,17 @@ export const schema = new Schema({
         },
         directive: {
             attrs: { 
-                name: string(), 
-                args: string({ default: "" }), 
-                value: string({ default: "" }) 
+                name: { default: "" }, 
+                args: { default: "" }, 
+                value: { default: "" } 
             },
-            group: "flowContent",
-            // Remove "| text". The flowContent (paragraphs) will hold the text.
-            content: "flowContent*", 
+            group: "block",
+            // This is the "magic" line: allow flowContent OR raw text fallback
+            content: "(flowContent | text)*", 
             toDOM(node) {
                 return ["div", { 
                     "data-directive": node.attrs.name, 
-                    class: "directive-node" 
+                    class: "myst-directive unknown-directive" 
                 }, 0];
             },
         },
