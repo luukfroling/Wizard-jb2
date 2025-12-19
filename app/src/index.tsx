@@ -8,6 +8,7 @@ import {
   getRepositoryLink,
   getCurrentFileHref,
   parseOwnerRepoFromHref,
+  setCurrentFileHref, // <--- Add this line
 } from "./lib/github/GithubUtility";
 import { github } from "./lib/github/githubInteraction";
 import { saveEditorContentToDatabase } from "./components/Editor";
