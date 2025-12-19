@@ -1,0 +1,38 @@
+name: Deploy Wizard to Pages
+
+on:
+  push:
+    branches: [main]  # Runs every time you commit to main
+
+permissions:
+  contents: write    # Allows the action to write to the gh-pages branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      - name: Install pnpm 📦
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node 🏗️
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies 🛠️
+        run: pnpm install
+
+      - name: Build App 🚀
+        run: pnpm --filter app build
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: app/dist # This is where the build files live
+          branch: gh-pages # This is the branch GitHub Pages will serve
