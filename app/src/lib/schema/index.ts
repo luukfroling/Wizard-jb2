@@ -218,12 +218,20 @@ export const schema = new Schema({
             content: "text*",
         },
         directive: {
-            attrs: { name: string(), args: string(), value: string() },
-            group: "flowContent",
-            toDOM(node) {
-                return ["div", { "data-directive": node.attrs.name, class: "directive-node" }, 0];
+            attrs: { 
+                name: string(), 
+                args: string({ default: "" }), 
+                value: string({ default: "" }) 
             },
-            content: "(block | flowContent | text)*", // Loosened content rules
+            group: "flowContent",
+            // Remove "| text". The flowContent (paragraphs) will hold the text.
+            content: "flowContent*", 
+            toDOM(node) {
+                return ["div", { 
+                    "data-directive": node.attrs.name, 
+                    class: "directive-node" 
+                }, 0];
+            },
         },
         admonition: {
             attrs: {
