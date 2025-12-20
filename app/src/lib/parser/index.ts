@@ -8,6 +8,7 @@ export {
 } from "./prosemirror_to_myst";
 
 export function parseMyst(source: string): Node {
+    console.log("PASSING MYST!!!!")
     const parsed = parseToMystAST(source);
     return mystToProseMirror(parsed);
 }
