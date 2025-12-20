@@ -95,6 +95,7 @@ const _validateStore = (store: string): void => {
  * @property {Promise<IDBPDatabase> | null} dbPromise - Lazily initialised promise resolving to the IDB database.
  */
 export const database = {
+
     /** Lazy-initialized promise for the IndexedDB connection. */
     dbPromise: null as Promise<IDBPDatabase> | null,
 
@@ -112,8 +113,6 @@ export const database = {
      * @throws Will throw if the active repo hasn't been set.
      */
     async getDB(checkInit: boolean = true): Promise<IDBPDatabase> {
-        // KILL SWITCH: Prevent any DB interaction
-        throw new Error("Database is currently disabled.");
         if (checkInit) {
             if (!this.isInitialised()) {
                 throw new Error(
