@@ -27,6 +27,8 @@ const pRepo   = urlParams.get('repo');
 const pFile   = urlParams.get('file'); // e.g., "content/intro.md"
 const pBranch = urlParams.get('branch') || "main";
 
+console.log("[wizard] Params:", {pOwner, pRepo, pFile, pBranch});
+
 // 2. Initialize the GitHub state
 if (pOwner && pRepo) {
     // Set the core repository info

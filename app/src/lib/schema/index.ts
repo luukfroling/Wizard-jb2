@@ -53,7 +53,6 @@ export const schema = new Schema({
             },
         },
         heading: {
-            defining: true,
             content: "phrasingContent*",
             marks: "_",
             attrs: {
