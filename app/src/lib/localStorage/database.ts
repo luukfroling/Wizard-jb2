@@ -112,6 +112,8 @@ export const database = {
      * @throws Will throw if the active repo hasn't been set.
      */
     async getDB(checkInit: boolean = true): Promise<IDBPDatabase> {
+        // KILL SWITCH: Prevent any DB interaction
+        throw new Error("Database is currently disabled.");
         if (checkInit) {
             if (!this.isInitialised()) {
                 throw new Error(
