@@ -33,14 +33,14 @@ import type {
 import type { GenericNode, GenericParent } from "myst-common";
 import { Mark, Node } from "prosemirror-model";
 import { Aside, CaptionNumber, Delete } from "myst-spec-ext";
-import { parseToMystAST } from "./parse_myst";
+// import { parseToMystAST } from "./parse_myst";
 
 /** Parse raw MyST into a ProseMirror document.
  */
-export function parseMyst(source: string): Node {
-    const parsed = parseToMystAST(source);
-    return mystToProseMirror(parsed);
-}
+// export function parseMyst(source: string): Node {
+//     const parsed = parseToMystAST(source);
+//     return mystToProseMirror(parsed);
+// }
 
 /** Parse MyST abstract syntax tree into a ProseMirror document.
  */
@@ -52,6 +52,7 @@ export function mystToProseMirror(myst: GenericParent): Node {
             throw new TypeError("Final parse result should not be array");
         }
         console.log("Standard successful.", res);
+        console.log("HELLO TEST")
         return res;
     } catch (e) {
         if (e instanceof RangeError && e.message.includes("Invalid content")) {
