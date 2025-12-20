@@ -200,6 +200,12 @@ const handlers = {
             ),
             schema.text(node.value),
         ),
+    iframe: (node: any) => 
+        schema.node(
+            "paragraph", 
+            {}, 
+            [schema.text("this is an iframe")]
+        ),
     inlineCode: (node: { value: string }) =>
         schema.text(node.value, [schema.mark("code")]),
     table: (node: Table, safe: boolean) =>

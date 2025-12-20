@@ -2,7 +2,9 @@
 
 - changed app/index.tsx so we can use the page in an iframe. Necessary arguments are being passed via the url. => owner, repo, file. 
 
+- hunting this bug `Uncaught (in promise) RangeError: Invalid content for node block: <heading("hello"), paragraph("this is another test") `
 
+- error is somewhere in transformAst function in myst_to_prosemirror.ts
 
 ![coverage](https://gitlab.ewi.tudelft.nl/cse2000-software-project/2024-2025/cluster-j/10c/10c/badges/main/coverage.svg)
 # Editor for TeachBooks
