@@ -11,10 +11,8 @@ import { HintTooltip } from "./components/toolbar/HintTooltip";
  * [SolidJS]: https://docs.solidjs.com
  */
 // Base styles for typography and layout
-import "@myst-theme/styles/dist/index.css";
+import "@myst-theme/styles";
 
-// Specific styles for admonitions (the boxes, icons, and colors)
-import "@myst-theme/styles/dist/admonitions.css";
 import { mystToHtml } from 'myst-to-html';
 
 const node = {
