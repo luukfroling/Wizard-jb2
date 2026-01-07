@@ -256,7 +256,7 @@ export const schema = new Schema({
                     class: `admonition ${kind}`,
                     style: `
                     background-color: ${CONTENT_BG}; 
-                    border-left: 6px solid ${colors.border}; 
+                    border-left: .2rem solid ${colors.border}; 
                     --title-bg: ${colors.titleBg};
                     border-radius: 4px;
                     margin: 1.5em 0;
