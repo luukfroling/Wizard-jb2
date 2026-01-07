@@ -8,7 +8,7 @@ const ADMONITION_SETTINGS: Record<string, { border: string; titleBg: string;}> =
   important: { border: "rgb(59, 130, 246)", titleBg: "rgb(239, 246, 255)"},
   tip:       { border: "rgb(22, 163, 74)", titleBg: "rgb(240, 253, 244)"},
   hint:      { border: "rgb(22, 163, 74)", titleBg: "rgb(240, 253, 244)"},
-  warning:   { border: "rgb(217, 119, 6)", titleBg: "#ffb74d"},
+  warning:   { border: "rgb(217, 119, 6)", titleBg: "rgb(255, 251, 235)"},
   danger:    { border: "rgb(220, 38, 38)", titleBg: "rgb(254, 242, 242)"},
   default:   { border: "#607d8b", titleBg: "#90a4ae"},
 };
