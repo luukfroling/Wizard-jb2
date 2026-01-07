@@ -2,6 +2,17 @@
 import { Schema, Mark } from "prosemirror-model";
 import { boolean, integer, oneOf, string } from "./utils";
 
+const ADMONITION_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
+  note: { bg: "#e3f2fd", border: "#2196f3", accent: "#1976d2" },
+  warning: { bg: "#fff3e0", border: "#ff9800", accent: "#ef6c00" },
+  danger: { bg: "#ffebee", border: "#f44336", accent: "#c62828" },
+  tip: { bg: "#e8f5e9", border: "#4caf50", accent: "#2e7d32" },
+  important: { bg: "#f3e5f5", border: "#9c27b0", accent: "#7b1fa2" },
+  // Fallback for unknown types
+  default: { bg: "#f5f5f5", border: "#9e9e9e", accent: "#616161" }
+};
+
+
 export const schema = new Schema({
     nodes: {
         root: {
@@ -224,70 +235,61 @@ export const schema = new Schema({
             },
             content: "flowContent*",
         },
+        
+        // In your schema definition:
         admonition: {
             attrs: {
-                kind: oneOf({
-                    values: [
-                        "attention",
-                        "caution",
-                        "danger",
-                        "error",
-                        "hint",
-                        "important",
-                        "note",
-                        "seealso",
-                        "tip",
-                        "warning",
-                        "topic", // <-- add "topic" if needed
-                    ] as const,
-                }),
-                class: string(),
+                kind: { default: "note" },
+                class: { default: "" },
             },
             group: "flowContent",
-            // This ensures the title is always the first child if it exists
-            content: "admonitionTitle? flowContent*", 
-            
+            content: "admonitionTitle? flowContent*",
             toDOM(node) {
+                const kind = node.attrs.kind || "note";
+                const colors = ADMONITION_COLORS[kind] || ADMONITION_COLORS.default;
+
                 return [
                 "div",
                 {
-                    class: `admonition ${node.attrs.kind}`,
+                    class: `admonition ${kind}`,
                     style: `
-                    background-color: #ffebee; 
-                    border: 2px solid red; 
-                    border-radius: 4px;
+                    background-color: ${colors.bg}; 
+                    border: 2px solid ${colors.border}; 
+                    border-radius: 6px;
                     margin: 1em 0;
-                    padding: 0; /* Let the children handle internal padding */
                     overflow: hidden;
                     display: block;
                     `,
                 },
-                0, // This is where admonitionTitle and flowContent will be rendered
+                0,
                 ];
             },
         },
 
         admonitionTitle: {
             content: "text*",
-            // The title is "inside" because it's rendered into the '0' hole above
-            toDOM() {
+            toDOM(node) {
+                // We need to look at the parent node to get the color, 
+                // but in ProseMirror toDOM, we usually style the title based on CSS classes
+                // or just use a generic "strong" look.
                 return [
                 "div",
                 {
                     class: "admonition-title",
                     style: `
-                    background-color: red;
-                    color: white;
-                    padding: 4px 12px;
+                    padding: 6px 12px;
                     font-weight: bold;
-                    text-transform: uppercase;
-                    font-size: 0.8em;
+                    border-bottom: 1px solid rgba(0,0,0,0.05);
+                    /* We can use a CSS variable or a default dark color */
+                    color: #333; 
+                    font-size: 0.9em;
                     `,
                 },
-                0, // This is where the actual title text goes
+                0,
                 ];
             },
         },
+
         container: {
             attrs: { kind: oneOf({ values: ["figure", "table"] as const }) },
             group: "flowContent",
