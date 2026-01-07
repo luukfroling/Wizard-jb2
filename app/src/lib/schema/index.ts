@@ -244,8 +244,8 @@ export const schema = new Schema({
                 kind: { default: "note" },
                 class: { default: "" },
             },
-            group: "flowContent",
             content: "admonitionTitle? admonitionContent",
+            group: "block",
             toDOM(node) {
                 const kind = node.attrs.kind || "note";
                 const colors = ADMONITION_SETTINGS[kind] || ADMONITION_SETTINGS.default;
