@@ -268,7 +268,7 @@ export const schema = new Schema({
         },
 
         admonitionTitle: {
-            content: "inline*",
+            content: "text*",
             // The title is "inside" because it's rendered into the '0' hole above
             toDOM() {
                 return [
