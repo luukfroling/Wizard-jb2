@@ -5,9 +5,9 @@ import { boolean, integer, oneOf, string } from "./utils";
 const ADMONITION_SETTINGS: Record<string, { border: string; titleBg: string;}> = {
   // We use the border color, and a titleBg that is much closer to it
   note:      { border: "rgb(59, 130, 246)", titleBg: "rgb(239, 246, 255)"},
-  tip:       { border: "#4caf50", titleBg: "#81c784"},
-  hint:      { border: "#4caf50", titleBg: "#81c784"},
-  important: { border: "#9c27b0", titleBg: "#ba68c8"},
+  important: { border: "rgb(59, 130, 246)", titleBg: "rgb(239, 246, 255)"},
+  tip:       { border: "rgb(22, 163, 74)", titleBg: "rgb(240, 253, 244)"},
+  hint:      { border: "rgb(22, 163, 74)", titleBg: "rgb(240, 253, 244)"},
   warning:   { border: "#ff9800", titleBg: "#ffb74d"},
   danger:    { border: "#f44336", titleBg: "#e57373"},
   default:   { border: "#607d8b", titleBg: "#90a4ae"},
