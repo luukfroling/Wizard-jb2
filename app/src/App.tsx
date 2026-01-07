@@ -11,21 +11,6 @@ import { HintTooltip } from "./components/toolbar/HintTooltip";
  * [SolidJS]: https://docs.solidjs.com
  */
 // Base styles for typography and layout
-import "@myst-theme/styles";
-
-import { mystToHtml } from 'myst-to-html';
-
-const node = {
-  type: 'admonition',
-  kind: 'warning',
-  children: [
-    { type: 'admonitionTitle', children: [{ type: 'text', value: 'Heads Up!' }] },
-    { type: 'paragraph', children: [{ type: 'text', value: 'This is the content.' }] }
-  ]
-};
-
-const html = mystToHtml(node);
-console.log(html);
 
 export default function App() {
   return (

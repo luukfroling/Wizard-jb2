@@ -251,21 +251,21 @@ export const schema = new Schema({
                 const colors = ADMONITION_SETTINGS[kind] || ADMONITION_SETTINGS.default;
 
                 return [
-                "aside",
+                "div",
                 {
                     class: `admonition ${kind}`,
-                    // style: `
-                    // background-color: ${CONTENT_BG}; 
-                    // border-left: 6px solid ${colors.border}; 
-                    // --title-bg: ${colors.titleBg};
-                    // border-radius: 4px;
-                    // margin: 1.5em 0;
-                    // overflow: hidden;
-                    // display: block;
-                    // border-top: 1px solid rgba(0,0,0,0.05);
-                    // border-right: 1px solid rgba(0,0,0,0.05);
-                    // border-bottom: 1px solid rgba(0,0,0,0.05);
-                    // `,
+                    style: `
+                    background-color: ${CONTENT_BG}; 
+                    border-left: 6px solid ${colors.border}; 
+                    --title-bg: ${colors.titleBg};
+                    border-radius: 4px;
+                    margin: 1.5em 0;
+                    overflow: hidden;
+                    display: block;
+                    border-top: 1px solid rgba(0,0,0,0.05);
+                    border-right: 1px solid rgba(0,0,0,0.05);
+                    border-bottom: 1px solid rgba(0,0,0,0.05);
+                    `,
                 },
                 0,
                 ];
@@ -279,15 +279,15 @@ export const schema = new Schema({
                 "div",
                 {
                     class: "admonition-title",
-                    // style: `
-                    // padding: 8px 12px;
-                    // font-weight: 700;
-                    // background-color: var(--title-bg);
-                    // color: var(--title-text);
-                    // font-size: 0.85rem;
-                    // display: block;
-                    // letter-spacing: 0.02em;
-                    // `,
+                    style: `
+                    padding: 8px 12px;
+                    font-weight: 700;
+                    background-color: var(--title-bg);
+                    color: var(--title-text);
+                    font-size: 0.85rem;
+                    display: block;
+                    letter-spacing: 0.02em;
+                    `,
                 },
                 0,
                 ];
