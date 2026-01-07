@@ -8,8 +8,8 @@ const ADMONITION_SETTINGS: Record<string, { border: string; titleBg: string;}> =
   important: { border: "rgb(59, 130, 246)", titleBg: "rgb(239, 246, 255)"},
   tip:       { border: "rgb(22, 163, 74)", titleBg: "rgb(240, 253, 244)"},
   hint:      { border: "rgb(22, 163, 74)", titleBg: "rgb(240, 253, 244)"},
-  warning:   { border: "#ff9800", titleBg: "#ffb74d"},
-  danger:    { border: "#f44336", titleBg: "#e57373"},
+  warning:   { border: "rgb(217, 119, 6)", titleBg: "#ffb74d"},
+  danger:    { border: "rgb(220, 38, 38)", titleBg: "rgb(254, 242, 242)"},
   default:   { border: "#607d8b", titleBg: "#90a4ae"},
 };
 
@@ -251,21 +251,21 @@ export const schema = new Schema({
                 const colors = ADMONITION_SETTINGS[kind] || ADMONITION_SETTINGS.default;
 
                 return [
-                "div",
+                "aside",
                 {
                     class: `admonition ${kind}`,
-                    style: `
-                    background-color: ${CONTENT_BG}; 
-                    border-left: 6px solid ${colors.border}; 
-                    --title-bg: ${colors.titleBg};
-                    border-radius: 4px;
-                    margin: 1.5em 0;
-                    overflow: hidden;
-                    display: block;
-                    border-top: 1px solid rgba(0,0,0,0.05);
-                    border-right: 1px solid rgba(0,0,0,0.05);
-                    border-bottom: 1px solid rgba(0,0,0,0.05);
-                    `,
+                    // style: `
+                    // background-color: ${CONTENT_BG}; 
+                    // border-left: 6px solid ${colors.border}; 
+                    // --title-bg: ${colors.titleBg};
+                    // border-radius: 4px;
+                    // margin: 1.5em 0;
+                    // overflow: hidden;
+                    // display: block;
+                    // border-top: 1px solid rgba(0,0,0,0.05);
+                    // border-right: 1px solid rgba(0,0,0,0.05);
+                    // border-bottom: 1px solid rgba(0,0,0,0.05);
+                    // `,
                 },
                 0,
                 ];
@@ -279,15 +279,15 @@ export const schema = new Schema({
                 "div",
                 {
                     class: "admonition-title",
-                    style: `
-                    padding: 8px 12px;
-                    font-weight: 700;
-                    background-color: var(--title-bg);
-                    color: var(--title-text);
-                    font-size: 0.85rem;
-                    display: block;
-                    letter-spacing: 0.02em;
-                    `,
+                    // style: `
+                    // padding: 8px 12px;
+                    // font-weight: 700;
+                    // background-color: var(--title-bg);
+                    // color: var(--title-text);
+                    // font-size: 0.85rem;
+                    // display: block;
+                    // letter-spacing: 0.02em;
+                    // `,
                 },
                 0,
                 ];

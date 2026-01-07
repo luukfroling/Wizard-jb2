@@ -63,6 +63,7 @@
     "myst-spec-ext": "^1.7.11",
     "myst-to-md": "^1.0.15",
     "myst-to-html": "^1.6.3", 
+    "@myst-theme/styles": "latest",
     "myst-transforms": "^1.3.35",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-history": "^1.4.1",
