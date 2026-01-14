@@ -31,6 +31,28 @@ export const GitHubUserPanel = (props: Props) => {
     new Set(),
   );
 
+  const refreshBranches = async () => {
+    try {
+      const repoInfo = await github.fetchRepoInfo();
+      setDefaultBranch(repoInfo.default_branch);
+      const [remoteBranches, localBranches] = await Promise.all([
+        github.fetchRemoteBranches(),
+        database.loadLocalbranches("markdown"),
+      ]);
+      const combined = Array.from(
+        new Set([...remoteBranches, ...localBranches]),
+      );
+      const nonDefault = combined.filter((b) => b !== repoInfo.default_branch);
+      setRemoteBranches(nonDefault);
+      if (!prBranchChoice()) {
+        setPrBranchChoice(nonDefault[0] ?? "__new__");
+      }
+    } catch (err) {
+      setRemoteBranches([]);
+      setPrBranchChoice("__new__");
+    }
+  };
+
   onMount(async () => {
     const currentPath = getFilePathFromHref(currentFileHref());
     setFilePath(currentPath);
@@ -40,19 +62,7 @@ export const GitHubUserPanel = (props: Props) => {
     setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
     setSelectedFiles(new Set<string>()); // <-- Start with no files selected
 
-    try {
-      const repoInfo = await github.fetchRepoInfo();
-      setDefaultBranch(repoInfo.default_branch);
-      const branches = await github.fetchRemoteBranches();
-      const nonDefault = branches.filter((b) => b !== repoInfo.default_branch);
-      setRemoteBranches(nonDefault);
-      if (!prBranchChoice()) {
-        setPrBranchChoice(nonDefault[0] ?? "__new__");
-      }
-    } catch (err) {
-      setRemoteBranches([]);
-      setPrBranchChoice("__new__");
-    }
+    await refreshBranches();
   });
 
   // Dynamically update availableFiles when the branch changes
@@ -155,6 +165,7 @@ export const GitHubUserPanel = (props: Props) => {
     try {
       const sourceBranch = github.getBranch();
       await github.ensureBranchExists(inputBranchName);
+      await refreshBranches();
 
       const keys = selectedFiles()
         .entries()
