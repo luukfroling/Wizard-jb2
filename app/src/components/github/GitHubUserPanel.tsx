@@ -17,6 +17,7 @@ type Props = {
 export const [filePath, setFilePath] = createSignal<string | null>(null);
 export const GitHubUserPanel = (props: Props) => {
   const [commitMsg, setCommitMsg] = createSignal("");
+  const [branchName, setBranchName] = createSignal("");
   const [status, setStatus] = createSignal<string | null>(null);
   const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
     [],
@@ -102,6 +103,99 @@ export const GitHubUserPanel = (props: Props) => {
     }
   };
 
+  const handleCreatePullRequest = async () => {
+    setStatus("Creating pull request...");
+
+    // Save the current editor content to the database before committing
+    await saveEditorContentToDatabase();
+
+    if (selectedFiles().size == 0) {
+      setStatus("No files selected.");
+      return;
+    }
+
+    const inputCommitMsg = commitMsg().trim();
+    if (!inputCommitMsg) {
+      setStatus("Please enter a commit message.");
+      return;
+    }
+
+    const inputBranchName = branchName().trim();
+    if (!inputBranchName) {
+      setStatus("Please enter a branch name.");
+      return;
+    }
+
+    try {
+      const sourceBranch = github.getBranch();
+      await github.ensureBranchExists(inputBranchName);
+
+      const keys = selectedFiles()
+        .entries()
+        .map(([a, _]) => a)
+        .toArray() as string[];
+      const missing: string[] = [];
+      for (const key of keys) {
+        let value = await database.loadFrom<string>(
+          "markdown",
+          github.getRepo(),
+          sourceBranch,
+          key,
+        );
+        if (value === undefined) {
+          try {
+            value = await github.fetchFileFromBranch(key, sourceBranch);
+          } catch (err) {
+            value = undefined;
+          }
+        }
+        if (value === undefined) {
+          missing.push(key);
+          continue;
+        }
+        await database.saveTo(
+          "markdown",
+          github.getRepo(),
+          inputBranchName,
+          key,
+          value,
+        );
+      }
+      if (missing.length) {
+        setStatus(`Missing files for keys: ${missing.join(", ")}`);
+        return;
+      }
+
+      github.setBranch(inputBranchName);
+      await github.commitMultipleFromDatabase(
+        inputCommitMsg,
+        keys as IDBValidKey[],
+        "markdown",
+      );
+
+      const repoInfo = await github.fetchRepoInfo();
+      const pr = await github.createPullRequest(
+        github.getOwner(),
+        github.getRepo(),
+        inputCommitMsg,
+        github.getBranch(),
+        repoInfo.default_branch,
+      );
+
+      setStatus(
+        `Pull request created from ${github.getBranch()} to ${repoInfo.default_branch}.${pr.html_url ? ` ${pr.html_url}` : ""}`,
+      );
+      setSelectedFiles(new Set<string>());
+      setCommitMsg("");
+      setBranchName("");
+    } catch (err) {
+      setStatus(
+        "Failed to create pull request: " +
+          (err instanceof Error ? err.message : err),
+      );
+    }
+  };
+
   return (
     <div>
       <h2 class="text-xl font-bold mb-2">Logged in as {props.user.login}</h2>
@@ -118,7 +212,12 @@ export const GitHubUserPanel = (props: Props) => {
           onInput={(e) => setCommitMsg(e.currentTarget.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              handleCommit();
+              e.preventDefault();
+              if (branchName().trim()) {
+                handleCreatePullRequest();
+              } else {
+                handleCommit();
+              }
             }
           }}
         />
@@ -186,22 +285,36 @@ export const GitHubUserPanel = (props: Props) => {
         {/* Status directly below the selection menu, no extra margin */}
         {status() && <div class="text-center text-sm">{status()}</div>}
 
-        <div class="flex flex-col gap-2 mt-2">
+        <div class="grid gap-2 mt-2">
+          <label class="block font-semibold" for="branch-name">
+            Branch name
+          </label>
+          <input
+            id="branch-name"
+            type="text"
+            class="border p-2 w-full"
+            placeholder="Enter branch name"
+            value={branchName()}
+            onInput={(e) => setBranchName(e.currentTarget.value)}
+          />
           <button
-            class="bg-black text-white px-4 py-2 rounded"
+            class="bg-black text-white px-4 py-2 rounded w-full"
             onClick={handleCommit}
+            style={{ width: "100%" }}
           >
             Commit
           </button>
           <button
-            class="bg-black text-white px-4 py-2 rounded"
-            onClick={() => console.log("test")}
+            class="bg-black text-white px-4 py-2 rounded w-full"
+            onClick={handleCreatePullRequest}
+            style={{ width: "100%" }}
           >
-            test
+            Create pull request
           </button>
           <button
             onClick={() => props.onLogout()}
-            class="bg-black text-white px-4 py-2 rounded"
+            class="bg-black text-white px-4 py-2 rounded w-full"
+            style={{ width: "100%" }}
           >
             Logout
           </button>

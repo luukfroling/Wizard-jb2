@@ -6,6 +6,7 @@ import { saveEditorContentToDatabase } from "../Editor";
 
 export const BranchDropdown: Component = () => {
   const [branches, setBranches] = createSignal<string[]>([]);
+  const [open, setOpen] = createSignal(false);
   const [showInput, setShowInput] = createSignal(false);
   const [newBranchName, setNewBranchName] = createSignal("");
   const [error, setError] = createSignal<string | null>(null);
@@ -68,6 +69,7 @@ export const BranchDropdown: Component = () => {
     console.log("saving before changing branch...");
     await saveEditorContentToDatabase();
     github.setBranch(b);
+    setOpen(false);
     setShowInput(false);
     setError(null);
   };
@@ -97,8 +99,8 @@ export const BranchDropdown: Component = () => {
         class="btn btn-sm dropdown-toggle d-flex align-items-center px-1"
         type="button"
         id="branchDropdown"
-        data-bs-toggle="dropdown"
-        aria-expanded="false"
+        aria-expanded={open()}
+        onClick={() => setOpen(!open())}
         style={{
           "min-width": "unset",
           padding: "2px 6px",
@@ -123,9 +125,9 @@ export const BranchDropdown: Component = () => {
         </span>
       </button>
       <ul
-        class="dropdown-menu p-2"
+        class={`dropdown-menu dropdown-menu-end p-2${open() ? " show" : ""}`}
         aria-labelledby="branchDropdown"
-        style={{ "min-width": "220px" }}
+        style={{ "min-width": "220px", left: "auto", right: 0 }}
       >
         <For each={branches()}>
           {(b) => (

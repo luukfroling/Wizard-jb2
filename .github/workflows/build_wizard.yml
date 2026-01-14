@@ -2,8 +2,16 @@ name: Deploy Vite App to Pages
 
 on:
   push:
-    branches: [main]
+    branches: [implement-pull-request]
   workflow_dispatch:
+    inputs:
+      deploy_branch:
+        description: Branch to deploy
+        required: false
+        default: implement-pull-request
+
+env:
+  DEPLOY_BRANCH: implement-pull-request
 
 permissions:
   contents: read
@@ -19,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.deploy_branch || env.DEPLOY_BRANCH }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2

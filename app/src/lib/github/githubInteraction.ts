@@ -368,7 +368,11 @@ class GitHubInteraction {
         const repoInfo = await this.fetchRepoInfo(owner, repo);
 
         // Get commit info the the specified branch.
-        let commit = await this.fetchBranchCommitInfo(owner, repo, branch);
+        let commit: BranchCommitInfo | undefined;
+        const remoteBranches = await this.fetchRemoteBranches();
+        if (remoteBranches.includes(branch)) {
+            commit = await this.fetchBranchCommitInfo(owner, repo, branch);
+        }
 
         // If the branch does not exist on remote, attempt to create it from the default branch.
         if (commit === undefined) {
@@ -385,12 +389,21 @@ class GitHubInteraction {
             }
 
             //  Create the new branch using the sha from the default branch
-            await this.createBranch(
-                owner,
-                repo,
-                branch,
-                defaultInfo.sha, // ← now a valid 40-char SHA
-            );
+            try {
+                await this.createBranch(
+                    owner,
+                    repo,
+                    branch,
+                    defaultInfo.sha, // ← now a valid 40-char SHA
+                );
+            } catch (err) {
+                if (
+                    !(err instanceof Error) ||
+                    !err.message.includes("Reference already exists")
+                ) {
+                    throw err;
+                }
+            }
             // Check if the new branch now exists.
             commit = await this.fetchBranchCommitInfo(owner, repo, branch);
 
@@ -524,6 +537,40 @@ class GitHubInteraction {
     }
 
     /**
+     * Ensures a branch exists on the remote, creating it from the default
+     * branch if missing.
+     * @param branch - Branch name to ensure.
+     */
+    public async ensureBranchExists(branch: string): Promise<void> {
+        const owner = this.getOwner();
+        const repo = this.getRepo();
+        const repoInfo = await this.fetchRepoInfo(owner, repo);
+        const remoteBranches = await this.fetchRemoteBranches();
+        if (remoteBranches.includes(branch)) return;
+
+        const baseInfo = await this.fetchBranchCommitInfo(
+            owner,
+            repo,
+            repoInfo.default_branch,
+        );
+        if (!baseInfo) {
+            throw new Error(
+                `Cannot create branch ${branch}: default branch ${repoInfo.default_branch} has no commit`,
+            );
+        }
+        try {
+            await this.createBranch(owner, repo, branch, baseInfo.sha);
+        } catch (err) {
+            if (
+                !(err instanceof Error) ||
+                !err.message.includes("Reference already exists")
+            ) {
+                throw err;
+            }
+        }
+    }
+
+    /**
      * Creates a Git tree with the provided files on top of a base commit.
      * @param owner - Repo owner.
      * @param repo - Repo name.
@@ -637,6 +684,44 @@ class GitHubInteraction {
                 `Update ref failed: ${resp.status} ${await resp.text()}`,
             );
         }
+    }
+
+    /**
+     * Creates a pull request from head to base.
+     * @param owner - Repo owner.
+     * @param repo - Repo name.
+     * @param title - PR title.
+     * @param head - Source branch name.
+     * @param base - Target branch name.
+     * @param body - Optional PR body.
+     */
+    public async createPullRequest(
+        owner: string,
+        repo: string,
+        title: string,
+        head: string,
+        base: string,
+        body?: string,
+    ): Promise<{ html_url?: string }> {
+        const resp = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/pulls`,
+            {
+                method: "POST",
+                headers: this.headers,
+                body: JSON.stringify({
+                    title,
+                    head,
+                    base,
+                    body,
+                }),
+            },
+        );
+        if (!resp.ok) {
+            throw new Error(
+                `Create pull request failed: ${resp.status} ${await resp.text()}`,
+            );
+        }
+        return resp.json();
     }
 }
 
