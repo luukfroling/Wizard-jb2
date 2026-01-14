@@ -127,6 +127,7 @@ export const GitHubUserPanel = (props: Props) => {
     }
 
     try {
+      await github.ensureBranchExists(inputBranchName);
       github.setBranch(inputBranchName);
       await github.commitMultipleFromDatabase(
         inputCommitMsg,
