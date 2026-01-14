@@ -1,4 +1,5 @@
 import { createSignal, onMount, createEffect, For } from "solid-js";
+import { Button, Col, Form, Row } from "solid-bootstrap";
 import type { GitHubUser } from "../../lib/github/GithubLogin";
 import {
   getFilePathFromHref,
@@ -224,14 +225,14 @@ export const GitHubUserPanel = (props: Props) => {
   return (
     <div>
       <h2 class="text-xl font-bold mb-2">Logged in as {props.user.login}</h2>
-      <div class="mt-3 d-grid gap-4">
-        <div>
-          <label class="form-label fw-semibold" for="commit-msg">
+      <Form class="mt-3 d-grid gap-4">
+        <Form.Group>
+          <Form.Label class="fw-semibold" for="commit-msg">
             Commit message
-          </label>
-          <textarea
+          </Form.Label>
+          <Form.Control
+            as="textarea"
             id="commit-msg"
-            class="form-control"
             rows={3}
             placeholder="Describe what you changed..."
             value={commitMsg()}
@@ -247,94 +248,84 @@ export const GitHubUserPanel = (props: Props) => {
               }
             }}
           />
-          <div class="form-text">Press Ctrl/Command + Enter to submit.</div>
-        </div>
+          <Form.Text>Press Ctrl/Command + Enter to submit.</Form.Text>
+        </Form.Group>
 
         {/* File selection submenu moved above the commit button */}
-        <div>
-          <label class="form-label fw-semibold">Files to include</label>
-          <div class="border rounded p-3 bg-white overflow-y-auto" style={{ "max-height": "160px" }}>
+        <Form.Group>
+          <Form.Label class="fw-semibold">Files to include</Form.Label>
+          <div
+            class="border rounded p-3 bg-white overflow-y-auto"
+            style={{ "max-height": "160px" }}
+          >
             {availableFiles().length === 0 && (
               <div class="text-muted">No files in database.</div>
             )}
             {availableFiles().length > 0 && (
-              <div class="form-check mb-2">
-                <input
-                  class="form-check-input"
-                    type="checkbox"
-                    checked={
-                      selectedFiles().size === availableFiles().length &&
-                      availableFiles().length > 0
-                    }
-                    onChange={(e) => {
-                      if (e.currentTarget.checked) {
-                        setSelectedFiles(
-                          new Set(availableFiles().map(([key]) => key)),
-                        );
-                      } else {
-                        setSelectedFiles(new Set<string>());
-                      }
-                    }}
-                />
-                <label class="form-check-label fw-semibold">Select all</label>
-              </div>
+              <Form.Check
+                class="mb-2"
+                type="checkbox"
+                label="Select all"
+                checked={
+                  selectedFiles().size === availableFiles().length &&
+                  availableFiles().length > 0
+                }
+                onChange={(e) => {
+                  if (e.currentTarget.checked) {
+                    setSelectedFiles(
+                      new Set(availableFiles().map(([key]) => key)),
+                    );
+                  } else {
+                    setSelectedFiles(new Set<string>());
+                  }
+                }}
+              />
             )}
             <For each={availableFiles()}>
               {([key]) => (
-                <div class="form-check mb-1">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      checked={selectedFiles().has(key)}
-                      onChange={(e) => {
-                        const newSet = new Set(selectedFiles());
-                        if (e.currentTarget.checked) {
-                          newSet.add(key);
-                        } else {
-                          newSet.delete(key);
-                        }
-                        setSelectedFiles(newSet);
-                      }}
-                    />
-                    <label class="form-check-label">{key}</label>
-                </div>
+                <Form.Check
+                  class="mb-1"
+                  type="checkbox"
+                  label={key}
+                  checked={selectedFiles().has(key)}
+                  onChange={(e) => {
+                    const newSet = new Set(selectedFiles());
+                    if (e.currentTarget.checked) {
+                      newSet.add(key);
+                    } else {
+                      newSet.delete(key);
+                    }
+                    setSelectedFiles(newSet);
+                  }}
+                />
               )}
             </For>
           </div>
-        </div>
+        </Form.Group>
 
-        <div class="row g-3">
-          <div class="col-md-5">
+        <Row class="g-3">
+          <Col md={5}>
             <div class="border rounded p-3 bg-light h-100">
               <div class="fw-semibold mb-2">Action</div>
-              <div class="form-check mb-2">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="git-action"
-                  checked={actionMode() === "push"}
-                  onChange={() => setActionMode("push")}
-                />
-                <label class="form-check-label">
-                  Push to current branch ({github.getBranch() || "none"})
-                </label>
-              </div>
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="git-action"
-                  checked={actionMode() === "pr"}
-                  onChange={() => setActionMode("pr")}
-                />
-                <label class="form-check-label">
-                  Create pull request to {defaultBranch()}
-                </label>
-              </div>
+              <Form.Check
+                class="mb-2"
+                type="radio"
+                name="git-action"
+                label={`Push to current branch (${github.getBranch() || "none"})`}
+                checked={actionMode() === "push"}
+                onChange={() => setActionMode("push")}
+              />
+              <Form.Check
+                type="radio"
+                name="git-action"
+                label={`Create pull request to ${defaultBranch()}`}
+                checked={actionMode() === "pr"}
+                onChange={() => setActionMode("pr")}
+              />
             </div>
-          </div>
+          </Col>
 
-          <div class="col-md-7">
+          <Col md={7}>
             <div
               class={`border rounded p-3 h-100 ${actionMode() === "pr" ? "bg-white" : "bg-light opacity-75"}`}
             >
@@ -342,53 +333,49 @@ export const GitHubUserPanel = (props: Props) => {
               <div class="text-muted small mb-2">
                 Choose a branch to push changes to before opening a pull request.
               </div>
-              <div class="d-grid gap-2 mb-2" style={{ "max-height": "160px", "overflow-y": "auto" }}>
+              <div
+                class="d-grid gap-2 mb-2"
+                style={{ "max-height": "160px", "overflow-y": "auto" }}
+              >
                 <For each={remoteBranches()}>
                   {(branch) => (
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="pr-branch"
-                        checked={prBranchChoice() === branch}
-                        onChange={() => setPrBranchChoice(branch)}
-                        disabled={actionMode() !== "pr"}
-                      />
-                      <label class="form-check-label">{branch}</label>
-                    </div>
+                    <Form.Check
+                      type="radio"
+                      name="pr-branch"
+                      label={branch}
+                      checked={prBranchChoice() === branch}
+                      onChange={() => setPrBranchChoice(branch)}
+                      disabled={actionMode() !== "pr"}
+                    />
                   )}
                 </For>
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="pr-branch"
-                    checked={prBranchChoice() === "__new__"}
-                    onChange={() => setPrBranchChoice("__new__")}
-                    disabled={actionMode() !== "pr"}
-                  />
-                  <label class="form-check-label">Create a new branch</label>
-                </div>
+                <Form.Check
+                  type="radio"
+                  name="pr-branch"
+                  label="Create a new branch"
+                  checked={prBranchChoice() === "__new__"}
+                  onChange={() => setPrBranchChoice("__new__")}
+                  disabled={actionMode() !== "pr"}
+                />
               </div>
-              <input
+              <Form.Control
                 id="branch-name"
                 type="text"
-                class="form-control"
                 placeholder="Enter new branch name"
                 value={newBranchName()}
                 onInput={(e) => setNewBranchName(e.currentTarget.value)}
                 disabled={actionMode() !== "pr" || prBranchChoice() !== "__new__"}
               />
             </div>
-          </div>
-        </div>
+          </Col>
+        </Row>
 
         {/* Status directly below the selection menu, no extra margin */}
         {status() && <div class="text-center small">{status()}</div>}
 
         <div class="d-grid gap-2">
-          <button
-            class="btn btn-dark"
+          <Button
+            variant="dark"
             onClick={() => {
               if (actionMode() === "pr") {
                 handleCreatePullRequest();
@@ -398,15 +385,12 @@ export const GitHubUserPanel = (props: Props) => {
             }}
           >
             {actionMode() === "pr" ? "Create pull request" : "Push to branch"}
-          </button>
-          <button
-            onClick={() => props.onLogout()}
-            class="btn btn-outline-secondary"
-          >
+          </Button>
+          <Button variant="outline-secondary" onClick={() => props.onLogout()}>
             Logout
-          </button>
+          </Button>
         </div>
-      </div>
+      </Form>
     </div>
   );
 };

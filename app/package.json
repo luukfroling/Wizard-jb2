@@ -75,6 +75,7 @@
     "prosemirror-tables": "^1.7.1",
     "prosemirror-view": "^1.39.2",
     "solid-js": "^1.9.6",
+    "solid-bootstrap": "^1.2.4",
     "unified": "^10.1.2",
     "unist-util-visit": "^5.0.0",
     "vfile": "^5.3.7"
