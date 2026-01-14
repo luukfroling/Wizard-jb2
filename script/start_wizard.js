@@ -79,6 +79,6 @@ const addWizard = function() {
 if (window.location.href.includes("editor=true")) {
     console.log("[wizard] Editor mode detected, initializing wizard...");
     document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(addWizard, 4000);
+        setTimeout(addWizard, 8000);
     });
 }
