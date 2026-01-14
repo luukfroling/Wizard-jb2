@@ -17,6 +17,7 @@ type Props = {
 export const [filePath, setFilePath] = createSignal<string | null>(null);
 export const GitHubUserPanel = (props: Props) => {
   const [commitMsg, setCommitMsg] = createSignal("");
+  const [branchName, setBranchName] = createSignal("");
   const [status, setStatus] = createSignal<string | null>(null);
   const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
     [],
@@ -119,7 +120,14 @@ export const GitHubUserPanel = (props: Props) => {
       return;
     }
 
+    const inputBranchName = branchName().trim();
+    if (!inputBranchName) {
+      setStatus("Please enter a branch name.");
+      return;
+    }
+
     try {
+      github.setBranch(inputBranchName);
       await github.commitMultipleFromDatabase(
         inputCommitMsg,
         selectedFiles()
@@ -143,6 +151,7 @@ export const GitHubUserPanel = (props: Props) => {
       );
       setSelectedFiles(new Set<string>());
       setCommitMsg("");
+      setBranchName("");
     } catch (err) {
       setStatus(
         "Failed to create pull request: " +
@@ -236,6 +245,17 @@ export const GitHubUserPanel = (props: Props) => {
         {status() && <div class="text-center text-sm">{status()}</div>}
 
         <div class="grid gap-2 mt-2">
+          <label class="block font-semibold" for="branch-name">
+            Branch name
+          </label>
+          <input
+            id="branch-name"
+            type="text"
+            class="border p-2 w-full"
+            placeholder="Enter branch name"
+            value={branchName()}
+            onInput={(e) => setBranchName(e.currentTarget.value)}
+          />
           <button
             class="bg-black text-white px-4 py-2 rounded w-full"
             onClick={handleCommit}
