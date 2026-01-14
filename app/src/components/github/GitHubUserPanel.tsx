@@ -102,6 +102,55 @@ export const GitHubUserPanel = (props: Props) => {
     }
   };
 
+  const handleCreatePullRequest = async () => {
+    setStatus("Creating pull request...");
+
+    // Save the current editor content to the database before committing
+    await saveEditorContentToDatabase();
+
+    if (selectedFiles().size == 0) {
+      setStatus("No files selected.");
+      return;
+    }
+
+    const inputCommitMsg = commitMsg().trim();
+    if (!inputCommitMsg) {
+      setStatus("Please enter a commit message.");
+      return;
+    }
+
+    try {
+      await github.commitMultipleFromDatabase(
+        inputCommitMsg,
+        selectedFiles()
+          .entries()
+          .map(([a, _]) => a)
+          .toArray() as IDBValidKey[],
+        "markdown",
+      );
+
+      const repoInfo = await github.fetchRepoInfo();
+      const pr = await github.createPullRequest(
+        github.getOwner(),
+        github.getRepo(),
+        inputCommitMsg,
+        github.getBranch(),
+        repoInfo.default_branch,
+      );
+
+      setStatus(
+        `Pull request created from ${github.getBranch()} to ${repoInfo.default_branch}.${pr.html_url ? ` ${pr.html_url}` : ""}`,
+      );
+      setSelectedFiles(new Set<string>());
+      setCommitMsg("");
+    } catch (err) {
+      setStatus(
+        "Failed to create pull request: " +
+          (err instanceof Error ? err.message : err),
+      );
+    }
+  };
+
   return (
     <div>
       <h2 class="text-xl font-bold mb-2">Logged in as {props.user.login}</h2>
@@ -186,22 +235,22 @@ export const GitHubUserPanel = (props: Props) => {
         {/* Status directly below the selection menu, no extra margin */}
         {status() && <div class="text-center text-sm">{status()}</div>}
 
-        <div class="flex flex-col gap-2 mt-2">
+        <div class="grid gap-2 mt-2">
           <button
-            class="bg-black text-white px-4 py-2 rounded"
+            class="bg-black text-white px-4 py-2 rounded w-full"
             onClick={handleCommit}
           >
             Commit
           </button>
           <button
-            class="bg-black text-white px-4 py-2 rounded"
-            onClick={() => console.log("test new branch updated")}
+            class="bg-black text-white px-4 py-2 rounded w-full"
+            onClick={handleCreatePullRequest}
           >
-            test
+            Create pull request
           </button>
           <button
             onClick={() => props.onLogout()}
-            class="bg-black text-white px-4 py-2 rounded"
+            class="bg-black text-white px-4 py-2 rounded w-full"
           >
             Logout
           </button>

@@ -638,6 +638,44 @@ class GitHubInteraction {
             );
         }
     }
+
+    /**
+     * Creates a pull request from head to base.
+     * @param owner - Repo owner.
+     * @param repo - Repo name.
+     * @param title - PR title.
+     * @param head - Source branch name.
+     * @param base - Target branch name.
+     * @param body - Optional PR body.
+     */
+    public async createPullRequest(
+        owner: string,
+        repo: string,
+        title: string,
+        head: string,
+        base: string,
+        body?: string,
+    ): Promise<{ html_url?: string }> {
+        const resp = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/pulls`,
+            {
+                method: "POST",
+                headers: this.headers,
+                body: JSON.stringify({
+                    title,
+                    head,
+                    base,
+                    body,
+                }),
+            },
+        );
+        if (!resp.ok) {
+            throw new Error(
+                `Create pull request failed: ${resp.status} ${await resp.text()}`,
+            );
+        }
+        return resp.json();
+    }
 }
 
 /**
