@@ -2,16 +2,16 @@ name: Deploy Vite App to Pages
 
 on:
   push:
-    branches: [implement-pull-request]
+    branches: [github-interface]
   workflow_dispatch:
     inputs:
       deploy_branch:
         description: Branch to deploy
         required: false
-        default: implement-pull-request
+        default: github-interface
 
 env:
-  DEPLOY_BRANCH: implement-pull-request
+  DEPLOY_BRANCH: github-interface
 
 permissions:
   contents: read

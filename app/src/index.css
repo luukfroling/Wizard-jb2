@@ -342,3 +342,60 @@ a {
   font-weight: 400;
   margin: 0;
 }
+
+/* === GitHub Popup === */
+.github-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 38, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 72px 20px 40px;
+  z-index: 2000;
+}
+
+.github-popup-card {
+  width: min(760px, 96vw);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(16, 20, 40, 0.2);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.github-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #eceff4;
+  background: linear-gradient(120deg, #f8fafc, #eef2ff);
+}
+
+.github-popup-title {
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+}
+
+.github-popup-close {
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.github-popup-close:hover,
+.github-popup-close:focus {
+  background: rgba(17, 24, 39, 0.08);
+  color: #111827;
+}

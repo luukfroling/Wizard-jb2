@@ -14,7 +14,7 @@ type Props = {
 
 export const GitHubAuthPanel = (props: Props) => {
   return (
-    <div class="p-6" style={{ "max-width": "235px", width: "100%" }}>
+    <div class="p-6" style={{ width: "100%" }}>
       <Show when={!props.token}>
         <GitHubTokenInput
           onTokenSet={(token) => validateTokenAndLogin(token)}

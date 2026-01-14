@@ -17,7 +17,11 @@ type Props = {
 export const [filePath, setFilePath] = createSignal<string | null>(null);
 export const GitHubUserPanel = (props: Props) => {
   const [commitMsg, setCommitMsg] = createSignal("");
-  const [branchName, setBranchName] = createSignal("");
+  const [actionMode, setActionMode] = createSignal<"push" | "pr">("push");
+  const [prBranchChoice, setPrBranchChoice] = createSignal<string>("");
+  const [newBranchName, setNewBranchName] = createSignal("");
+  const [defaultBranch, setDefaultBranch] = createSignal("main");
+  const [remoteBranches, setRemoteBranches] = createSignal<string[]>([]);
   const [status, setStatus] = createSignal<string | null>(null);
   const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
     [],
@@ -34,6 +38,20 @@ export const GitHubUserPanel = (props: Props) => {
     const files = await database.loadAll<string>("markdown");
     setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
     setSelectedFiles(new Set<string>()); // <-- Start with no files selected
+
+    try {
+      const repoInfo = await github.fetchRepoInfo();
+      setDefaultBranch(repoInfo.default_branch);
+      const branches = await github.fetchRemoteBranches();
+      const nonDefault = branches.filter((b) => b !== repoInfo.default_branch);
+      setRemoteBranches(nonDefault);
+      if (!prBranchChoice()) {
+        setPrBranchChoice(nonDefault[0] ?? "__new__");
+      }
+    } catch (err) {
+      setRemoteBranches([]);
+      setPrBranchChoice("__new__");
+    }
   });
 
   // Dynamically update availableFiles when the branch changes
@@ -120,9 +138,16 @@ export const GitHubUserPanel = (props: Props) => {
       return;
     }
 
-    const inputBranchName = branchName().trim();
+    const inputBranchName =
+      prBranchChoice() === "__new__"
+        ? newBranchName().trim()
+        : prBranchChoice().trim();
     if (!inputBranchName) {
       setStatus("Please enter a branch name.");
+      return;
+    }
+    if (inputBranchName === defaultBranch()) {
+      setStatus(`Please choose a branch other than ${defaultBranch()}.`);
       return;
     }
 
@@ -187,7 +212,7 @@ export const GitHubUserPanel = (props: Props) => {
       );
       setSelectedFiles(new Set<string>());
       setCommitMsg("");
-      setBranchName("");
+      setNewBranchName("");
     } catch (err) {
       setStatus(
         "Failed to create pull request: " +
@@ -199,36 +224,41 @@ export const GitHubUserPanel = (props: Props) => {
   return (
     <div>
       <h2 class="text-xl font-bold mb-2">Logged in as {props.user.login}</h2>
-      <div class="mt-6">
-        <label class="block mb-1 font-semibold" for="commit-msg">
-          Commit message
-        </label>
-        <input
-          id="commit-msg"
-          type="text"
-          class="border p-2 w-full mb-2"
-          placeholder="Enter commit message"
-          value={commitMsg()}
-          onInput={(e) => setCommitMsg(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              if (branchName().trim()) {
-                handleCreatePullRequest();
-              } else {
-                handleCommit();
+      <div class="mt-6 grid gap-4">
+        <div>
+          <label class="block mb-2 font-semibold" for="commit-msg">
+            Commit message
+          </label>
+          <textarea
+            id="commit-msg"
+            class="border rounded-md p-3 w-full bg-white"
+            rows={3}
+            placeholder="Describe what you changed..."
+            value={commitMsg()}
+            onInput={(e) => setCommitMsg(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (actionMode() === "pr") {
+                  handleCreatePullRequest();
+                } else {
+                  handleCommit();
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+          <div class="text-xs text-gray-500 mt-1">
+            Press Ctrl/Command + Enter to submit.
+          </div>
+        </div>
 
         {/* File selection submenu moved above the commit button */}
-        <div class="mb-2">
-          <label class="block font-semibold mb-1">
-            Select files to commit:
+        <div>
+          <label class="block font-semibold mb-2">
+            Files to include
           </label>
           <div
-            class="border rounded p-2 bg-white overflow-y-auto"
+            class="border rounded p-3 bg-white overflow-y-auto"
             style={{ "max-height": "160px" }}
           >
             {availableFiles().length === 0 && (
@@ -282,39 +312,93 @@ export const GitHubUserPanel = (props: Props) => {
           </div>
         </div>
 
+        <div class="grid gap-3">
+          <div class="border rounded-md p-3 bg-gray-50">
+            <div class="font-semibold mb-2">Action</div>
+            <label class="flex items-center gap-2 mb-2">
+              <input
+                type="radio"
+                name="git-action"
+                checked={actionMode() === "push"}
+                onChange={() => setActionMode("push")}
+              />
+              <span>Push to current branch ({github.getBranch() || "none"})</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input
+                type="radio"
+                name="git-action"
+                checked={actionMode() === "pr"}
+                onChange={() => setActionMode("pr")}
+              />
+              <span>Create pull request to {defaultBranch()}</span>
+            </label>
+          </div>
+
+          <div
+            class={`border rounded-md p-3 ${actionMode() === "pr" ? "bg-white" : "bg-gray-100 opacity-60"}`}
+          >
+            <div class="font-semibold mb-2">Pull request branch</div>
+            <div class="text-xs text-gray-500 mb-2">
+              Choose a branch to push changes to before opening a pull request.
+            </div>
+            <div class="grid gap-2 max-h-40 overflow-y-auto mb-2">
+              <For each={remoteBranches()}>
+                {(branch) => (
+                  <label class="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="pr-branch"
+                      checked={prBranchChoice() === branch}
+                      onChange={() => setPrBranchChoice(branch)}
+                      disabled={actionMode() !== "pr"}
+                    />
+                    <span>{branch}</span>
+                  </label>
+                )}
+              </For>
+              <label class="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="pr-branch"
+                  checked={prBranchChoice() === "__new__"}
+                  onChange={() => setPrBranchChoice("__new__")}
+                  disabled={actionMode() !== "pr"}
+                />
+                <span>Create a new branch</span>
+              </label>
+            </div>
+            <input
+              id="branch-name"
+              type="text"
+              class="border p-2 w-full"
+              placeholder="Enter new branch name"
+              value={newBranchName()}
+              onInput={(e) => setNewBranchName(e.currentTarget.value)}
+              disabled={actionMode() !== "pr" || prBranchChoice() !== "__new__"}
+            />
+          </div>
+        </div>
+
         {/* Status directly below the selection menu, no extra margin */}
         {status() && <div class="text-center text-sm">{status()}</div>}
 
-        <div class="grid gap-2 mt-2">
-          <label class="block font-semibold" for="branch-name">
-            Branch name
-          </label>
-          <input
-            id="branch-name"
-            type="text"
-            class="border p-2 w-full"
-            placeholder="Enter branch name"
-            value={branchName()}
-            onInput={(e) => setBranchName(e.currentTarget.value)}
-          />
+        <div class="grid gap-2">
           <button
             class="bg-black text-white px-4 py-2 rounded w-full"
-            onClick={handleCommit}
-            style={{ width: "100%" }}
+            onClick={() => {
+              if (actionMode() === "pr") {
+                handleCreatePullRequest();
+              } else {
+                handleCommit();
+              }
+            }}
           >
-            Commit
-          </button>
-          <button
-            class="bg-black text-white px-4 py-2 rounded w-full"
-            onClick={handleCreatePullRequest}
-            style={{ width: "100%" }}
-          >
-            Create pull request
+            {actionMode() === "pr" ? "Create pull request" : "Push to branch"}
           </button>
           <button
             onClick={() => props.onLogout()}
-            class="bg-black text-white px-4 py-2 rounded w-full"
-            style={{ width: "100%" }}
+            class="bg-gray-100 text-gray-800 px-4 py-2 rounded w-full"
           >
             Logout
           </button>

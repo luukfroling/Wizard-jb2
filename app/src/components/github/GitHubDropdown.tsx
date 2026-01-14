@@ -1,4 +1,5 @@
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
+import { Portal } from "solid-js/web";
 import { useGitHubAuth } from "../../lib/github/GithubLogin";
 import { GitHubAuthPanel } from "./GitHubAuthPanel";
 import { github } from "../../lib/github/githubInteraction";
@@ -19,16 +20,39 @@ export const GitHubDropdown = () => {
         {/* Remove or comment out the span below */}
         {/* <span class="ms-2">GitHub</span> */}
       </button>
-      <div
-        class={`dropdown-menu dropdown-menu-end p-3${open() ? " show" : ""}`}
-        style={{ "min-width": "235px", left: "auto", right: 0 }}
-      >
-        <GitHubAuthPanel
-          token={github.getAuth()}
-          user={user()}
-          onLogout={logout}
-        />
-      </div>
+      <Show when={open()}>
+        <Portal>
+          <div class="github-popup-backdrop" onClick={() => setOpen(false)}>
+            <div
+              class="github-popup-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div class="github-popup-header">
+                <div class="github-popup-title">
+                  <i class="bi bi-github me-2" />
+                  GitHub
+                </div>
+                <button
+                  class="github-popup-close"
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                >
+                  <i class="bi bi-x-lg" />
+                </button>
+              </div>
+              <GitHubAuthPanel
+                token={github.getAuth()}
+                user={user()}
+                onLogout={() => {
+                  logout();
+                  setOpen(false);
+                }}
+              />
+            </div>
+          </div>
+        </Portal>
+      </Show>
     </div>
   );
 };
