@@ -7,6 +7,10 @@ import { github } from "../../lib/github/githubInteraction";
 export const GitHubDropdown = () => {
   const [open, setOpen] = createSignal(false);
   const { user, logout } = useGitHubAuth();
+  const modalContainer = () =>
+    typeof document !== "undefined"
+      ? document.querySelector(".extension_name_css") ?? document.body
+      : undefined;
 
   return (
     <div class="dropdown ms-auto" style={{ "margin-left": "auto" }}>
@@ -20,7 +24,13 @@ export const GitHubDropdown = () => {
         {/* Remove or comment out the span below */}
         {/* <span class="ms-2">GitHub</span> */}
       </button>
-      <Modal show={open()} onHide={() => setOpen(false)} centered size="lg">
+      <Modal
+        show={open()}
+        onHide={() => setOpen(false)}
+        centered
+        size="lg"
+        container={modalContainer()}
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             <i class="bi bi-github me-2" />
