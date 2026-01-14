@@ -125,9 +125,9 @@ export const BranchDropdown: Component = () => {
         </span>
       </button>
       <ul
-        class={`dropdown-menu p-2${open() ? " show" : ""}`}
+        class={`dropdown-menu dropdown-menu-end p-2${open() ? " show" : ""}`}
         aria-labelledby="branchDropdown"
-        style={{ "min-width": "220px" }}
+        style={{ "min-width": "220px", left: "auto", right: 0 }}
       >
         <For each={branches()}>
           {(b) => (

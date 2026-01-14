@@ -300,18 +300,21 @@ export const GitHubUserPanel = (props: Props) => {
           <button
             class="bg-black text-white px-4 py-2 rounded w-full"
             onClick={handleCommit}
+            style={{ width: "100%" }}
           >
             Commit
           </button>
           <button
             class="bg-black text-white px-4 py-2 rounded w-full"
             onClick={handleCreatePullRequest}
+            style={{ width: "100%" }}
           >
             Create pull request
           </button>
           <button
             onClick={() => props.onLogout()}
             class="bg-black text-white px-4 py-2 rounded w-full"
+            style={{ width: "100%" }}
           >
             Logout
           </button>
