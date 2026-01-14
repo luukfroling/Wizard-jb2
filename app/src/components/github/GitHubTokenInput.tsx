@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { Button, Form } from "solid-bootstrap";
 import { showModal } from "../popups/popup_modal"; // <-- import showModal
 
 type Props = {
@@ -76,52 +77,43 @@ export const GitHubTokenInput = (props: Props) => {
   };
 
   return (
-    <div class="flex flex-col items-center justify-center w-full">
-      <h2 class="text-lg font-bold mb-2">Enter GitHub Access Token</h2>
-      <input
-        class="border p-2 w-full max-w-md mb-2"
-        type="password"
-        placeholder="Paste fine grained PAT here"
-        value={token()}
-        onInput={(e) => setToken(e.currentTarget.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            handleSave();
-          }
-        }}
-      />
-      <div class="w-full flex justify-center">
-        <button
-          onClick={handleSave}
-          class="bg-black text-white px-4 py-2 rounded w-full max-w-md"
-        >
-          Save Token
-        </button>
+    <Form class="d-grid gap-3">
+      <div>
+        <h2 class="h5 fw-semibold mb-2">Enter GitHub Access Token</h2>
+        <Form.Control
+          type="password"
+          placeholder="Paste fine grained PAT here"
+          value={token()}
+          onInput={(e) => setToken(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSave();
+            }
+          }}
+        />
       </div>
-      {error() && (
-        <div class="mt-2 text-left text-red-600 w-full max-w-md">{error()}</div>
-      )}
-      <div class="mt-2 text-left w-full max-w-md">
+      <Button variant="dark" onClick={handleSave}>
+        Save Token
+      </Button>
+      {error() && <div class="text-danger">{error()}</div>}
+      <div class="d-flex flex-column gap-1">
         <a
           href="https://github.com/settings/personal-access-tokens/new"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-blue-600 underline text-sm"
+          class="link-primary small"
         >
-          Don't have an access token?
+          Don&apos;t have an access token?
         </a>
-      </div>
-      <div class="mt-2 text-left w-full max-w-md">
         <span
           onClick={handleShowInstructions}
-          class="text-blue-600 underline text-sm"
-          style={{ "text-align": "left" }}
+          class="link-primary small"
           role="button"
           tabindex={0}
         >
           How to create an access token?
         </span>
       </div>
-    </div>
+    </Form>
   );
 };

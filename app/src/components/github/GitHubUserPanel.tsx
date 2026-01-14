@@ -1,4 +1,5 @@
 import { createSignal, onMount, createEffect, For } from "solid-js";
+import { Button, Col, Form, Row } from "solid-bootstrap";
 import type { GitHubUser } from "../../lib/github/GithubLogin";
 import {
   getFilePathFromHref,
@@ -17,7 +18,11 @@ type Props = {
 export const [filePath, setFilePath] = createSignal<string | null>(null);
 export const GitHubUserPanel = (props: Props) => {
   const [commitMsg, setCommitMsg] = createSignal("");
-  const [branchName, setBranchName] = createSignal("");
+  const [actionMode, setActionMode] = createSignal<"push" | "pr">("push");
+  const [prBranchChoice, setPrBranchChoice] = createSignal<string>("");
+  const [newBranchName, setNewBranchName] = createSignal("");
+  const [defaultBranch, setDefaultBranch] = createSignal("main");
+  const [remoteBranches, setRemoteBranches] = createSignal<string[]>([]);
   const [status, setStatus] = createSignal<string | null>(null);
   const [availableFiles, setAvailableFiles] = createSignal<[string, string][]>(
     [],
@@ -34,6 +39,20 @@ export const GitHubUserPanel = (props: Props) => {
     const files = await database.loadAll<string>("markdown");
     setAvailableFiles(files.map(([key, value]) => [key.toString(), value]));
     setSelectedFiles(new Set<string>()); // <-- Start with no files selected
+
+    try {
+      const repoInfo = await github.fetchRepoInfo();
+      setDefaultBranch(repoInfo.default_branch);
+      const branches = await github.fetchRemoteBranches();
+      const nonDefault = branches.filter((b) => b !== repoInfo.default_branch);
+      setRemoteBranches(nonDefault);
+      if (!prBranchChoice()) {
+        setPrBranchChoice(nonDefault[0] ?? "__new__");
+      }
+    } catch (err) {
+      setRemoteBranches([]);
+      setPrBranchChoice("__new__");
+    }
   });
 
   // Dynamically update availableFiles when the branch changes
@@ -120,9 +139,16 @@ export const GitHubUserPanel = (props: Props) => {
       return;
     }
 
-    const inputBranchName = branchName().trim();
+    const inputBranchName =
+      prBranchChoice() === "__new__"
+        ? newBranchName().trim()
+        : prBranchChoice().trim();
     if (!inputBranchName) {
       setStatus("Please enter a branch name.");
+      return;
+    }
+    if (inputBranchName === defaultBranch()) {
+      setStatus(`Please choose a branch other than ${defaultBranch()}.`);
       return;
     }
 
@@ -187,7 +213,7 @@ export const GitHubUserPanel = (props: Props) => {
       );
       setSelectedFiles(new Set<string>());
       setCommitMsg("");
-      setBranchName("");
+      setNewBranchName("");
     } catch (err) {
       setStatus(
         "Failed to create pull request: " +
@@ -199,127 +225,172 @@ export const GitHubUserPanel = (props: Props) => {
   return (
     <div>
       <h2 class="text-xl font-bold mb-2">Logged in as {props.user.login}</h2>
-      <div class="mt-6">
-        <label class="block mb-1 font-semibold" for="commit-msg">
-          Commit message
-        </label>
-        <input
-          id="commit-msg"
-          type="text"
-          class="border p-2 w-full mb-2"
-          placeholder="Enter commit message"
-          value={commitMsg()}
-          onInput={(e) => setCommitMsg(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              if (branchName().trim()) {
+      <Form class="mt-3 d-grid gap-4">
+        <Form.Group>
+          <Form.Label class="fw-semibold" for="commit-msg">
+            Commit message
+          </Form.Label>
+          <Form.Control
+            as="textarea"
+            id="commit-msg"
+            rows={3}
+            placeholder="Describe what you changed..."
+            value={commitMsg()}
+            onInput={(e) => setCommitMsg(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (actionMode() === "pr") {
+                  handleCreatePullRequest();
+                } else {
+                  handleCommit();
+                }
+              }
+            }}
+          />
+          <Form.Text>Press Ctrl/Command + Enter to submit.</Form.Text>
+        </Form.Group>
+
+        {/* File selection submenu moved above the commit button */}
+        <Form.Group>
+          <Form.Label class="fw-semibold">Files to include</Form.Label>
+          <div
+            class="border rounded p-3 bg-white overflow-y-auto"
+            style={{ "max-height": "160px" }}
+          >
+            {availableFiles().length === 0 && (
+              <div class="text-muted">No files in database.</div>
+            )}
+            {availableFiles().length > 0 && (
+              <Form.Check
+                class="mb-2"
+                type="checkbox"
+                label="Select all"
+                checked={
+                  selectedFiles().size === availableFiles().length &&
+                  availableFiles().length > 0
+                }
+                onChange={(e) => {
+                  if (e.currentTarget.checked) {
+                    setSelectedFiles(
+                      new Set(availableFiles().map(([key]) => key)),
+                    );
+                  } else {
+                    setSelectedFiles(new Set<string>());
+                  }
+                }}
+              />
+            )}
+            <For each={availableFiles()}>
+              {([key]) => (
+                <Form.Check
+                  class="mb-1"
+                  type="checkbox"
+                  label={key}
+                  checked={selectedFiles().has(key)}
+                  onChange={(e) => {
+                    const newSet = new Set(selectedFiles());
+                    if (e.currentTarget.checked) {
+                      newSet.add(key);
+                    } else {
+                      newSet.delete(key);
+                    }
+                    setSelectedFiles(newSet);
+                  }}
+                />
+              )}
+            </For>
+          </div>
+        </Form.Group>
+
+        <Row class="g-3">
+          <Col md={5}>
+            <div class="border rounded p-3 bg-light h-100">
+              <div class="fw-semibold mb-2">Action</div>
+              <Form.Check
+                class="mb-2"
+                type="radio"
+                name="git-action"
+                label={`Push to current branch (${github.getBranch() || "none"})`}
+                checked={actionMode() === "push"}
+                onChange={() => setActionMode("push")}
+              />
+              <Form.Check
+                type="radio"
+                name="git-action"
+                label={`Create pull request to ${defaultBranch()}`}
+                checked={actionMode() === "pr"}
+                onChange={() => setActionMode("pr")}
+              />
+            </div>
+          </Col>
+
+          <Col md={7}>
+            <div
+              class={`border rounded p-3 h-100 ${actionMode() === "pr" ? "bg-white" : "bg-light opacity-75"}`}
+            >
+              <div class="fw-semibold mb-2">Pull request branch</div>
+              <div class="text-muted small mb-2">
+                Choose a branch to push changes to before opening a pull request.
+              </div>
+              <div
+                class="d-grid gap-2 mb-2"
+                style={{ "max-height": "160px", "overflow-y": "auto" }}
+              >
+                <For each={remoteBranches()}>
+                  {(branch) => (
+                    <Form.Check
+                      type="radio"
+                      name="pr-branch"
+                      label={branch}
+                      checked={prBranchChoice() === branch}
+                      onChange={() => setPrBranchChoice(branch)}
+                      disabled={actionMode() !== "pr"}
+                    />
+                  )}
+                </For>
+                <Form.Check
+                  type="radio"
+                  name="pr-branch"
+                  label="Create a new branch"
+                  checked={prBranchChoice() === "__new__"}
+                  onChange={() => setPrBranchChoice("__new__")}
+                  disabled={actionMode() !== "pr"}
+                />
+              </div>
+              <Form.Control
+                id="branch-name"
+                type="text"
+                placeholder="Enter new branch name"
+                value={newBranchName()}
+                onInput={(e) => setNewBranchName(e.currentTarget.value)}
+                disabled={actionMode() !== "pr" || prBranchChoice() !== "__new__"}
+              />
+            </div>
+          </Col>
+        </Row>
+
+        {/* Status directly below the selection menu, no extra margin */}
+        {status() && <div class="text-center small">{status()}</div>}
+
+        <div class="d-grid gap-2">
+          <Button
+            variant="dark"
+            onClick={() => {
+              if (actionMode() === "pr") {
                 handleCreatePullRequest();
               } else {
                 handleCommit();
               }
-            }
-          }}
-        />
-
-        {/* File selection submenu moved above the commit button */}
-        <div class="mb-2">
-          <label class="block font-semibold mb-1">
-            Select files to commit:
-          </label>
-          <div
-            class="border rounded p-2 bg-white overflow-y-auto"
-            style={{ "max-height": "160px" }}
+            }}
           >
-            {availableFiles().length === 0 && (
-              <div class="text-gray-500">No files in database.</div>
-            )}
-            {availableFiles().length > 0 && (
-              <div class="mb-2">
-                <label class="block cursor-pointer font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedFiles().size === availableFiles().length &&
-                      availableFiles().length > 0
-                    }
-                    onChange={(e) => {
-                      if (e.currentTarget.checked) {
-                        setSelectedFiles(
-                          new Set(availableFiles().map(([key]) => key)),
-                        );
-                      } else {
-                        setSelectedFiles(new Set<string>());
-                      }
-                    }}
-                  />
-                  <span class="ml-2">Select all</span>
-                </label>
-              </div>
-            )}
-            <For each={availableFiles()}>
-              {([key]) => (
-                <div class="mb-1">
-                  <label class="block cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedFiles().has(key)}
-                      onChange={(e) => {
-                        const newSet = new Set(selectedFiles());
-                        if (e.currentTarget.checked) {
-                          newSet.add(key);
-                        } else {
-                          newSet.delete(key);
-                        }
-                        setSelectedFiles(newSet);
-                      }}
-                    />
-                    <span class="ml-2">{key}</span>
-                  </label>
-                </div>
-              )}
-            </For>
-          </div>
-        </div>
-
-        {/* Status directly below the selection menu, no extra margin */}
-        {status() && <div class="text-center text-sm">{status()}</div>}
-
-        <div class="grid gap-2 mt-2">
-          <label class="block font-semibold" for="branch-name">
-            Branch name
-          </label>
-          <input
-            id="branch-name"
-            type="text"
-            class="border p-2 w-full"
-            placeholder="Enter branch name"
-            value={branchName()}
-            onInput={(e) => setBranchName(e.currentTarget.value)}
-          />
-          <button
-            class="bg-black text-white px-4 py-2 rounded w-full"
-            onClick={handleCommit}
-            style={{ width: "100%" }}
-          >
-            Commit
-          </button>
-          <button
-            class="bg-black text-white px-4 py-2 rounded w-full"
-            onClick={handleCreatePullRequest}
-            style={{ width: "100%" }}
-          >
-            Create pull request
-          </button>
-          <button
-            onClick={() => props.onLogout()}
-            class="bg-black text-white px-4 py-2 rounded w-full"
-            style={{ width: "100%" }}
-          >
+            {actionMode() === "pr" ? "Create pull request" : "Push to branch"}
+          </Button>
+          <Button variant="outline-secondary" onClick={() => props.onLogout()}>
             Logout
-          </button>
+          </Button>
         </div>
-      </div>
+      </Form>
     </div>
   );
 };
