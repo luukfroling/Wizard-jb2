@@ -35,7 +35,7 @@ export class MathNodeView implements NodeView {
         this.renderSpan.addEventListener("mouseenter", (_e) => {
             const rect = this.renderSpan.getBoundingClientRect();
             const hintText = this.label
-                ? `Label: ${this.label}, Double click to edit inline\nCtrl + Backspace to delete`
+                ? `Label: ${this.label}\nDouble click to edit inline\nCtrl + Backspace to delete`
                 : "Double click to edit inline\nCtrl + Backspace to delete";
             showHintTooltip(
                 hintText,
