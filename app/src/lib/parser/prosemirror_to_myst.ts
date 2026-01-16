@@ -258,6 +258,7 @@ const proseMirrorToMystHandlers = {
         value: node.textContent,
         enumerated: node.attrs.enumerated,
         enumerator: node.attrs.enumerator,
+        ...(node.attrs.label ? { label: node.attrs.label } : {}),
     }),
     inlineMath: (node: Node): InlineMath => ({
         type: "inlineMath",

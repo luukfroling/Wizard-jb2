@@ -245,13 +245,15 @@ export function insertImage(url: string, alt = "", title = "") {
 /**
  * Inserts a math node at the current selection.
  * @param {string} [equation=""] - The LaTeX equation.
+ * @param {string} [label] - Optional MyST label for the equation.
  * @returns {Command}
  */
-export function insertMath(equation: string = "") {
+export function insertMath(equation: string = "", label?: string) {
     return (state: EditorState, dispatch?: (tr: Transaction) => void) => {
         const { schema } = state;
+        const attrs = label ? { enumerated: false, label } : { enumerated: false };
         const mathNode = schema.nodes.math.create(
-            { enumerated: false },
+            attrs,
             schema.text(equation),
         );
         if (dispatch) {
