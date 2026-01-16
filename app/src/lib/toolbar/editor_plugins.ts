@@ -14,7 +14,6 @@ import {
 } from "prosemirror-schema-list";
 import { Schema } from "prosemirror-model";
 import { chainCommands } from "prosemirror-commands";
-import { InputRule, inputRules } from "prosemirror-inputrules";
 import {
     toggleBold,
     toggleItalic,
@@ -168,24 +167,37 @@ export function tableDeleteKeymap(): Plugin {
 }
 
 /**
- * Input rule that converts `[](#label)` into a reference link node.
+ * Plugin that converts typed `[](#label)` into a reference link node.
  * Keeps the displayed text as typed while preserving the markdown on save.
  * @param {Schema} schema - The ProseMirror schema.
- * @returns {Plugin} ProseMirror plugin for reference link input rules.
+ * @returns {Plugin} ProseMirror plugin for reference link handling.
  */
-export function referenceLinkInputRules(schema: Schema): Plugin {
-    const rule = new InputRule(
-        /\[\]\(#([^)]+)\)$/,
-        (state, match, start, end) => {
-            const label = match[1];
-            const node = schema.nodes.referenceLink.create(
-                {},
-                schema.text(`[](#${label})`),
-            );
-            return state.tr.replaceWith(start, end, node);
+export function referenceLinkInputPlugin(schema: Schema): Plugin {
+    return new Plugin({
+        props: {
+            handleTextInput(view, from, to, text) {
+                const tr = view.state.tr.insertText(text, from, to);
+                const $from = tr.doc.resolve(from + text.length);
+                const start = Math.max(0, $from.pos - 64);
+                const end = $from.pos;
+                const recent = tr.doc.textBetween(start, end, "\n");
+                const match = recent.match(/\[\]\(#([^)]+)\)$/);
+                if (!match) {
+                    view.dispatch(tr);
+                    return true;
+                }
+                const label = match[1];
+                const matchStart = end - match[0].length;
+                const node = schema.nodes.referenceLink.create(
+                    {},
+                    schema.text(`[](#${label})`),
+                );
+                tr.replaceWith(matchStart, end, node);
+                view.dispatch(tr);
+                return true;
+            },
         },
-    );
-    return inputRules({ rules: [rule] });
+    });
 }
 
 /**
