@@ -14,6 +14,7 @@ import {
 } from "prosemirror-schema-list";
 import { Schema } from "prosemirror-model";
 import { chainCommands } from "prosemirror-commands";
+import { InputRule, inputRules } from "prosemirror-inputrules";
 import {
     toggleBold,
     toggleItalic,
@@ -49,6 +50,50 @@ export function preserveMarksPlugin(): Plugin {
                     : oldState.selection.$from.marks();
             if (!prevMarks || prevMarks.length === 0) return null;
             return newState.tr.setStoredMarks(prevMarks);
+        },
+    });
+}
+
+/**
+ * Normalizes reference link nodes, converting them back to plain text when they
+ * no longer match the `[](#label)` pattern.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} ProseMirror plugin for reference link normalization.
+ */
+export function referenceLinkNormalizePlugin(schema: Schema): Plugin {
+    return new Plugin({
+        appendTransaction(transactions, _oldState, newState) {
+            if (!transactions.some((tr) => tr.docChanged)) return null;
+            const referenceLink = schema.nodes.referenceLink;
+            if (!referenceLink) return null;
+            const replacements: { pos: number; size: number; text: string }[] =
+                [];
+
+            newState.doc.descendants((node, pos) => {
+                if (node.type === referenceLink) {
+                    const text = node.textContent;
+                    if (!/^\[\]\(#.+\)$/.test(text)) {
+                        replacements.push({
+                            pos,
+                            size: node.nodeSize,
+                            text,
+                        });
+                    }
+                }
+            });
+
+            if (replacements.length === 0) return null;
+
+            const tr = newState.tr;
+            for (let i = replacements.length - 1; i >= 0; i -= 1) {
+                const { pos, size, text } = replacements[i];
+                tr.replaceWith(
+                    pos,
+                    pos + size,
+                    newState.schema.text(text),
+                );
+            }
+            return tr;
         },
     });
 }
@@ -120,6 +165,27 @@ export function tableDeleteKeymap(): Plugin {
         "Mod-Backspace": deleteTable(),
         "Mod-Delete": deleteTable(),
     });
+}
+
+/**
+ * Input rule that converts `[](#label)` into a reference link node.
+ * Keeps the displayed text as typed while preserving the markdown on save.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} ProseMirror plugin for reference link input rules.
+ */
+export function referenceLinkInputRules(schema: Schema): Plugin {
+    const rule = new InputRule(
+        /\[\]\(#([^)]+)\)$/,
+        (state, match, start, end) => {
+            const label = match[1];
+            const node = schema.nodes.referenceLink.create(
+                {},
+                schema.text(`[](#${label})`),
+            );
+            return state.tr.replaceWith(start, end, node);
+        },
+    );
+    return inputRules({ rules: [rule] });
 }
 
 /**

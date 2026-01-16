@@ -255,13 +255,29 @@ const handlers = {
         markChildren(node, safe, schema.mark("emphasis")),
     strong: (node: Strong, safe: boolean) =>
         markChildren(node, safe, schema.mark("strong")),
-    link: (node: Link, safe: boolean) =>
-        markChildren(
+    link: (node: Link, safe: boolean) => {
+        const url = node.url ?? "";
+        const children = node.children ?? [];
+        const isEmptyChildren =
+            children.length === 0 ||
+            children.every(
+                (child) =>
+                    child.type === "text" &&
+                    (child as Text).value.trim() === "",
+            );
+        if (url.startsWith("#") && isEmptyChildren) {
+            return schema.node(
+                "referenceLink",
+                {},
+                schema.text(`[](${url})`),
+            );
+        }
+        return markChildren(
             node,
-
             safe,
             schema.mark("link", pick(node, "url", "title")),
-        ),
+        );
+    },
     superscript: (node: Superscript, safe: boolean) =>
         markChildren(node, safe, schema.mark("superscript")),
 

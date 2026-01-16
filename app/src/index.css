@@ -99,6 +99,11 @@ a {
   cursor: pointer;
 }
 
+/* === Reference Links === */
+.reference-link {
+  color: #1d4ed8;
+}
+
 /* === Toolbar Buttons & Dropdowns === */
 .toolbar-btn,
 .btn.btn-sm.px-1,
