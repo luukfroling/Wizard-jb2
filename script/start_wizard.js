@@ -10,8 +10,9 @@ let container = null;
 let footerLinks = null;
 let giscus = null;
 
+// check if metadata is present (owner, repo, file)
 const parseMetadata = function() {
-    // 2. Metadata Parsing
+
     const repoAnchor = document.querySelector('a[title*="GitHub Repository:"]');
     const fileAnchor = document.querySelector('a[title="Edit This Page"]');
 
@@ -156,11 +157,8 @@ const addToggleButton = function() {
 };
 
 const initWizard = function() {
-    if(!window.location.href.includes("editor=true")) {
-        console.log("[wizard] Not in editor mode");
-        return;
-    }
-    
+
+    // 
     if (!parseMetadata()) {
         return;
     }
@@ -169,10 +167,8 @@ const initWizard = function() {
     showEditor();
 };
 
-// Check if we should run
-if (window.location.href.includes("editor=true")) {
-    console.log("[wizard] Editor mode detected, initializing wizard...");
-    document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(initWizard, 8000);
-    });
-}
+// Always run the script
+console.log("[wizard] Editor mode detected, initializing wizard...");
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(initWizard, 4000);
+});
