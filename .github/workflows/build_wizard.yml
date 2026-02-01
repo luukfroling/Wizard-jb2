@@ -2,16 +2,16 @@ name: Deploy Vite App to Pages
 
 on:
   push:
-    branches: [math-modal]
+    branches: [main]
   workflow_dispatch:
     inputs:
       deploy_branch:
         description: Branch to deploy
         required: false
-        default: math-modal
+        default: main
 
 env:
-  DEPLOY_BRANCH: math-modal
+  DEPLOY_BRANCH: main
 
 permissions:
   contents: read
