@@ -42,23 +42,78 @@ const parseMetadata = function() {
     return true;
 };
 
+// See https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_switch for toggle button
 const createToggleButton = function() {
-    // Create a button styled similar to the theme toggle button
-    const toggleButton = document.createElement('button');
-    toggleButton.className = 'wizard-toggle-button rounded-full aspect-square border border-stone-700 dark:border-white hover:bg-neutral-100 border-solid overflow-hidden text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-neutral-800 w-10 h-10 mx-3';
-    toggleButton.title = 'Toggle between editor and original view';
-    toggleButton.setAttribute('aria-label', 'Toggle between editor and original view');
-    
-    // Add SVG icon (document/code icon)
-    toggleButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-full w-full p-0.5">
-            <path fill-rule="evenodd" d="M3 5.25a1.5 1.5 0 0 1 1.5-1.5h16.5a1.5 1.5 0 0 1 1.5 1.5v13.5a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5V5.25zm1.5.75a.75.75 0 0 0-.75.75v12c0 .414.336.75.75.75h16.5a.75.75 0 0 0 .75-.75V6.75a.75.75 0 0 0-.75-.75H4.5z" clip-rule="evenodd"></path>
-            <path fill-rule="evenodd" d="M7.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0-1.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5z" clip-rule="evenodd"></path>
-        </svg>
-    `;
-    
-    toggleButton.addEventListener('click', toggleView);
-    return toggleButton;
+        // Create slider markup: <label class="switch"><input type="checkbox"><span class="slider round"></span></label>
+        const wrapper = document.createElement('label');
+        wrapper.className = 'switch';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.setAttribute('aria-label', 'Toggle wizard editor');
+
+        const slider = document.createElement('span');
+        slider.className = 'slider round';
+
+        // Keep a reference to checkbox so other functions can check/modify it
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(slider);
+
+        // When changed, toggle view
+        checkbox.addEventListener('change', () => {
+                if (checkbox.checked) showEditor(); else showOriginal();
+        });
+
+        // expose the checkbox for external sync
+        wrapper._checkbox = checkbox;
+        return wrapper;
+};
+
+const injectToggleStyles = function() {
+        if (document.getElementById('wizard-toggle-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'wizard-toggle-styles';
+        style.textContent = `
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+input:checked + .slider { background-color: #2196F3; }
+input:focus + .slider { box-shadow: 0 0 1px #2196F3; }
+input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+`;
+        document.head.appendChild(style);
 };
 
 const hideOriginalContent = function() {
@@ -104,6 +159,12 @@ const showEditor = function() {
     window.scrollTo(0, 0);
     
     isEditorMode = true;
+    // sync toggle checkbox if present
+    try {
+        const nav = document.querySelector('div.flex.items-center.flex-grow.w-auto');
+        const label = nav && nav.querySelector('label.switch');
+        if (label && label._checkbox) label._checkbox.checked = true;
+    } catch (e) {}
     console.log("[wizard] Editor view activated.");
 };
 
@@ -123,6 +184,12 @@ const showOriginal = function() {
     }
     
     isEditorMode = false;
+    // sync toggle checkbox if present
+    try {
+        const nav = document.querySelector('div.flex.items-center.flex-grow.w-auto');
+        const label = nav && nav.querySelector('label.switch');
+        if (label && label._checkbox) label._checkbox.checked = false;
+    } catch (e) {}
     console.log("[wizard] Original view restored.");
 };
 
@@ -157,18 +224,19 @@ const addToggleButton = function() {
 };
 
 const initWizard = function() {
-
-    // 
+    // Initialize: parse metadata, inject styles, and add the toggle.
+    // Do NOT auto-open the editor — default is original content. Users toggle when ready.
     if (!parseMetadata()) {
         return;
     }
-    
+    injectToggleStyles();
     addToggleButton();
-    showEditor();
 };
 
-// Always run the script
-console.log("[wizard] Editor mode detected, initializing wizard...");
+// Add the toggle after 4 seconds so it doesn't interfere with initial page rendering
+console.log("[wizard] Scheduling wizard toggle insertion in 4s...");
 document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(initWizard, 4000);
+    setTimeout(() => {
+        initWizard();
+    }, 4000);
 });
