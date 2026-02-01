@@ -9,6 +9,7 @@ let filePath = "not found";
 let container = null;
 let footerLinks = null;
 let giscus = null;
+let loaderElement = null;
 
 // check if metadata is present (owner, repo, file)
 const parseMetadata = function() {
@@ -115,6 +116,38 @@ input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transf
 `;
         document.head.appendChild(style);
 };
+
+    const injectLoaderStyles = function() {
+        if (document.getElementById('wizard-loader-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'wizard-loader-styles';
+        style.textContent = `
+    .wizard-loading { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin: 0 12px; }
+    .wizard-loading svg { width: 20px; height: 20px; animation: wizard-spin 1s linear infinite; }
+    @keyframes wizard-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    `;
+        document.head.appendChild(style);
+    };
+
+    const createLoadingIndicator = function() {
+        injectLoaderStyles();
+        const el = document.createElement('div');
+        el.className = 'wizard-loading';
+        el.setAttribute('aria-hidden', 'true');
+        el.innerHTML = `
+            <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="#999" stroke-width="5" stroke-linecap="round" stroke-dasharray="31.4 31.4"></circle>
+            </svg>`;
+        return el;
+    };
+
+    const removeLoadingIndicator = function() {
+        try {
+            if (!loaderElement) return;
+            if (loaderElement.parentNode) loaderElement.parentNode.removeChild(loaderElement);
+            loaderElement = null;
+        } catch (e) {}
+    };
 
 const hideOriginalContent = function() {
     container = document.querySelector('article') || document.body;
@@ -236,7 +269,19 @@ const initWizard = function() {
 // Add the toggle after 4 seconds so it doesn't interfere with initial page rendering
 console.log("[wizard] Scheduling wizard toggle insertion in 4s...");
 document.addEventListener("DOMContentLoaded", () => {
+    // Insert a small loading indicator in the navbar immediately, then replace with the toggle after 4s
+    try {
+        const navbar = document.querySelector('div.flex.items-center.flex-grow.w-auto');
+        if (navbar) {
+            const themeButton = navbar.querySelector('.myst-theme-button');
+            loaderElement = createLoadingIndicator();
+            if (themeButton) themeButton.parentNode.insertBefore(loaderElement, themeButton);
+            else navbar.appendChild(loaderElement);
+        }
+    } catch (e) { console.warn('[wizard] Could not insert loader', e); }
+
     setTimeout(() => {
+        removeLoadingIndicator();
         initWizard();
     }, 4000);
 });
