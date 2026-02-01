@@ -1,4 +1,5 @@
 import { createSignal, JSX, Show } from "solid-js";
+import { Button, Form, Modal } from "solid-bootstrap";
 import {
   useEditorState,
   useDispatchCommand,
@@ -43,11 +44,18 @@ export const HEADER_OPTIONS: { label: JSX.Element; value: number | string }[] =
 const [showTableSelector, setShowTableSelector] = createSignal(false);
 const [hoverX, setHoverX] = createSignal(0);
 const [hoverY, setHoverY] = createSignal(0);
+const [showMathModal, setShowMathModal] = createSignal(false);
+const [mathEquation, setMathEquation] = createSignal("E=mc^2");
+const [mathLabel, setMathLabel] = createSignal("");
 let insertButtonRef: HTMLButtonElement | undefined;
 const [_selectorPos, setSelectorPos] = createSignal<{
   top: number;
   left: number;
 }>({ top: 0, left: 0 });
+const modalContainer = () =>
+  typeof document !== "undefined"
+    ? document.querySelector(".extension_name_css") ?? document.body
+    : undefined;
 
 /**
  * Collection of toolbar dropdown JSX elements and a factory for creating them.
@@ -135,65 +143,135 @@ export const toolbarDropdowns: {
       />
     );
 
+    const handleInsertMath = () => {
+      const equation = mathEquation().trim();
+      if (!equation) return;
+      const label = mathLabel().trim();
+      dispatchCommand(insertMath(equation, label || undefined));
+      setShowMathModal(false);
+    };
+
     // --- Insert Dropdown (icons only) ---
     this.insertDropdown = (
-      <ToolbarDropdown
-        icon="bi-plus-lg"
-        options={[
-          {
-            icon: "bi-link-45deg",
-            onClick: () => {
-              const url = prompt("Enter link URL:");
-              if (!url) return;
-              const text = prompt("Enter link text (displayed):", url) || url;
-              dispatchCommand(insertLink(url, text));
+      <>
+        <ToolbarDropdown
+          icon="bi-plus-lg"
+          options={[
+            {
+              icon: "bi-link-45deg",
+              onClick: () => {
+                const url = prompt("Enter link URL:");
+                if (!url) return;
+                const text = prompt("Enter link text (displayed):", url) || url;
+                dispatchCommand(insertLink(url, text));
+              },
             },
-          },
-          {
-            icon: "bi-image",
-            onClick: () => {
-              const url = prompt("Enter image URL:");
-              if (url) dispatchCommand(insertImage(url));
+            {
+              icon: "bi-image",
+              onClick: () => {
+                const url = prompt("Enter image URL:");
+                if (url) dispatchCommand(insertImage(url));
+              },
             },
-          },
-          {
-            icon: "bi-calculator",
-            onClick: () => {
-              const equation = prompt("Enter LaTeX equation:", "E=mc^2");
-              if (equation !== null) dispatchCommand(insertMath(equation));
+            {
+              icon: "bi-calculator",
+              onClick: () => {
+                setShowMathModal(true);
+              },
             },
-          },
-          {
-            icon: "bi-table",
-            onClick: () => {
-              if (insertButtonRef) {
-                const rect = insertButtonRef.getBoundingClientRect();
-                setSelectorPos({
-                  top: rect.bottom + window.scrollY + 4,
-                  left: rect.left + window.scrollX,
-                });
-              }
-              setShowTableSelector(true);
+            {
+              icon: "bi-table",
+              onClick: () => {
+                if (insertButtonRef) {
+                  const rect = insertButtonRef.getBoundingClientRect();
+                  setSelectorPos({
+                    top: rect.bottom + window.scrollY + 4,
+                    left: rect.left + window.scrollX,
+                  });
+                }
+                setShowTableSelector(true);
+              },
             },
-          },
-        ]}
-      >
-        <Show when={showTableSelector()}>
-          <TableGridSelector
-            show={showTableSelector()}
-            position={_selectorPos()}
-            hoverX={hoverX()}
-            hoverY={hoverY()}
-            setHoverX={setHoverX}
-            setHoverY={setHoverY}
-            onSelect={(rows, cols) => {
-              setShowTableSelector(false);
-              dispatchCommand(insertTable(rows, cols));
-            }}
-            onClose={() => setShowTableSelector(false)}
-          />
-        </Show>
-      </ToolbarDropdown>
+          ]}
+          setButtonRef={(el) => {
+            insertButtonRef = el;
+          }}
+        >
+          <Show when={showTableSelector()}>
+            <TableGridSelector
+              show={showTableSelector()}
+              position={_selectorPos()}
+              hoverX={hoverX()}
+              hoverY={hoverY()}
+              setHoverX={setHoverX}
+              setHoverY={setHoverY}
+              onSelect={(rows, cols) => {
+                setShowTableSelector(false);
+                dispatchCommand(insertTable(rows, cols));
+              }}
+              onClose={() => setShowTableSelector(false)}
+            />
+          </Show>
+        </ToolbarDropdown>
+        <Modal
+          show={showMathModal()}
+          onHide={() => setShowMathModal(false)}
+          centered
+          size="lg"
+          container={modalContainer()}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              <i class="bi bi-calculator me-2" />
+              Insert equation
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form class="d-grid gap-3">
+              <Form.Group>
+                <Form.Label class="fw-semibold">Equation</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={4}
+                  value={mathEquation()}
+                  placeholder="E=mc^2"
+                  onInput={(e) => setMathEquation(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      handleInsertMath();
+                    }
+                  }}
+                />
+                <Form.Text>Use Ctrl/Command + Enter to insert.</Form.Text>
+              </Form.Group>
+              <Form.Group>
+                <Form.Label class="fw-semibold">Label (optional)</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={mathLabel()}
+                  placeholder="my-equation"
+                  onInput={(e) => setMathLabel(e.currentTarget.value)}
+                />
+                <Form.Text>
+                  Saved as <code>:label:</code> in MyST.
+                </Form.Text>
+              </Form.Group>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="outline-secondary"
+              onClick={() => setShowMathModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="dark" onClick={handleInsertMath}>
+              Insert equation
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </>
     );
   },
 };

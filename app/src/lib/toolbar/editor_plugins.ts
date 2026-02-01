@@ -53,6 +53,50 @@ export function preserveMarksPlugin(): Plugin {
     });
 }
 
+/**
+ * Normalizes reference link nodes, converting them back to plain text when they
+ * no longer match the `[](#label)` pattern.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} ProseMirror plugin for reference link normalization.
+ */
+export function referenceLinkNormalizePlugin(schema: Schema): Plugin {
+    return new Plugin({
+        appendTransaction(transactions, _oldState, newState) {
+            if (!transactions.some((tr) => tr.docChanged)) return null;
+            const referenceLink = schema.nodes.referenceLink;
+            if (!referenceLink) return null;
+            const replacements: { pos: number; size: number; text: string }[] =
+                [];
+
+            newState.doc.descendants((node, pos) => {
+                if (node.type === referenceLink) {
+                    const text = node.textContent;
+                    if (!/^\[\]\(#.+\)$/.test(text)) {
+                        replacements.push({
+                            pos,
+                            size: node.nodeSize,
+                            text,
+                        });
+                    }
+                }
+            });
+
+            if (replacements.length === 0) return null;
+
+            const tr = newState.tr;
+            for (let i = replacements.length - 1; i >= 0; i -= 1) {
+                const { pos, size, text } = replacements[i];
+                tr.replaceWith(
+                    pos,
+                    pos + size,
+                    newState.schema.text(text),
+                );
+            }
+            return tr;
+        },
+    });
+}
+
 // --- Keymaps ---
 
 /**
@@ -119,6 +163,40 @@ export function tableDeleteKeymap(): Plugin {
     return keymap({
         "Mod-Backspace": deleteTable(),
         "Mod-Delete": deleteTable(),
+    });
+}
+
+/**
+ * Plugin that converts typed `[](#label)` into a reference link node.
+ * Keeps the displayed text as typed while preserving the markdown on save.
+ * @param {Schema} schema - The ProseMirror schema.
+ * @returns {Plugin} ProseMirror plugin for reference link handling.
+ */
+export function referenceLinkInputPlugin(schema: Schema): Plugin {
+    return new Plugin({
+        props: {
+            handleTextInput(view, from, to, text) {
+                const tr = view.state.tr.insertText(text, from, to);
+                const $from = tr.doc.resolve(from + text.length);
+                const start = Math.max(0, $from.pos - 64);
+                const end = $from.pos;
+                const recent = tr.doc.textBetween(start, end, "\n");
+                const match = recent.match(/\[\]\(#([^)]+)\)$/);
+                if (!match) {
+                    view.dispatch(tr);
+                    return true;
+                }
+                const label = match[1];
+                const matchStart = end - match[0].length;
+                const node = schema.nodes.referenceLink.create(
+                    {},
+                    schema.text(`[](#${label})`),
+                );
+                tr.replaceWith(matchStart, end, node);
+                view.dispatch(tr);
+                return true;
+            },
+        },
     });
 }
 
