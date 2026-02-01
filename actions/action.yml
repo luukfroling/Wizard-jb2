@@ -13,13 +13,14 @@ runs:
     - name: Add script tag
       shell: bash
       run: |
-        echo "adding script: ${{ inputs.script_url }}"
+        SCRIPT_URL="${{ inputs.script_url }}?v=${{ github.sha }}"
+        echo "adding script: $SCRIPT_URL"
         
         # Find all HTML files
         html_files=$(find "${{ inputs.html_dir }}" -type f -name "*.html")
         
-        # Construct the script tag
-        TAG="<script src=\"${{ inputs.script_url }}\"></script>"
+        # Construct the script tag with cache busting
+        TAG="<script src=\"${SCRIPT_URL}\"></script>"
         
         # Use sed to insert the tag before the closing </head> tag
         for file in $html_files; do
