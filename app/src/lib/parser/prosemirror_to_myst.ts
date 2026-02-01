@@ -227,6 +227,16 @@ const proseMirrorToMystHandlers = {
         type: "html",
         value: node.textContent,
     }),
+    referenceLink: (node: Node): Link => {
+        const match = node.textContent.match(/^\[\]\(#([^)]+)\)$/);
+        const label = match?.[1] ?? "";
+        return {
+            type: "link",
+            url: `#${label}`,
+            title: "",
+            children: [{ type: "text", value: "" }],
+        } as Link;
+    },
     target: (node: Node): Target => ({
         type: "mystTarget",
         label: node.attrs.label,
@@ -258,6 +268,7 @@ const proseMirrorToMystHandlers = {
         value: node.textContent,
         enumerated: node.attrs.enumerated,
         enumerator: node.attrs.enumerator,
+        ...(node.attrs.label ? { label: node.attrs.label } : {}),
     }),
     inlineMath: (node: Node): InlineMath => ({
         type: "inlineMath",

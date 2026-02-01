@@ -17,10 +17,12 @@ export class MathNodeView implements NodeView {
     editing = false;
     view: EditorView;
     getPos: () => number;
+    label?: string;
 
     constructor(node: ProseMirrorNode, view: EditorView, getPos: () => number) {
         this.view = view;
         this.getPos = getPos;
+        this.label = node.attrs.label;
 
         this.dom = document.createElement("span");
         this.dom.className = "math-node";
@@ -32,8 +34,11 @@ export class MathNodeView implements NodeView {
 
         this.renderSpan.addEventListener("mouseenter", (_e) => {
             const rect = this.renderSpan.getBoundingClientRect();
+            const hintText = this.label
+                ? `Label: ${this.label}\nDouble click to edit inline\nCtrl + Backspace to delete`
+                : "Double click to edit inline\nCtrl + Backspace to delete";
             showHintTooltip(
-                "Double click to edit inline\nCtrl + Backspace to delete",
+                hintText,
                 rect.bottom + window.scrollY + 10,
                 rect.left + window.scrollX + rect.width / 2,
             );
@@ -110,6 +115,7 @@ export class MathNodeView implements NodeView {
         if (!this.editing) {
             this.renderMath(node.textContent);
         }
+        this.label = node.attrs.label;
         return true;
     }
 }

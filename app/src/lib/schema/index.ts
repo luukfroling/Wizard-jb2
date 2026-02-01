@@ -452,6 +452,19 @@ export const schema = new Schema({
             },
             parseDOM: [{ tag: "span[class=math]" }],
         },
+        referenceLink: {
+            group: "phrasingContent",
+            content: "text*",
+            inline: true,
+            toDOM() {
+                return [
+                    "span",
+                    { class: "reference-link", "data-reference-link": "true" },
+                    0,
+                ];
+            },
+            parseDOM: [{ tag: "span[data-reference-link]" }],
+        },
         break: {
             group: "phrasingContent",
             inline: true,
