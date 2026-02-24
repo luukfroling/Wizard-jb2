@@ -1,4 +1,4 @@
-console.log("[wizard] Script loaded.");
+console.log("[wizard] Script loaded (updated).");
 
 let isEditorMode = false;
 let iframeElement = null;
@@ -71,15 +71,17 @@ const createToggleButton = function() {
 };
 
 const injectToggleStyles = function() {
-        if (document.getElementById('wizard-toggle-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'wizard-toggle-styles';
-        style.textContent = `
+    if (document.getElementById('wizard-toggle-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'wizard-toggle-styles';
+    style.textContent = `
 .switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    /* 60px * 0.7 = 42px */
+    width: 42px; 
+    /* 34px * 0.7 = 23.8px */
+    height: 24px; 
 }
 .switch input { 
     opacity: 0;
@@ -100,21 +102,30 @@ const injectToggleStyles = function() {
 .slider:before {
     position: absolute;
     content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
+    /* 26px * 0.7 = 18.2px */
+    height: 18px;
+    width: 18px;
+    /* Adjusted spacing to keep it centered */
+    left: 3px;
+    bottom: 3px;
     background-color: white;
     -webkit-transition: .4s;
     transition: .4s;
 }
 input:checked + .slider { background-color: #2196F3; }
 input:focus + .slider { box-shadow: 0 0 1px #2196F3; }
-input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
-.slider.round { border-radius: 34px; }
+
+/* Translation: (Width 42px) - (Circle 18px) - (Left margin 3px * 2) = 18px */
+input:checked + .slider:before { 
+    -webkit-transform: translateX(18px); 
+    -ms-transform: translateX(18px); 
+    transform: translateX(18px); 
+}
+
+.slider.round { border-radius: 24px; }
 .slider.round:before { border-radius: 50%; }
 `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
 };
 
     const injectLoaderStyles = function() {
