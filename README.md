@@ -43,8 +43,5 @@ As the wizard was originally designed for JB1, there will be unknown nodetypes w
 
 # Using the editor
 
-todo 
-
-- personal access token
-- example image
+After adding the extra steps to the gh-action, a toggle should appear on the top right in the navigation bar. 
  

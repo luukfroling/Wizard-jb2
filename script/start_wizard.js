@@ -11,6 +11,9 @@ let footerLinks = null;
 let giscus = null;
 let loaderElement = null;
 
+let hasError = false;
+let errorMessage = ""; 
+
 // check if metadata is present (owner, repo, file)
 const parseMetadata = function() {
 
@@ -21,6 +24,8 @@ const parseMetadata = function() {
         console.warn("[wizard] Could not find necessary metadata anchors.");
         console.log("[wizard] Repo Anchor Found:", !!repoAnchor);
         console.log("[wizard] File Anchor Found:", !!fileAnchor);
+        hasError = true;
+        errorMessage = "Could not find necessary metadata anchors.";
         return false;
     }
 
@@ -30,7 +35,7 @@ const parseMetadata = function() {
     if (repoMatch) {
         owner = repoMatch[1];
         repo = repoMatch[2];
-    }
+    } 
 
     // Parse File Path
     const fileUrlParts = fileAnchor.href.split('/edit/');
@@ -62,6 +67,7 @@ const createToggleButton = function() {
 
         // When changed, toggle view
         checkbox.addEventListener('change', () => {
+                if (hasError) alert(`Wizard Error: ${errorMessage}`);
                 if (checkbox.checked) showEditor(); else showOriginal();
         });
 
