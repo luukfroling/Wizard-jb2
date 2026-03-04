@@ -25,7 +25,7 @@ const parseMetadata = function() {
         console.log("[wizard] Repo Anchor Found:", !!repoAnchor);
         console.log("[wizard] File Anchor Found:", !!fileAnchor);
         hasError = true;
-        errorMessage = "Could not find necessary metadata anchors.";
+        errorMessage = "Could not find github information, have you linked your repository in myst.yml?";
         return false;
     }
 
