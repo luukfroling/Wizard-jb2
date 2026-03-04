@@ -26,6 +26,7 @@ import type {
     InlineMath,
     Image,
     Caption,
+    FootnoteDefinition,
     Subscript,
     Superscript,
     Underline,
@@ -321,6 +322,12 @@ const handlers = {
 
     caption: (node: Caption, safe: boolean) =>
         schema.node("caption", {}, children(node, safe)),
+    footnoteDefinition: (node: FootnoteDefinition, safe: boolean) =>
+        schema.node(
+            "footnoteDefinition",
+            { identifier: node.identifier },
+            children(node, safe),
+        ),
     captionNumber: (node: CaptionNumber, safe: boolean) =>
         schema.node(
             "captionNumber",

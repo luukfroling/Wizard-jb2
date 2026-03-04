@@ -355,6 +355,9 @@ export const schema = new Schema({
         },
         footnoteDefinition: {
             group: "flowContent",
+            attrs: {
+                identifier: string({ optional: false }),
+            },
             toDOM() {
                 return ["div", { class: "footnote-definition" }, 0];
             },
